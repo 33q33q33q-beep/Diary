@@ -1341,8 +1341,8 @@ const SYNC = {
     try{
       updateSyncUI('syncing');
       await this.pull();
-      sessionStorage.setItem('pulled','1');
-      location.reload();
+      renderCalendar();
+      showAnnivBanner();
     } catch(e){
       updateSyncUI('error');
       alert('ダウンロードエラー: '+e.message);
@@ -1387,12 +1387,14 @@ initCalendar();
 let lastAutoPull=0;
 async function autoPull(){
   if(!SYNC.key||!SYNC.gistId) return;
-  // リロード直後はスキップ（無限ループ防止）
-  if(sessionStorage.getItem('pulled')){ sessionStorage.removeItem('pulled'); return; }
   const now=Date.now();
   if(now-lastAutoPull < 30000) return;
   lastAutoPull=now;
-  try{ await SYNC.pull(); }catch(e){ console.warn('auto pull failed:',e); }
+  try{
+    await SYNC.pull();
+    renderCalendar();
+    showAnnivBanner();
+  }catch(e){ console.warn('auto pull failed:',e); }
 }
 // タブ・アプリが前面に戻った時に自動取得
 document.addEventListener('visibilitychange',()=>{
