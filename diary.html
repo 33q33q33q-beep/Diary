@@ -55,6 +55,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 .cal-mood{font-size:13px;line-height:1;z-index:1;margin-top:1px}
 .cal-thumb{width:100%;max-height:80px;object-fit:contain;border-radius:5px;margin-top:4px;display:block;z-index:0;background:rgba(0,0,0,.04)}
 .cal-day.has-anniversary::after{content:'🎉';position:absolute;top:2px;right:3px;font-size:9px;z-index:2}
+.cal-day.has-link::before{content:'🔗';position:absolute;bottom:2px;right:3px;font-size:8px;z-index:2}
 .cal-tags-dot{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;margin-top:2px;z-index:1}
 .cal-tags-dot span{width:5px;height:5px;border-radius:50%;background:var(--primary-dark);opacity:.5}
 /* Timeline */
@@ -142,6 +143,10 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .vision-item .del{color:var(--text-muted);cursor:pointer;font-size:12px;padding:0 4px}
 #modal-weather{font-size:13px;color:var(--text-light);margin:4px 0 10px;min-height:20px;display:flex;align-items:center;gap:6px}
 #modal-weather .weather-badge{background:#e8f4ff;border:1px solid #b8d8f0;border-radius:20px;padding:3px 10px;font-size:13px;color:#2a6a9a}
+.modal-link-section{display:flex;align-items:center;gap:8px;margin:8px 0}
+.modal-link-section input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit}
+.modal-link-section input:focus{outline:none;border-color:var(--primary)}
+.modal-link-section a{font-size:12px;color:var(--primary-dark);white-space:nowrap;padding:5px 10px;border:1px solid var(--primary);border-radius:6px}
 .modal-todo-section{margin:12px 0;padding:12px;background:var(--bg);border-radius:8px}
 .modal-todo-section .todo-item{padding:6px 0}
 /* Modal */
@@ -343,6 +348,11 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <div id="modal-weather"></div>
     <div class="mood-select" id="mood-select"></div>
     <div class="tags-row" id="tags-row"></div>
+    <div class="modal-link-section">
+      <span style="font-size:13px;color:var(--text-muted)">🔗</span>
+      <input type="url" id="linkInput" placeholder="お店・参考URLを貼り付け（任意）">
+      <a id="linkPreview" href="#" target="_blank" style="display:none">開く</a>
+    </div>
     <textarea id="diaryText" placeholder="今日の出来事を書いてみましょう…"></textarea>
     <div class="photo-section">
       <label class="btn" style="cursor:pointer;display:inline-block">📷 写真を追加 <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="addPhotos(this)"></label>
@@ -490,6 +500,7 @@ function addCalCell(grid,y,m,d,other,entries,annivs,todayKey){
   const entry=entries[key];
   const mmdd=`${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   if(annivs.some(a=>a.date===mmdd)) cell.classList.add('has-anniversary');
+  if(entry&&entry.link) cell.classList.add('has-link');
 
   // Background color from mood
   if(entry&&entry.mood&&MOOD_BG[entry.mood]){
@@ -548,7 +559,7 @@ function showAnnivBanner(){
 }
 
 // ─── Modal / Editor ──────────────────────────────────────────────────────────
-let currentKey='', currentPhotos=[], currentTags=[], currentMood='', currentModalTodos=[], currentWeather=null;
+let currentKey='', currentPhotos=[], currentTags=[], currentMood='', currentModalTodos=[], currentWeather=null, currentLink='';
 
 // ─── Weather ──────────────────────────────────────────────────────────────────
 function wmoToInfo(code){
@@ -602,6 +613,17 @@ function openModal(y,m,d){
   currentMood=entry.mood||'';
   currentModalTodos=JSON.parse(JSON.stringify(entry.todos||[]));
   currentWeather=entry.weather||null;
+  currentLink=entry.link||'';
+  const linkInp=document.getElementById('linkInput');
+  const linkPrev=document.getElementById('linkPreview');
+  linkInp.value=currentLink;
+  if(currentLink){ linkPrev.href=currentLink; linkPrev.style.display='inline'; }
+  else { linkPrev.style.display='none'; }
+  linkInp.oninput=()=>{
+    currentLink=linkInp.value.trim();
+    if(currentLink){ linkPrev.href=currentLink; linkPrev.style.display='inline'; }
+    else { linkPrev.style.display='none'; }
+  };
 
   // Weather
   const wEl=document.getElementById('modal-weather');
@@ -724,7 +746,7 @@ function saveEntry(){
   if(!content&&currentPhotos.length===0&&!currentMood&&currentTags.length===0){
     delete entries[currentKey];
   } else {
-    entries[currentKey]={content,mood:currentMood,tags:currentTags,photos:currentPhotos,todos:currentModalTodos,weather:currentWeather,updatedAt:Date.now()};
+    entries[currentKey]={content,mood:currentMood,tags:currentTags,photos:currentPhotos,todos:currentModalTodos,weather:currentWeather,link:currentLink||undefined,updatedAt:Date.now()};
   }
   try{
     DB.setEntries(entries);
@@ -1297,7 +1319,7 @@ const SYNC = {
     if(d.userTags)  trySet('diary_user_tags',  toArr(d.userTags));
     if(errors.length) alert('一部のデータを保存できませんでした:\n'+errors.join('\n'));
     updateSyncUI('synced');
-    renderCurrentPage();
+    try{ renderCurrentPage(); }catch(e){ console.warn('render error after pull:',e); }
   },
 
   async pullAndReload(){
@@ -1347,6 +1369,24 @@ function renderCurrentPage(){
 // ─── Init ────────────────────────────────────────────────────────────────────
 SYNC.init();
 initCalendar();
+
+// ─── 自動同期 ─────────────────────────────────────────────────────────────────
+let lastAutoPull=0;
+async function autoPull(){
+  if(!SYNC.key||!SYNC.gistId) return;
+  const now=Date.now();
+  if(now-lastAutoPull < 30000) return; // 30秒以内は再取得しない
+  lastAutoPull=now;
+  try{
+    await SYNC.pull();
+  }catch(e){ console.warn('auto pull failed:',e); }
+}
+// タブ・アプリが前面に戻った時に自動取得
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible') autoPull();
+});
+// ウィンドウがフォーカスされた時
+window.addEventListener('focus', autoPull);
 </script>
 </body>
 </html>
