@@ -396,15 +396,15 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 const DB = {
   getEntries(){ return JSON.parse(localStorage.getItem('diary_entries')||'{}') },
   setEntries(d){ localStorage.setItem('diary_entries', JSON.stringify(d)); SYNC.schedule(); },
-  getAnniversaries(){ return JSON.parse(localStorage.getItem('diary_annivs')||'[]') },
+  getAnniversaries(){ const d=JSON.parse(localStorage.getItem('diary_annivs')||'[]'); return Array.isArray(d)?d:[]; },
   setAnniversaries(d){ localStorage.setItem('diary_annivs', JSON.stringify(d)); SYNC.schedule(); },
-  getMedia(){ return JSON.parse(localStorage.getItem('diary_media')||'[]') },
+  getMedia(){ const d=JSON.parse(localStorage.getItem('diary_media')||'[]'); return Array.isArray(d)?d:[]; },
   setMedia(d){ localStorage.setItem('diary_media', JSON.stringify(d)); SYNC.schedule(); },
-  getTodos(){ return JSON.parse(localStorage.getItem('diary_todos')||'[]') },
+  getTodos(){ const d=JSON.parse(localStorage.getItem('diary_todos')||'[]'); return Array.isArray(d)?d:[]; },
   setTodos(d){ localStorage.setItem('diary_todos', JSON.stringify(d)); SYNC.schedule(); },
-  getGoals(){ return JSON.parse(localStorage.getItem('diary_goals')||'[]') },
+  getGoals(){ const d=JSON.parse(localStorage.getItem('diary_goals')||'[]'); return Array.isArray(d)?d:[]; },
   setGoals(d){ localStorage.setItem('diary_goals', JSON.stringify(d)); SYNC.schedule(); },
-  getVisions(){ return JSON.parse(localStorage.getItem('diary_visions')||'[]') },
+  getVisions(){ const d=JSON.parse(localStorage.getItem('diary_visions')||'[]'); return Array.isArray(d)?d:[]; },
   setVisions(d){ localStorage.setItem('diary_visions', JSON.stringify(d)); SYNC.schedule(); },
 };
 
@@ -1286,13 +1286,15 @@ const SYNC = {
       try{ localStorage.setItem(key, JSON.stringify(val)); }
       catch(e){ errors.push(key+': '+e.message); }
     };
-    if(d.entries) trySet('diary_entries', d.entries);
-    if(d.annivs)  trySet('diary_annivs',  d.annivs);
-    if(d.media)   trySet('diary_media',   d.media);
-    if(d.todos)   trySet('diary_todos',   d.todos);
-    if(d.goals)   trySet('diary_goals',   d.goals);
-    if(d.visions)   trySet('diary_visions',    d.visions);
-    if(d.userTags)  trySet('diary_user_tags',  d.userTags);
+    const toArr=v=>Array.isArray(v)?v:[];
+    const toObj=v=>(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
+    if(d.entries) trySet('diary_entries', toObj(d.entries));
+    if(d.annivs)  trySet('diary_annivs',  toArr(d.annivs));
+    if(d.media)   trySet('diary_media',   toArr(d.media));
+    if(d.todos)   trySet('diary_todos',   toArr(d.todos));
+    if(d.goals)   trySet('diary_goals',   toArr(d.goals));
+    if(d.visions)   trySet('diary_visions',    toArr(d.visions));
+    if(d.userTags)  trySet('diary_user_tags',  toArr(d.userTags));
     if(errors.length) alert('一部のデータを保存できませんでした:\n'+errors.join('\n'));
     updateSyncUI('synced');
     renderCurrentPage();
