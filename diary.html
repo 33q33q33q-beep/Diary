@@ -1164,7 +1164,7 @@ function renderMedia(){
   const all=DB.getMedia();
   const media=all.filter(m=>m.type===mediaType);
   const grid=document.getElementById('media-grid');
-  if(media.length===0){grid.innerHTML='<div class="empty">記録がありません</div>';return;}
+  if(media.length===0){grid.innerHTML='<div class="empty">記録がありません<br><button onclick="restoreFromGistV26()" style="margin-top:10px;padding:6px 16px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">⚠️ 旧データから復元</button></div>';return;}
   grid.innerHTML=media.map((m,fi)=>`
     <div class="media-card" data-media-id="${m.id}">
       <div class="title">${escHtml(m.title)}</div>
@@ -1306,7 +1306,7 @@ function addGoal(){
 function renderGoals(){
   const goals=DB.getGoals();
   const list=document.getElementById('goal-list');
-  if(goals.length===0){list.innerHTML='<div class="empty" style="padding:20px">目標はありません</div>';return;}
+  if(goals.length===0){list.innerHTML='<div class="empty" style="padding:20px">目標はありません<br><button onclick="restoreFromGistV26()" style="margin-top:10px;padding:6px 16px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">⚠️ 旧データから復元</button></div>';return;}
   list.innerHTML=goals.map(g=>`
     <div class="goal-item">
       <div class="goal-text">
