@@ -56,6 +56,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 .cal-thumb{width:100%;max-height:80px;object-fit:contain;border-radius:5px;margin-top:4px;display:block;z-index:0;background:rgba(0,0,0,.04)}
 .cal-day.has-anniversary::after{content:'🎉';position:absolute;top:2px;right:3px;font-size:9px;z-index:2}
 .cal-day.has-link::before{content:'🔗';position:absolute;bottom:2px;right:3px;font-size:8px;z-index:2}
+.cal-media-icons{font-size:10px;line-height:1;margin-top:2px;z-index:1}
 .cal-tags-dot{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;margin-top:2px;z-index:1}
 .cal-tags-dot span{width:5px;height:5px;border-radius:50%;background:var(--primary-dark);opacity:.5}
 /* Timeline */
@@ -456,6 +457,7 @@ function goToday(){
 function renderCalendar(){
   const entries=DB.getEntries();
   const annivs=DB.getAnniversaries();
+  const media=DB.getMedia();
   document.getElementById('cal-title').textContent=`${calYear}年 ${calMonth+1}月`;
   const grid=document.getElementById('cal-grid');
   // Remove day cells (keep headers)
@@ -501,6 +503,17 @@ function addCalCell(grid,y,m,d,other,entries,annivs,todayKey){
   const mmdd=`${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   if(annivs.some(a=>a.date===mmdd)) cell.classList.add('has-anniversary');
   if(entry&&entry.link) cell.classList.add('has-link');
+  const dayMedia=media.filter(m=>m.date===key);
+  if(dayMedia.length){
+    const hasMovie=dayMedia.some(m=>m.type==='movie');
+    const hasBook=dayMedia.some(m=>m.type==='book');
+    cell.classList.add('has-media');
+    const icons=document.createElement('div');
+    icons.className='cal-media-icons';
+    if(hasMovie) icons.innerHTML+='🎬';
+    if(hasBook)  icons.innerHTML+='📚';
+    cell.appendChild(icons);
+  }
 
   // Background color from mood
   if(entry&&entry.mood&&MOOD_BG[entry.mood]){
