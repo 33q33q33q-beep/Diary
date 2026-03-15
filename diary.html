@@ -1319,6 +1319,7 @@ const SYNC = {
     if(d.userTags)  trySet('diary_user_tags',  toArr(d.userTags));
     if(errors.length) alert('一部のデータを保存できませんでした:\n'+errors.join('\n'));
     updateSyncUI('synced');
+    try{ renderCurrentPage(); }catch(e){ console.warn('render:',e); }
   },
 
   async pullAndReload(){
@@ -1327,8 +1328,8 @@ const SYNC = {
     try{
       updateSyncUI('syncing');
       await this.pull();
-      // Force full reload so all pages reflect new data
-      setTimeout(()=>location.reload(), 300);
+      sessionStorage.setItem('pulled','1');
+      location.reload();
     } catch(e){
       updateSyncUI('error');
       alert('ダウンロードエラー: '+e.message);
@@ -1373,13 +1374,12 @@ initCalendar();
 let lastAutoPull=0;
 async function autoPull(){
   if(!SYNC.key||!SYNC.gistId) return;
+  // リロード直後はスキップ（無限ループ防止）
+  if(sessionStorage.getItem('pulled')){ sessionStorage.removeItem('pulled'); return; }
   const now=Date.now();
-  if(now-lastAutoPull < 30000) return; // 30秒以内は再取得しない
+  if(now-lastAutoPull < 30000) return;
   lastAutoPull=now;
-  try{
-    await SYNC.pull();
-    location.reload();
-  }catch(e){ console.warn('auto pull failed:',e); }
+  try{ await SYNC.pull(); }catch(e){ console.warn('auto pull failed:',e); }
 }
 // タブ・アプリが前面に戻った時に自動取得
 document.addEventListener('visibilitychange',()=>{
