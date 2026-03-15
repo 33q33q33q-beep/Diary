@@ -1337,6 +1337,7 @@ const SYNC = {
     if(d.userTags)  trySet('diary_user_tags',  toArr(d.userTags));
     if(errors.length) alert('一部のデータを保存できませんでした:\n'+errors.join('\n'));
     updateSyncUI('synced');
+    alert('取得完了\n日記: '+Object.keys(d.entries||{}).length+'件\n記念日: '+(d.annivs||[]).length+'件\nTODO: '+(d.todos||[]).length+'件');
   },
 
   async pullAndReload(){
