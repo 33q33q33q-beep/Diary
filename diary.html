@@ -1421,7 +1421,8 @@ const SYNC = {
 
   getData(){
     return {
-      entries: DB.getEntries(), annivs: DB.getAnniversaries(),
+      entries: DB.getEntries(),
+      annivs: DB.getAnniversaries().filter(a=>a.desc!=='Facebook誕生日'),
       media: DB.getMedia(), todos: DB.getTodos(), goals: DB.getGoals(), visions: DB.getVisions(),
       userTags: getUserTags(),
       updatedAt: Date.now()
@@ -1485,7 +1486,15 @@ const SYNC = {
     };
     const toArr=v=>Array.isArray(v)?v:[];
     const toObj=v=>(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
-    if(d.entries) trySet('diary_entries', toObj(d.entries));
+    if(d.entries){
+      const localCount=Object.keys(DB.getEntries()).length;
+      const gistCount=Object.keys(toObj(d.entries)).length;
+      if(gistCount===0&&localCount>0){
+        console.warn('Gistの日記が0件のためローカルデータを保持します');
+      } else {
+        trySet('diary_entries', toObj(d.entries));
+      }
+    }
     if(d.annivs)  trySet('diary_annivs',  toArr(d.annivs));
     if(d.media)   trySet('diary_media',   toArr(d.media));
     if(d.todos)   trySet('diary_todos',   toArr(d.todos));
