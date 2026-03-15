@@ -359,15 +359,17 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <div id="modal-weather"></div>
     <div class="mood-select" id="mood-select"></div>
     <div class="tags-row" id="tags-row"></div>
-    <div class="modal-link-section">
-      <span style="font-size:13px;color:var(--text-muted)">🔗</span>
-      <input type="url" id="linkInput" placeholder="お店・参考URLを貼り付け（任意）">
-      <a id="linkPreview" href="#" target="_blank" style="display:none">開く</a>
-    </div>
     <textarea id="diaryText" placeholder="今日の出来事を書いてみましょう…"></textarea>
     <div class="photo-section">
       <label class="btn" style="cursor:pointer;display:inline-block">📷 写真を追加 <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="addPhotos(this)"></label>
+      <button id="shopBtn" class="btn" onclick="toggleShopInput()" style="margin-left:8px">🏪 お店を追加</button>
       <div class="photo-grid" id="photo-grid"></div>
+    </div>
+    <div id="shop-input-area" style="display:none;margin:8px 0">
+      <div class="modal-link-section">
+        <input type="url" id="linkInput" placeholder="お店・参考URLを貼り付け（任意）">
+        <a id="linkPreview" href="#" target="_blank" style="display:none">開く</a>
+      </div>
     </div>
     <div class="modal-todo-section">
       <div style="font-size:13px;font-weight:600;color:var(--primary-dark);margin-bottom:8px">📝 この日のTODO</div>
@@ -383,6 +385,11 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <button class="btn btn-primary" onclick="saveEntry()">保存</button>
     </div>
   </div>
+</div>
+
+<!-- Anniversary Context Menu -->
+<div id="anniv-ctx" style="display:none;position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);z-index:500;padding:4px 0;min-width:120px">
+  <div id="anniv-ctx-delete" style="padding:8px 16px;cursor:pointer;font-size:13px;color:#c00">🗑️ 削除</div>
 </div>
 
 <!-- JSONbin Settings Modal -->
@@ -566,6 +573,24 @@ function addCalCell(grid,y,m,d,other,entries,annivs,todayKey,media){
   cell.onclick=()=>openModal(y,m,d);
   grid.appendChild(cell);
 }
+function toggleShopInput(){
+  const area=document.getElementById('shop-input-area');
+  const btn=document.getElementById('shopBtn');
+  if(area.style.display==='none'){
+    area.style.display='block';
+    document.getElementById('linkInput').focus();
+  } else {
+    area.style.display='none';
+  }
+}
+
+let _ctxAnnivId=null;
+document.addEventListener('click',()=>{document.getElementById('anniv-ctx').style.display='none';});
+document.getElementById('anniv-ctx-delete').onclick=()=>{
+  if(_ctxAnnivId!==null) deleteAnniversaryById(_ctxAnnivId);
+  document.getElementById('anniv-ctx').style.display='none';
+};
+
 function deleteAnniversaryById(id){
   const annivs=JSON.parse(localStorage.getItem('diary_annivs')||'[]').filter(a=>a.id!==id);
   localStorage.setItem('diary_annivs',JSON.stringify(annivs));
@@ -599,7 +624,7 @@ function showAnnivBanner(){
   banner.style.display='block';
   document.getElementById('banner-items').innerHTML=weekAnnivs.map(a=>{
     const today=a.isToday?' 🎂':'';
-    return `<div style="display:flex;align-items:center;gap:8px;margin:3px 0"><span>🎊 <b>${a.label}</b> ${a.name}${today}</span><button onclick="deleteAnniversaryById(${a.id})" style="font-size:11px;padding:1px 7px;border:1px solid #fcc;color:#c00;background:white;border-radius:4px;cursor:pointer">削除</button></div>`;
+    return `<div data-anniv-id="${a.id}" style="padding:2px 0;cursor:context-menu;user-select:none" oncontextmenu="(function(e){e.preventDefault();e.stopPropagation();_ctxAnnivId=${a.id};const m=document.getElementById('anniv-ctx');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.style.display='block';})(event)">🎊 <b>${a.label}</b> ${a.name}${today}</div>`;
   }).join('');
 }
 
@@ -683,13 +708,22 @@ function openModal(y,m,d){
   currentLink=entry.link||'';
   const linkInp=document.getElementById('linkInput');
   const linkPrev=document.getElementById('linkPreview');
+  const shopBtn=document.getElementById('shopBtn');
+  const shopArea=document.getElementById('shop-input-area');
   linkInp.value=currentLink;
-  if(currentLink){ linkPrev.href=currentLink; linkPrev.style.display='inline'; }
-  else { linkPrev.style.display='none'; }
+  if(currentLink){
+    linkPrev.href=currentLink; linkPrev.style.display='inline';
+    shopArea.style.display='block';
+    shopBtn.style.background='#c00'; shopBtn.style.color='white'; shopBtn.style.borderColor='#c00';
+  } else {
+    linkPrev.style.display='none';
+    shopArea.style.display='none';
+    shopBtn.style.background=''; shopBtn.style.color=''; shopBtn.style.borderColor='';
+  }
   linkInp.oninput=()=>{
     currentLink=linkInp.value.trim();
-    if(currentLink){ linkPrev.href=currentLink; linkPrev.style.display='inline'; }
-    else { linkPrev.style.display='none'; }
+    if(currentLink){ linkPrev.href=currentLink; linkPrev.style.display='inline'; shopBtn.style.background='#c00'; shopBtn.style.color='white'; shopBtn.style.borderColor='#c00'; }
+    else { linkPrev.style.display='none'; shopBtn.style.background=''; shopBtn.style.color=''; shopBtn.style.borderColor=''; }
   };
 
   // Weather
