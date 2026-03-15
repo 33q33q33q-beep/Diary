@@ -472,17 +472,17 @@ function renderCalendar(){
   // Prev month fill
   for(let i=0;i<startDay;i++){
     const d=new Date(calYear,calMonth,1-startDay+i);
-    addCalCell(grid, d.getFullYear(), d.getMonth()+1, d.getDate(), true, entries, annivs, todayKey);
+    addCalCell(grid, d.getFullYear(), d.getMonth()+1, d.getDate(), true, entries, annivs, todayKey, media);
   }
   // This month
   for(let d=1;d<=last.getDate();d++){
-    addCalCell(grid, calYear, calMonth+1, d, false, entries, annivs, todayKey);
+    addCalCell(grid, calYear, calMonth+1, d, false, entries, annivs, todayKey, media);
   }
   // Next month fill
   const total=grid.children.length-7;
   const remaining=total%7===0?0:7-(total%7);
   for(let d=1;d<=remaining;d++){
-    addCalCell(grid, calYear, calMonth+2>12?calYear+1:calYear, calMonth+2>12?1:calMonth+2, d, true, entries, annivs, todayKey);
+    addCalCell(grid, calYear, calMonth+2>12?calYear+1:calYear, calMonth+2>12?1:calMonth+2, d, true, entries, annivs, todayKey, media);
   }
 }
 const MOOD_BG={
@@ -490,7 +490,7 @@ const MOOD_BG={
   '😢':'#e8eaf6','😡':'#ffebee','😰':'#fce4ec','🥰':'#fce4ec',
   '😴':'#ede7f6','🤒':'#f1f8e9'
 };
-function addCalCell(grid,y,m,d,other,entries,annivs,todayKey){
+function addCalCell(grid,y,m,d,other,entries,annivs,todayKey,media){
   const key=dateKey(y,m,d);
   const cell=document.createElement('div');
   cell.className='cal-day';
