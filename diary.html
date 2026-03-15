@@ -812,7 +812,7 @@ function addPhotos(input){
 function saveEntry(){
   const entries=DB.getEntries();
   const content=document.getElementById('diaryText').value.trim();
-  if(!content&&currentPhotos.length===0&&!currentMood&&currentTags.length===0){
+  if(!content&&currentPhotos.length===0&&!currentMood&&currentTags.length===0&&currentModalTodos.length===0){
     delete entries[currentKey];
   } else {
     entries[currentKey]={content,mood:currentMood,tags:currentTags,photos:currentPhotos,todos:currentModalTodos,weather:currentWeather,link:currentLink||undefined,updatedAt:Date.now()};
