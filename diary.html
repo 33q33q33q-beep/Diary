@@ -54,7 +54,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 .cal-num{font-size:13px;font-weight:600;line-height:1.4;z-index:1;flex-shrink:0}
 .cal-mood{font-size:13px;line-height:1;z-index:1;margin-top:1px}
 .cal-thumb{width:100%;max-height:80px;object-fit:contain;border-radius:5px;margin-top:4px;display:block;z-index:0;background:rgba(0,0,0,.04)}
-.cal-day.has-anniversary::after{content:'🎉';position:absolute;top:2px;right:3px;font-size:9px;z-index:2}
+.cal-anniv-icon{position:absolute;top:2px;right:3px;font-size:9px;z-index:2;line-height:1}
 .cal-day.has-link::before{content:'🔗';position:absolute;bottom:2px;right:3px;font-size:8px;z-index:2}
 .cal-media-icons{font-size:10px;line-height:1;margin-top:2px;z-index:1}
 .cal-tags-dot{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;margin-top:2px;z-index:1}
@@ -94,6 +94,9 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 #active-tag-bar{display:flex;align-items:center;gap:10px;background:#e8f0e9;border-radius:8px;padding:8px 14px;margin-bottom:10px;font-size:13px;color:var(--primary-dark);font-weight:600}
 #active-tag-bar button{margin-left:auto;font-size:11px;padding:2px 8px;border:1px solid var(--primary);background:transparent;border-radius:6px;cursor:pointer;color:var(--primary-dark)}
 /* Anniversary */
+.anniv-icon-picker{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.anniv-icon-btn{font-size:20px;width:38px;height:38px;border:2px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+.anniv-icon-btn.selected{border-color:var(--primary);background:#e8f5e9}
 .anniv-form{background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:20px}
 .form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .form-row input,.form-row select,.form-row textarea{flex:1;min-width:140px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit}
@@ -286,6 +289,17 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   <div class="page" id="page-anniversary">
     <div class="page-title">記念日の管理</div>
     <div class="anniv-form">
+      <div class="anniv-icon-picker" id="anniv-icon-picker">
+        <button class="anniv-icon-btn selected" data-icon="🎉" onclick="selectAnnivIcon(this)" title="記念日">🎉</button>
+        <button class="anniv-icon-btn" data-icon="🎂" onclick="selectAnnivIcon(this)" title="誕生日">🎂</button>
+        <button class="anniv-icon-btn" data-icon="💍" onclick="selectAnnivIcon(this)" title="結婚記念日">💍</button>
+        <button class="anniv-icon-btn" data-icon="🕯️" onclick="selectAnnivIcon(this)" title="命日">🕯️</button>
+        <button class="anniv-icon-btn" data-icon="❤️" onclick="selectAnnivIcon(this)" title="交際記念日">❤️</button>
+        <button class="anniv-icon-btn" data-icon="🌸" onclick="selectAnnivIcon(this)" title="その他">🌸</button>
+        <button class="anniv-icon-btn" data-icon="🏆" onclick="selectAnnivIcon(this)" title="達成・入賞">🏆</button>
+        <button class="anniv-icon-btn" data-icon="🎓" onclick="selectAnnivIcon(this)" title="卒業・入学">🎓</button>
+      </div>
+      <input type="hidden" id="annivIcon" value="🎉">
       <div class="form-row">
         <input type="text" id="annivName" placeholder="記念日の名前 (例: 結婚記念日)">
         <input type="text" id="annivDate" placeholder="日付 (例: 06-15)" pattern="\d{2}-\d{2}">
@@ -426,7 +440,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 const DB = {
   getEntries(){ return JSON.parse(localStorage.getItem('diary_entries')||'{}') },
   setEntries(d){ localStorage.setItem('diary_entries', JSON.stringify(d)); SYNC.schedule(); },
-  getAnniversaries(){ const d=JSON.parse(localStorage.getItem('diary_annivs')||'[]'); const fb=JSON.parse(localStorage.getItem('diary_fb_birthdays')||'[]'); const base=Array.isArray(d)?d:[]; const keys=new Set(base.map(a=>a.date+'_'+a.name)); return [...base,...fb.filter(a=>!keys.has(a.date+'_'+a.name))]; },
+  getAnniversaries(){ const d=JSON.parse(localStorage.getItem('diary_annivs')||'[]'); const fb=JSON.parse(localStorage.getItem('diary_fb_birthdays')||'[]'); const base=Array.isArray(d)?d:[]; const keys=new Set(base.map(a=>a.date+'_'+a.name)); const fbWithIcon=fb.filter(a=>!keys.has(a.date+'_'+a.name)).map(a=>({...a,icon:a.icon||'🎂'})); return [...base,...fbWithIcon]; },
   setAnniversaries(d){ localStorage.setItem('diary_annivs', JSON.stringify(d.filter(a=>a.desc!=='Facebook誕生日'))); SYNC.schedule(); },
   getMedia(){ const d=JSON.parse(localStorage.getItem('diary_media')||'[]'); return Array.isArray(d)?d:[]; },
   setMedia(d){ localStorage.setItem('diary_media', JSON.stringify(d)); SYNC.schedule(); },
@@ -520,7 +534,8 @@ function addCalCell(grid,y,m,d,other,entries,annivs,todayKey,media){
   if(dow===6) cell.classList.add('sat');
   const entry=entries[key];
   const mmdd=`${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-  if(annivs.some(a=>a.date===mmdd)) cell.classList.add('has-anniversary');
+  const dayAnnivs=annivs.filter(a=>a.date===mmdd);
+  if(dayAnnivs.length){const ic=document.createElement('span');ic.className='cal-anniv-icon';ic.textContent=dayAnnivs[0].icon||'🎉';cell.appendChild(ic);}
   if(entry&&entry.link) cell.classList.add('has-link');
   const dayMedia=(media||[]).filter(item=>item.date===key);
   if(dayMedia.length){
@@ -626,7 +641,7 @@ function showAnnivBanner(){
   banner.style.display='block';
   document.getElementById('banner-items').innerHTML=weekAnnivs.map(a=>{
     const today=a.isToday?' 🎂':'';
-    return `<div data-anniv-id="${a.id}" style="padding:2px 0;cursor:context-menu;user-select:none" oncontextmenu="(function(e){e.preventDefault();e.stopPropagation();_ctxAnnivId=${a.id};const m=document.getElementById('anniv-ctx');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.style.display='block';})(event)">🎊 <b>${a.label}</b> ${a.name}${today}</div>`;
+    return `<div data-anniv-id="${a.id}" style="padding:2px 0;cursor:context-menu;user-select:none" oncontextmenu="(function(e){e.preventDefault();e.stopPropagation();_ctxAnnivId=${a.id};const m=document.getElementById('anniv-ctx');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.style.display='block';})(event)">${a.icon||'🎉'} <b>${a.label}</b> ${a.name}${today}</div>`;
   }).join('');
 }
 
@@ -1021,18 +1036,26 @@ function doSearch(q){
 }
 
 // ─── Anniversary ─────────────────────────────────────────────────────────────
+function selectAnnivIcon(btn){
+  document.querySelectorAll('.anniv-icon-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('annivIcon').value=btn.dataset.icon;
+}
 function addAnniversary(){
   const name=document.getElementById('annivName').value.trim();
   const date=document.getElementById('annivDate').value.trim();
   const desc=document.getElementById('annivDesc').value.trim();
+  const icon=document.getElementById('annivIcon').value||'🎉';
   if(!name||!date){alert('名前と日付を入力してください');return;}
   if(!/^\d{2}-\d{2}$/.test(date)){alert('日付は MM-DD 形式で入力してください（例: 06-15）');return;}
   const annivs=DB.getAnniversaries();
-  annivs.push({id:Date.now(),name,date,desc});
+  annivs.push({id:Date.now(),name,date,desc,icon});
   DB.setAnniversaries(annivs);
   document.getElementById('annivName').value='';
   document.getElementById('annivDate').value='';
   document.getElementById('annivDesc').value='';
+  document.getElementById('annivIcon').value='🎉';
+  document.querySelectorAll('.anniv-icon-btn').forEach(b=>b.classList.toggle('selected',b.dataset.icon==='🎉'));
   renderAnniversaries();
   showAnnivBanner();
 }
@@ -1043,7 +1066,7 @@ function renderAnniversaries(){
   list.innerHTML=annivs.map(a=>`
     <div class="anniv-list"><div class="card">
       <div class="info">
-        <div class="name">🎉 ${escHtml(a.name)}</div>
+        <div class="name">${a.icon||'🎉'} ${escHtml(a.name)}</div>
         <div class="meta">${a.date.split('-').map(Number).join('月')}日${a.desc?' — '+escHtml(a.desc):''}</div>
       </div>
       <button class="card-del" onclick="delAnniversary(${a.id})">削除</button>
