@@ -108,11 +108,17 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .media-tab{padding:6px 16px;border:1px solid var(--border);border-radius:20px;cursor:pointer;font-size:13px;background:var(--surface)}
 .media-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
 .media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
-.media-card{background:var(--surface);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
+.media-card{background:var(--surface);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);position:relative}
 .media-card .title{font-size:14px;font-weight:600;margin-bottom:4px}
 .media-card .stars{color:#f0a020;font-size:14px;margin-bottom:6px}
 .media-card .memo{font-size:12px;color:var(--text-muted);line-height:1.5}
 .media-card .date{font-size:11px;color:var(--text-muted);margin-top:6px}
+.media-card-actions{display:flex;gap:4px;justify-content:flex-end;margin-top:8px}
+.card-edit{padding:4px 10px;font-size:12px;color:#0066cc;border:1px solid #cce;background:#f0f4ff;border-radius:6px;cursor:pointer}
+.card-move{padding:4px 8px;font-size:12px;color:#555;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer}
+.media-edit-form input,.media-edit-form select,.media-edit-form textarea{width:100%;box-sizing:border-box;margin-bottom:6px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text)}
+.media-edit-form textarea{resize:vertical;min-height:60px}
+.media-edit-form .edit-actions{display:flex;gap:8px;margin-top:4px}
 /* TODO */
 .todo-sections{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:700px){.todo-sections{grid-template-columns:1fr}}
@@ -1010,20 +1016,73 @@ function addMedia(){
   renderMedia();
 }
 function renderMedia(){
-  const media=DB.getMedia().filter(m=>m.type===mediaType);
+  const all=DB.getMedia();
+  const media=all.filter(m=>m.type===mediaType);
   const grid=document.getElementById('media-grid');
   if(media.length===0){grid.innerHTML='<div class="empty">記録がありません</div>';return;}
-  grid.innerHTML=media.map(m=>`
-    <div class="media-card">
+  grid.innerHTML=media.map((m,fi)=>`
+    <div class="media-card" data-media-id="${m.id}">
       <div class="title">${escHtml(m.title)}</div>
       ${m.author?`<div class="memo" style="font-size:0.8em;color:var(--text-muted)">著者: ${escHtml(m.author)}</div>`:''}
       <div class="stars">${'★'.repeat(m.rating)}${'☆'.repeat(5-m.rating)}</div>
       ${m.memo?`<div class="memo">${escHtml(m.memo)}</div>`:''}
-      <div class="date" style="display:flex;justify-content:space-between;align-items:center">
-        <span>${m.date}</span>
+      <div class="date">${m.date}</div>
+      <div class="media-card-actions">
+        <button class="card-move" onclick="moveMedia(${m.id},-1)" ${fi===0?'disabled':''}>▲</button>
+        <button class="card-move" onclick="moveMedia(${m.id},1)" ${fi===media.length-1?'disabled':''}>▼</button>
+        <button class="card-edit" onclick="editMedia(${m.id})">編集</button>
         <button class="card-del" onclick="delMedia(${m.id})">削除</button>
       </div>
     </div>`).join('');
+}
+function editMedia(id){
+  const m=DB.getMedia().find(x=>x.id===id);
+  if(!m) return;
+  const card=document.querySelector(`[data-media-id="${id}"]`);
+  const isBook=m.type==='book';
+  card.innerHTML=`<div class="media-edit-form">
+    ${isBook?`<input id="eAuthor_${id}" value="${escHtml(m.author||'')}" placeholder="著者名">`:''}
+    <input id="eTitle_${id}" value="${escHtml(m.title)}" placeholder="タイトル">
+    <select id="eRating_${id}">
+      ${[5,4,3,2,1].map(v=>`<option value="${v}"${m.rating==v?' selected':''}>${'★'.repeat(v)}${'☆'.repeat(5-v)}</option>`).join('')}
+    </select>
+    <input type="date" id="eDate_${id}" value="${m.date}">
+    <textarea id="eMemo_${id}">${escHtml(m.memo||'')}</textarea>
+    <div class="edit-actions">
+      <button class="btn btn-primary" onclick="saveMedia(${id})">保存</button>
+      <button class="btn" onclick="renderMedia()">キャンセル</button>
+    </div>
+  </div>`;
+}
+function saveMedia(id){
+  const all=DB.getMedia();
+  const idx=all.findIndex(x=>x.id===id);
+  if(idx<0) return;
+  const m=all[idx];
+  const title=document.getElementById(`eTitle_${id}`).value.trim();
+  if(title) m.title=title;
+  m.rating=Number(document.getElementById(`eRating_${id}`).value);
+  m.memo=document.getElementById(`eMemo_${id}`).value.trim();
+  m.date=document.getElementById(`eDate_${id}`).value||m.date;
+  if(m.type==='book'){
+    const a=document.getElementById(`eAuthor_${id}`);
+    if(a) m.author=a.value.trim();
+  }
+  all[idx]=m;
+  DB.setMedia(all);
+  renderMedia();
+}
+function moveMedia(id,dir){
+  const all=DB.getMedia();
+  const filtered=all.filter(m=>m.type===mediaType);
+  const fi=filtered.findIndex(m=>m.id===id);
+  const target=fi+dir;
+  if(target<0||target>=filtered.length) return;
+  const idxA=all.findIndex(m=>m.id===filtered[fi].id);
+  const idxB=all.findIndex(m=>m.id===filtered[target].id);
+  [all[idxA],all[idxB]]=[all[idxB],all[idxA]];
+  DB.setMedia(all);
+  renderMedia();
 }
 function delMedia(id){
   DB.setMedia(DB.getMedia().filter(m=>m.id!==id));
