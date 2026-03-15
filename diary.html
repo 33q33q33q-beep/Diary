@@ -262,6 +262,11 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <button class="nav-btn" style="font-size:11px;padding:6px 10px" onclick="importData()">📥 復元</button>
   </div>
 </nav>
+<div id="restore-banner" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 16px;margin:8px;font-size:13px">
+  ⚠️ 映画・本 / Ambitionのデータが見つかりません。Gistの旧バージョンから復元しますか？
+  <button onclick="restoreFromGistV26()" style="margin-left:12px;padding:4px 14px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-weight:600">復元する</button>
+  <button onclick="document.getElementById('restore-banner').style.display='none'" style="margin-left:6px;padding:4px 10px;background:transparent;border:1px solid #aaa;border-radius:6px;cursor:pointer">閉じる</button>
+</div>
 <main id="main">
   <!-- Calendar -->
   <div class="page active" id="page-calendar">
@@ -1572,9 +1577,16 @@ const SYNC = {
       }
     }
     if(d.annivs)  trySet('diary_annivs',  toArr(d.annivs));
-    if(d.media)   trySet('diary_media',   toArr(d.media));
-    if(d.todos)   trySet('diary_todos',   toArr(d.todos));
-    if(d.goals)   trySet('diary_goals',   toArr(d.goals));
+    // media/todos/goals: Gistが空でローカルにデータがある場合は保持
+    const gistMedia=toArr(d.media); const localMedia=DB.getMedia();
+    if(gistMedia.length===0&&localMedia.length>0){ console.warn('Gistのメディアが0件のためローカルを保持'); }
+    else if(d.media) trySet('diary_media', gistMedia);
+    const gistTodos=toArr(d.todos); const localTodos=DB.getTodos();
+    if(gistTodos.length===0&&localTodos.length>0){ console.warn('GistのTODOが0件のためローカルを保持'); }
+    else if(d.todos) trySet('diary_todos', gistTodos);
+    const gistGoals=toArr(d.goals); const localGoals=DB.getGoals();
+    if(gistGoals.length===0&&localGoals.length>0){ console.warn('GistのGoalsが0件のためローカルを保持'); }
+    else if(d.goals) trySet('diary_goals', gistGoals);
     if(d.visions)   trySet('diary_visions',    toArr(d.visions));
     if(d.userTags)  trySet('diary_user_tags',  toArr(d.userTags));
     if(errors.length) alert('一部のデータを保存できませんでした:\n'+errors.join('\n'));
@@ -1673,6 +1685,42 @@ window.addEventListener('focus', autoPull);
   }
   localStorage.setItem('diary_fb_birthdays',JSON.stringify(data));
   console.log('Facebook誕生日インポート完了: '+added+'件');
+})();
+
+// Gist旧バージョン(26番)からメディア・Goals復元
+function restoreFromGistV26(){
+  const token=SYNC.key, gistId=SYNC.gistId;
+  if(!token||!gistId){alert('Gist設定がありません');return;}
+  const btn=document.querySelector('#restore-banner button');
+  if(btn){btn.textContent='復元中…';btn.disabled=true;}
+  fetch('https://api.github.com/gists/'+gistId,{headers:{'Authorization':'Bearer '+token}})
+  .then(r=>r.json()).then(j=>{
+    const ver=j.history[26];
+    if(!ver){alert('バージョン26が見つかりません');return;}
+    return fetch('https://api.github.com/gists/'+gistId+'/'+ver.version,{headers:{'Authorization':'Bearer '+token}});
+  }).then(r=>r.json()).then(v=>{
+    const file=v.files[Object.keys(v.files)[0]];
+    const d=JSON.parse(file.content);
+    const curCount=Object.keys(DB.getEntries()).length;
+    const newCount=Object.keys(d.entries||{}).length;
+    if(newCount>=curCount) localStorage.setItem('diary_entries',JSON.stringify(d.entries||{}));
+    if((d.media||[]).length>0)  localStorage.setItem('diary_media',  JSON.stringify(d.media));
+    if((d.goals||[]).length>0)  localStorage.setItem('diary_goals',  JSON.stringify(d.goals));
+    if((d.todos||[]).length>0)  localStorage.setItem('diary_todos',  JSON.stringify(d.todos));
+    if((d.annivs||[]).length>0) localStorage.setItem('diary_annivs', JSON.stringify(d.annivs));
+    alert('復元完了！\n日記='+Object.keys(d.entries||{}).length+'件\nメディア='+(d.media||[]).length+'件\nGoals='+(d.goals||[]).length+'件\nOKでリロードします。');
+    location.reload();
+  }).catch(e=>{alert('復元失敗: '+e.message);});
+}
+
+// メディア・Goalsが空の場合に復元バナーを表示
+(function checkRestoreBanner(){
+  if(!SYNC.key||!SYNC.gistId) return;
+  const noMedia=DB.getMedia().length===0;
+  const noGoals=DB.getGoals().length===0;
+  if(noMedia&&noGoals){
+    document.getElementById('restore-banner').style.display='block';
+  }
 })();
 </script>
 </body>
