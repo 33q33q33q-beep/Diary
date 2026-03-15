@@ -587,31 +587,47 @@ function wmoToInfo(code){
   if(code<=86)         return {e:'❄️',d:'吹雪'};
   return               {e:'⛈️',d:'雷雨'};
 }
+function getWeatherCity(){ return localStorage.getItem('diary_weather_city')||'東京'; }
+function setWeatherCity(c){ localStorage.setItem('diary_weather_city',c); localStorage.removeItem('diary_weather_coords'); }
+
+async function getCoords(){
+  const cached=localStorage.getItem('diary_weather_coords');
+  if(cached) return JSON.parse(cached);
+  const city=getWeatherCity();
+  try{
+    const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=ja&format=json`);
+    const j=await r.json();
+    if(!j.results||!j.results[0]) return null;
+    const {latitude:lat,longitude:lon}=j.results[0];
+    localStorage.setItem('diary_weather_coords',JSON.stringify({lat,lon}));
+    return {lat,lon};
+  }catch(e){return null;}
+}
+
 async function fetchWeather(dateStr){
-  const timeout=new Promise(r=>setTimeout(()=>r(null),8000));
-  const fetch_=new Promise((resolve)=>{
-    if(!navigator.geolocation){resolve(null);return;}
-    navigator.geolocation.getCurrentPosition(async pos=>{
-      try{
-        const {latitude:lat,longitude:lon}=pos.coords;
-        const isToday=dateStr===today();
-        const base=isToday
-          ?'https://api.open-meteo.com/v1/forecast'
-          :'https://archive-api.open-meteo.com/v1/archive';
-        const url=`${base}?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=temperature_2m,weathercode&timezone=auto&start_date=${dateStr}&end_date=${dateStr}`;
-        const r=await fetch(url);
-        const j=await r.json();
-        const idx=j.hourly.time.findIndex(t=>t.endsWith('T12:00'));
-        const i=idx>=0?idx:12;
-        const temp=Math.round(j.hourly.temperature_2m[i]);
-        const code=j.hourly.weathercode[i];
-        resolve({temp,code,...wmoInfo(code)});
-      }catch(e){resolve(null);}
-    },()=>resolve(null),{timeout:5000,maximumAge:60000});
-  });
-  return Promise.race([fetch_,timeout]);
+  try{
+    const coords=await getCoords();
+    if(!coords) return null;
+    const {lat,lon}=coords;
+    const isToday=dateStr===today();
+    const base=isToday
+      ?'https://api.open-meteo.com/v1/forecast'
+      :'https://archive-api.open-meteo.com/v1/archive';
+    const url=`${base}?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=temperature_2m,weathercode&timezone=auto&start_date=${dateStr}&end_date=${dateStr}`;
+    const r=await fetch(url);
+    const j=await r.json();
+    const idx=j.hourly.time.findIndex(t=>t.endsWith('T12:00'));
+    const i=idx>=0?idx:12;
+    const temp=Math.round(j.hourly.temperature_2m[i]);
+    const code=j.hourly.weathercode[i];
+    return {temp,code,...wmoInfo(code)};
+  }catch(e){return null;}
 }
 function wmoInfo(code){ return wmoToInfo(code); }
+function changeWeatherCity(){
+  const c=prompt('都市名を入力してください（例：大阪、札幌、福岡）',getWeatherCity());
+  if(c&&c.trim()){ setWeatherCity(c.trim()); currentWeather=null; openModal(...currentKey.split('-').map(Number)); }
+}
 const MOODS=['😊','😄','😐','😔','😢','😡','😰','🥰','😴','🤒'];
 const DEFAULT_TAGS=['仕事','家族','友人','旅行','食事','健康','趣味','勉強','買い物','出張'];
 
@@ -644,11 +660,13 @@ function openModal(y,m,d){
   if(currentWeather){
     wEl.innerHTML=`<span class="weather-badge">${currentWeather.e} ${currentWeather.temp}°C・${currentWeather.d}（12時）</span>`;
   } else {
-    wEl.innerHTML='<span style="color:var(--text-muted);font-size:12px">🌡️ 天気取得中…</span>';
+    const cityBtn=`<span onclick="changeWeatherCity()" style="font-size:11px;color:var(--primary);cursor:pointer;margin-left:6px">📍${getWeatherCity()}</span>`;
+    wEl.innerHTML='<span style="color:var(--text-muted);font-size:12px">🌡️ 取得中…</span>'+cityBtn;
     fetchWeather(key).then(w=>{
       currentWeather=w;
-      if(w) wEl.innerHTML=`<span class="weather-badge">${w.e} ${w.temp}°C・${w.d}（12時）</span>`;
-      else  wEl.innerHTML='<span style="color:var(--text-muted);font-size:12px">🌡️ 天気取得不可（位置情報を許可してください）</span>';
+      const city=`<span onclick="changeWeatherCity()" style="font-size:11px;color:var(--primary);cursor:pointer;margin-left:6px">📍${getWeatherCity()}</span>`;
+      if(w) wEl.innerHTML=`<span class="weather-badge">${w.e} ${w.temp}°C・${w.d}（12時）</span>`+city;
+      else  wEl.innerHTML=`<span style="color:var(--text-muted);font-size:12px">🌡️ 取得不可</span>`+city;
     });
   }
 
