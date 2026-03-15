@@ -245,7 +245,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 <main id="main">
   <!-- Calendar -->
   <div class="page active" id="page-calendar">
-    <div id="anniv-banner"><h3>🎉 今日の記念日</h3><div class="anniv-items" id="banner-items"></div></div>
+    <div id="anniv-banner"><h3>🎉 今週の記念日</h3><div class="anniv-items" id="banner-items"></div></div>
     <div class="cal-nav">
       <button class="btn" onclick="calMove(-1)">◀</button>
       <h2 id="cal-title"></h2>
@@ -567,16 +567,29 @@ function addCalCell(grid,y,m,d,other,entries,annivs,todayKey,media){
 }
 function showAnnivBanner(){
   const n=new Date();
-  const mmdd=`${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
-  const annivs=DB.getAnniversaries().filter(a=>a.date===mmdd);
+  const dow=n.getDay();
+  const weekDates=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(n);
+    d.setDate(n.getDate()-dow+i);
+    const mm=String(d.getMonth()+1).padStart(2,'0');
+    const dd=String(d.getDate()).padStart(2,'0');
+    const isToday=(i===dow);
+    weekDates.push({mmdd:`${mm}-${dd}`,label:`${d.getMonth()+1}/${d.getDate()}`,isToday});
+  }
+  const allAnnivs=DB.getAnniversaries();
+  const weekAnnivs=[];
+  for(const {mmdd,label,isToday} of weekDates){
+    for(const a of allAnnivs.filter(x=>x.date===mmdd)){
+      weekAnnivs.push({...a,label,isToday});
+    }
+  }
   const banner=document.getElementById('anniv-banner');
-  if(annivs.length===0){banner.style.display='none';return;}
+  if(weekAnnivs.length===0){banner.style.display='none';return;}
   banner.style.display='block';
-  const year=n.getFullYear();
-  document.getElementById('banner-items').innerHTML=annivs.map(a=>{
-    const [ay,am,ad]=a.date.split('-');
-    // calculate years if original year stored
-    return `🎊 ${a.name}${a.desc?' — '+a.desc:''}`;
+  document.getElementById('banner-items').innerHTML=weekAnnivs.map(a=>{
+    const today=a.isToday?' 🎂':'';
+    return `🎊 <b>${a.label}</b> ${a.name}${today}`;
   }).join('<br>');
 }
 
