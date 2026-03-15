@@ -503,10 +503,10 @@ function addCalCell(grid,y,m,d,other,entries,annivs,todayKey,media){
   const mmdd=`${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   if(annivs.some(a=>a.date===mmdd)) cell.classList.add('has-anniversary');
   if(entry&&entry.link) cell.classList.add('has-link');
-  const dayMedia=media.filter(m=>m.date===key);
+  const dayMedia=(media||[]).filter(item=>item.date===key);
   if(dayMedia.length){
-    const hasMovie=dayMedia.some(m=>m.type==='movie');
-    const hasBook=dayMedia.some(m=>m.type==='book');
+    const hasMovie=dayMedia.some(item=>item.type==='movie');
+    const hasBook=dayMedia.some(item=>item.type==='book');
     cell.classList.add('has-media');
     const icons=document.createElement('div');
     icons.className='cal-media-icons';
