@@ -1502,7 +1502,7 @@ SYNC.init();
 initCalendar();
 
 // ─── 自動同期 ─────────────────────────────────────────────────────────────────
-let lastAutoPull=0;
+let lastAutoPull=Date.now();
 async function autoPull(){
   if(!SYNC.key||!SYNC.gistId) return;
   const now=Date.now();
