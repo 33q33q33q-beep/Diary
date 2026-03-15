@@ -617,8 +617,10 @@ function deleteAnniversaryById(id){
   renderCalendar();
   showAnnivBanner();
 }
-function showAnnivBanner(){
-  const n=new Date();
+function showAnnivBanner(baseDate){
+  const n=baseDate?new Date(baseDate):new Date();
+  const today=new Date();
+  const todayKey=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   const dow=n.getDay();
   const weekDates=[];
   for(let i=0;i<7;i++){
@@ -626,7 +628,8 @@ function showAnnivBanner(){
     d.setDate(n.getDate()-dow+i);
     const mm=String(d.getMonth()+1).padStart(2,'0');
     const dd=String(d.getDate()).padStart(2,'0');
-    const isToday=(i===dow);
+    const dKey=`${d.getFullYear()}-${mm}-${dd}`;
+    const isToday=(dKey===todayKey);
     weekDates.push({mmdd:`${mm}-${dd}`,label:`${d.getMonth()+1}/${d.getDate()}`,isToday});
   }
   const allAnnivs=DB.getAnniversaries();
@@ -639,9 +642,12 @@ function showAnnivBanner(){
   const banner=document.getElementById('anniv-banner');
   if(weekAnnivs.length===0){banner.style.display='none';return;}
   banner.style.display='block';
+  const isCurrentWeek=!baseDate||weekDates.some(w=>w.isToday);
+  const weekLabel=isCurrentWeek?'今週の記念日':`${n.getMonth()+1}/${n.getDate()} の週の記念日`;
+  banner.querySelector('h3').childNodes[0].textContent=weekLabel+' ';
   document.getElementById('banner-items').innerHTML=weekAnnivs.map(a=>{
-    const today=a.isToday?' 🎂':'';
-    return `<div data-anniv-id="${a.id}" style="padding:2px 0;cursor:context-menu;user-select:none" oncontextmenu="(function(e){e.preventDefault();e.stopPropagation();_ctxAnnivId=${a.id};const m=document.getElementById('anniv-ctx');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.style.display='block';})(event)">${a.icon||'🎉'} <b>${a.label}</b> ${a.name}${today}</div>`;
+    const todayMark=a.isToday?' ⬅️今日':'';
+    return `<div data-anniv-id="${a.id}" style="padding:2px 0;cursor:context-menu;user-select:none" oncontextmenu="(function(e){e.preventDefault();e.stopPropagation();_ctxAnnivId=${a.id};const m=document.getElementById('anniv-ctx');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.style.display='block';})(event)">${a.icon||'🎉'} <b>${a.label}</b> ${a.name}${todayMark}</div>`;
   }).join('');
 }
 
@@ -706,6 +712,7 @@ const MOODS=['😊','😄','😐','😔','😢','😡','😰','🥰','😴','�
 const DEFAULT_TAGS=['仕事','家族','友人','旅行','食事','健康','趣味','勉強','買い物','出張'];
 
 function openModal(y,m,d){
+  showAnnivBanner(new Date(y,m-1,d));
   const key=dateKey(y,m,d);
   currentKey=key;
   const entries=DB.getEntries();
