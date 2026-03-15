@@ -299,6 +299,9 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <div class="media-tab" onclick="switchMedia('book',this)">📚 書籍</div>
     </div>
     <div class="anniv-form" id="media-form">
+      <div class="form-row" id="authorRow" style="display:none">
+        <input type="text" id="mediaAuthor" placeholder="著者名">
+      </div>
       <div class="form-row">
         <input type="text" id="mediaTitle" placeholder="タイトル">
         <select id="mediaRating">
@@ -988,18 +991,21 @@ function switchMedia(type,el){
   mediaType=type;
   document.querySelectorAll('.media-tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
+  document.getElementById('authorRow').style.display=type==='book'?'':'none';
   renderMedia();
 }
 function addMedia(){
   const title=document.getElementById('mediaTitle').value.trim();
+  const author=document.getElementById('mediaAuthor').value.trim();
   const rating=Number(document.getElementById('mediaRating').value);
   const memo=document.getElementById('mediaMemo').value.trim();
   const date=document.getElementById('mediaDate').value||today();
   if(!title){alert('タイトルを入力してください');return;}
   const media=DB.getMedia();
-  media.unshift({id:Date.now(),type:mediaType,title,rating,memo,date});
+  media.unshift({id:Date.now(),type:mediaType,title,author,rating,memo,date});
   DB.setMedia(media);
   document.getElementById('mediaTitle').value='';
+  document.getElementById('mediaAuthor').value='';
   document.getElementById('mediaMemo').value='';
   renderMedia();
 }
@@ -1010,6 +1016,7 @@ function renderMedia(){
   grid.innerHTML=media.map(m=>`
     <div class="media-card">
       <div class="title">${escHtml(m.title)}</div>
+      ${m.author?`<div class="memo" style="font-size:0.8em;color:var(--text-muted)">著者: ${escHtml(m.author)}</div>`:''}
       <div class="stars">${'★'.repeat(m.rating)}${'☆'.repeat(5-m.rating)}</div>
       ${m.memo?`<div class="memo">${escHtml(m.memo)}</div>`:''}
       <div class="date" style="display:flex;justify-content:space-between;align-items:center">
