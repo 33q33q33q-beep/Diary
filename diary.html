@@ -1319,7 +1319,6 @@ const SYNC = {
     if(d.userTags)  trySet('diary_user_tags',  toArr(d.userTags));
     if(errors.length) alert('一部のデータを保存できませんでした:\n'+errors.join('\n'));
     updateSyncUI('synced');
-    try{ renderCurrentPage(); }catch(e){ console.warn('render error after pull:',e); }
   },
 
   async pullAndReload(){
@@ -1379,6 +1378,7 @@ async function autoPull(){
   lastAutoPull=now;
   try{
     await SYNC.pull();
+    location.reload();
   }catch(e){ console.warn('auto pull failed:',e); }
 }
 // タブ・アプリが前面に戻った時に自動取得
