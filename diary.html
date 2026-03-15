@@ -588,7 +588,8 @@ function wmoToInfo(code){
   return               {e:'⛈️',d:'雷雨'};
 }
 async function fetchWeather(dateStr){
-  return new Promise((resolve)=>{
+  const timeout=new Promise(r=>setTimeout(()=>r(null),8000));
+  const fetch_=new Promise((resolve)=>{
     if(!navigator.geolocation){resolve(null);return;}
     navigator.geolocation.getCurrentPosition(async pos=>{
       try{
@@ -604,11 +605,11 @@ async function fetchWeather(dateStr){
         const i=idx>=0?idx:12;
         const temp=Math.round(j.hourly.temperature_2m[i]);
         const code=j.hourly.weathercode[i];
-        const info=wmoInfo(code);
-        resolve({temp,code,...info});
+        resolve({temp,code,...wmoInfo(code)});
       }catch(e){resolve(null);}
-    },()=>resolve(null),{timeout:5000});
+    },()=>resolve(null),{timeout:5000,maximumAge:60000});
   });
+  return Promise.race([fetch_,timeout]);
 }
 function wmoInfo(code){ return wmoToInfo(code); }
 const MOODS=['😊','😄','😐','😔','😢','😡','😰','🥰','😴','🤒'];
