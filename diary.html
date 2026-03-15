@@ -1414,7 +1414,12 @@ const SYNC = {
     const toArr=v=>Array.isArray(v)?v:[];
     const toObj=v=>(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
     if(d.entries) trySet('diary_entries', toObj(d.entries));
-    if(d.annivs)  trySet('diary_annivs',  toArr(d.annivs));
+    if(d.annivs){
+      const pulled=toArr(d.annivs);
+      const pulledKeys=new Set(pulled.map(a=>a.date+'_'+a.name));
+      const fbOnly=JSON.parse(localStorage.getItem('diary_annivs')||'[]').filter(a=>a.desc==='Facebook誕生日'&&!pulledKeys.has(a.date+'_'+a.name));
+      trySet('diary_annivs',[...pulled,...fbOnly]);
+    }
     if(d.media)   trySet('diary_media',   toArr(d.media));
     if(d.todos)   trySet('diary_todos',   toArr(d.todos));
     if(d.goals)   trySet('diary_goals',   toArr(d.goals));
