@@ -1223,9 +1223,14 @@ const SYNC = {
   timer: null,
 
   init(){
-    // 旧JSONbinのキーを削除
     localStorage.removeItem('jb_key');
     localStorage.removeItem('jb_bin');
+    // ダウンロード後リロード時はpull不要（データはlocalStorageに存在）
+    if(sessionStorage.getItem('just_pulled')){
+      sessionStorage.removeItem('just_pulled');
+      updateSyncUI('synced');
+      return;
+    }
     if(this.key) this.pull().catch(()=>updateSyncUI('error'));
     else updateSyncUI('no-key');
   },
@@ -1332,7 +1337,6 @@ const SYNC = {
     if(d.userTags)  trySet('diary_user_tags',  toArr(d.userTags));
     if(errors.length) alert('一部のデータを保存できませんでした:\n'+errors.join('\n'));
     updateSyncUI('synced');
-    try{ renderCurrentPage(); }catch(e){ console.warn('render:',e); }
   },
 
   async pullAndReload(){
@@ -1341,8 +1345,8 @@ const SYNC = {
     try{
       updateSyncUI('syncing');
       await this.pull();
-      renderCalendar();
-      showAnnivBanner();
+      sessionStorage.setItem('just_pulled','1');
+      location.reload();
     } catch(e){
       updateSyncUI('error');
       alert('ダウンロードエラー: '+e.message);
