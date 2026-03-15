@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>私の日記</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="私の日記">
+<meta name="theme-color" content="#7a9e7e">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237a9e7e'/><text y='.9em' font-size='80' x='10'>📔</text></svg>">
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;私の日記&quot;,&quot;short_name&quot;:&quot;日記&quot;,&quot;start_url&quot;:&quot;/&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%23f5f0e8&quot;,&quot;theme_color&quot;:&quot;%237a9e7e&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237a9e7e'/><text y='.9em' font-size='80' x='10'>📔</text></svg>&quot;,&quot;sizes&quot;:&quot;any&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]}">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f0e8;--surface:#fff;--primary:#7a9e7e;--primary-dark:#5a7e5e;
+  --accent:#c4956a;--text:#333;--text-light:#666;--text-muted:#999;
+  --border:#e0d8cc;--shadow:0 2px 8px rgba(0,0,0,.1);--radius:12px
+}
+body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{display:flex;min-height:100vh}
+/* Sidebar */
+#sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0;flex-shrink:0;box-shadow:var(--shadow)}
+#sidebar h1{font-size:18px;font-weight:700;color:var(--primary-dark);padding:0 20px 20px;border-bottom:1px solid var(--border)}
+#sidebar h1 span{display:block;font-size:12px;color:var(--text-muted);font-weight:400;margin-top:2px}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:12px 20px;cursor:pointer;font-size:14px;color:var(--text-light);border:none;background:none;width:100%;text-align:left;transition:.2s}
+.nav-btn:hover{background:#f0ebe0;color:var(--text)}
+.nav-btn.active{background:#e8f0e9;color:var(--primary-dark);font-weight:600;border-right:3px solid var(--primary)}
+.nav-btn .icon{font-size:18px;width:24px;text-align:center}
+/* Main */
+#main{flex:1;overflow-y:auto;padding:24px}
+.page{display:none}
+.page.active{display:block}
+.page-title{font-size:20px;font-weight:700;color:var(--primary-dark);margin-bottom:20px}
+/* Calendar */
+.cal-nav{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.cal-nav h2{flex:1;font-size:18px;font-weight:600}
+.btn{padding:6px 14px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:13px;transition:.2s}
+.btn:hover{background:#f0ebe0}
+.btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn-primary:hover{background:var(--primary-dark)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;align-items:start}
+.cal-header{text-align:center;font-size:12px;font-weight:600;color:var(--text-muted);padding:6px 0}
+.cal-header:nth-child(1){color:#e07070}
+.cal-header:nth-child(7){color:#7090e0}
+.cal-day{min-height:64px;display:flex;flex-direction:column;align-items:center;border-radius:10px;cursor:pointer;font-size:13px;padding:6px 4px 5px;border:2px solid transparent;position:relative;overflow:hidden;transition:.15s;background:var(--surface)}
+.cal-day:hover{filter:brightness(.95);border-color:var(--primary)}
+.cal-day.today{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
+.cal-day.today .cal-num{background:var(--primary);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.cal-day.other-month{opacity:.35}
+.cal-day.sun .cal-num{color:#e07070}
+.cal-day.sat .cal-num{color:#7090e0}
+.cal-day.today .cal-num{color:#fff!important}
+.cal-num{font-size:13px;font-weight:600;line-height:1.4;z-index:1;flex-shrink:0}
+.cal-mood{font-size:13px;line-height:1;z-index:1;margin-top:1px}
+.cal-thumb{width:100%;max-height:80px;object-fit:contain;border-radius:5px;margin-top:4px;display:block;z-index:0;background:rgba(0,0,0,.04)}
+.cal-day.has-anniversary::after{content:'🎉';position:absolute;top:2px;right:3px;font-size:9px;z-index:2}
+.cal-tags-dot{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;margin-top:2px;z-index:1}
+.cal-tags-dot span{width:5px;height:5px;border-radius:50%;background:var(--primary-dark);opacity:.5}
+/* Timeline */
+.timeline{position:relative;padding-left:24px}
+.timeline::before{content:'';position:absolute;left:10px;top:0;bottom:0;width:2px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:16px}
+.tl-item::before{content:'';position:absolute;left:-18px;top:16px;width:12px;height:12px;border-radius:50%;background:var(--primary);border:2px solid var(--surface)}
+.tl-item.future::before{background:var(--border)}
+.tl-item.today-year::before{background:var(--accent);width:16px;height:16px;left:-20px;top:14px}
+.tl-card{background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);cursor:pointer;transition:.2s;border:2px solid transparent}
+.tl-card:hover{border-color:var(--primary)}
+.tl-card.future{background:#fafafa;border-style:dashed;border-color:var(--border)}
+.tl-year{font-size:12px;color:var(--text-muted);margin-bottom:4px}
+.tl-year strong{color:var(--primary-dark);font-size:14px}
+.tl-label{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:#e8f0e9;color:var(--primary-dark);margin-bottom:8px;font-weight:600}
+.tl-label.future-label{background:#f0ebe0;color:var(--accent)}
+.tl-preview{font-size:13px;color:var(--text-light);line-height:1.6;white-space:pre-line}
+.tl-mood{font-size:18px;float:right}
+/* Search */
+#searchInput{width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;background:var(--surface);margin-bottom:16px}
+#searchInput:focus{outline:none;border-color:var(--primary)}
+.search-result{background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow);transition:.2s}
+.search-result:hover{border-left:3px solid var(--primary)}
+.search-result .date{font-size:12px;color:var(--text-muted);margin-bottom:4px}
+.search-result .snippet{font-size:13px;color:var(--text);line-height:1.5}
+mark{background:#fff3c4;padding:0 2px;border-radius:3px}
+/* Tag Cloud */
+#tag-cloud-wrap{background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
+#tag-cloud-label{font-size:12px;color:var(--text-muted);margin-bottom:10px;font-weight:600}
+#tag-cloud{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tag-cloud-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;cursor:pointer;font-weight:600;transition:.15s;border:2px solid transparent}
+.tag-cloud-chip:hover{filter:brightness(.92)}
+.tag-cloud-chip.selected{border-color:var(--primary-dark);box-shadow:0 0 0 2px var(--primary)}
+.tag-cloud-chip .cnt{font-size:10px;opacity:.75}
+#active-tag-bar{display:flex;align-items:center;gap:10px;background:#e8f0e9;border-radius:8px;padding:8px 14px;margin-bottom:10px;font-size:13px;color:var(--primary-dark);font-weight:600}
+#active-tag-bar button{margin-left:auto;font-size:11px;padding:2px 8px;border:1px solid var(--primary);background:transparent;border-radius:6px;cursor:pointer;color:var(--primary-dark)}
+/* Anniversary */
+.anniv-form{background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:20px}
+.form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.form-row input,.form-row select,.form-row textarea{flex:1;min-width:140px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:var(--primary)}
+.anniv-list .card{background:var(--surface);border-radius:var(--radius);padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow)}
+.anniv-list .card .info{flex:1}
+.anniv-list .card .name{font-size:14px;font-weight:600}
+.anniv-list .card .meta{font-size:12px;color:var(--text-muted)}
+.card-del{padding:4px 10px;font-size:12px;color:#c00;border:1px solid #fcc;background:#fff5f5;border-radius:6px;cursor:pointer}
+/* Media */
+.media-tabs{display:flex;gap:8px;margin-bottom:16px}
+.media-tab{padding:6px 16px;border:1px solid var(--border);border-radius:20px;cursor:pointer;font-size:13px;background:var(--surface)}
+.media-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.media-card{background:var(--surface);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
+.media-card .title{font-size:14px;font-weight:600;margin-bottom:4px}
+.media-card .stars{color:#f0a020;font-size:14px;margin-bottom:6px}
+.media-card .memo{font-size:12px;color:var(--text-muted);line-height:1.5}
+.media-card .date{font-size:11px;color:var(--text-muted);margin-top:6px}
+/* TODO */
+.todo-sections{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.todo-sections{grid-template-columns:1fr}}
+.section-card{background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.section-card h3{font-size:15px;font-weight:600;color:var(--primary-dark);margin-bottom:12px}
+.todo-add{display:flex;gap:8px;margin-bottom:12px}
+.todo-add input{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit}
+.todo-add input:focus{outline:none;border-color:var(--primary)}
+.todo-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.todo-item:last-child{border-bottom:none}
+.todo-item input[type=checkbox]{margin-top:2px;accent-color:var(--primary)}
+.todo-item .text{flex:1;font-size:13px;min-width:0;word-break:break-word;white-space:pre-wrap}
+.todo-item .text.done{text-decoration:line-through;color:var(--text-muted)}
+.todo-item .del{color:var(--text-muted);cursor:pointer;font-size:12px;padding:0 4px}
+.goal-item{margin-bottom:12px}
+.goal-item .goal-text{font-size:13px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.goal-item .progress-bar{height:8px;background:#e8e8e8;border-radius:4px;overflow:hidden}
+.goal-item .progress-fill{height:100%;background:var(--primary);border-radius:4px;transition:.3s}
+.goal-item .goal-pct{font-size:11px;color:var(--text-muted)}
+.goal-label{cursor:pointer;border-radius:4px;padding:1px 3px}
+.goal-label:hover{background:#e8f0e9}
+/* Vision */
+.vision-section{margin-top:16px}
+.vision-item{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)}
+.vision-item:last-child{border-bottom:none}
+.vision-item input[type=checkbox]{accent-color:#c4956a;width:18px;height:18px;flex-shrink:0}
+.vision-item .text{flex:1;font-size:13px;min-width:0;word-break:break-word}
+.vision-item .count{font-size:11px;background:#fff3e0;color:#c4956a;border:1px solid #f5c896;border-radius:20px;padding:2px 8px;white-space:nowrap;font-weight:600}
+.vision-item .del{color:var(--text-muted);cursor:pointer;font-size:12px;padding:0 4px}
+#modal-weather{font-size:13px;color:var(--text-light);margin:4px 0 10px;min-height:20px;display:flex;align-items:center;gap:6px}
+#modal-weather .weather-badge{background:#e8f4ff;border:1px solid #b8d8f0;border-radius:20px;padding:3px 10px;font-size:13px;color:#2a6a9a}
+.modal-todo-section{margin:12px 0;padding:12px;background:var(--bg);border-radius:8px}
+.modal-todo-section .todo-item{padding:6px 0}
+/* Modal */
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;overflow-y:auto;padding:20px}
+#modal.open{display:flex;align-items:flex-start;justify-content:center}
+#modal-inner{background:var(--surface);border-radius:var(--radius);width:100%;max-width:700px;padding:24px;position:relative;margin:auto}
+#modal-close{position:absolute;top:16px;right:16px;font-size:20px;cursor:pointer;color:var(--text-muted);background:none;border:none}
+#modal-date{font-size:16px;font-weight:700;color:var(--primary-dark);margin-bottom:16px}
+.mood-select{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.mood-btn{font-size:24px;padding:6px;border:2px solid transparent;border-radius:8px;cursor:pointer;background:none;transition:.2s}
+.mood-btn:hover,.mood-btn.selected{border-color:var(--primary);background:#e8f0e9}
+.tags-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.tag-chip{padding:3px 10px;background:#e8f0e9;color:var(--primary-dark);border-radius:20px;font-size:12px;cursor:pointer;border:1px solid transparent}
+.tag-chip:hover{border-color:var(--primary)}
+.tag-chip.active{background:var(--primary);color:#fff}
+#tagInput{border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:12px;width:80px;font-family:inherit}
+#tagInput:focus{outline:none;border-color:var(--primary)}
+#diaryText{width:100%;min-height:200px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;line-height:1.8;resize:vertical}
+#diaryText:focus{outline:none;border-color:var(--primary)}
+.photo-section{margin:12px 0}
+.photo-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.photo-thumb{width:80px;height:80px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent}
+.photo-thumb:hover{border-color:var(--accent)}
+.photo-wrap{position:relative}
+.photo-del{position:absolute;top:-6px;right:-6px;background:#e00;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+/* Anniversary banner */
+#anniv-banner{display:none;background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:12px 16px;margin-bottom:16px}
+#anniv-banner h3{font-size:14px;font-weight:600;color:var(--accent);margin-bottom:6px}
+#anniv-banner .anniv-items{font-size:13px;color:var(--text)}
+/* Photo lightbox */
+#lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center}
+#lightbox.open{display:flex}
+#lightbox img{max-width:90vw;max-height:90vh;border-radius:8px}
+#lightbox-close{position:absolute;top:16px;right:20px;color:#fff;font-size:28px;cursor:pointer}
+/* Responsive */
+@media(max-width:600px){
+  #sidebar{width:60px;overflow:hidden}
+  #sidebar h1{padding:10px;font-size:0}
+  #sidebar h1::first-line{font-size:16px}
+  .nav-btn span:not(.icon){display:none}
+  .nav-btn{padding:14px;justify-content:center}
+  #main{padding:12px}
+  .cal-day{min-height:50px;padding:4px 2px}
+  .cal-num{font-size:11px}
+  .cal-thumb{max-height:56px}
+  .cal-mood{font-size:11px}
+  .todo-sections{grid-template-columns:1fr}
+  #modal-inner{padding:16px}
+}
+.empty{text-align:center;padding:40px;color:var(--text-muted);font-size:14px}
+#sync-area{padding:12px 16px;border-top:1px solid var(--border);margin-top:auto}
+.sync-status{font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--text-muted);flex-shrink:0}
+.sync-dot.green{background:#5a9e5e}
+.sync-dot.orange{background:#e0a020;animation:sdpulse .9s infinite}
+.sync-dot.red{background:#c04040}
+@keyframes sdpulse{0%,100%{opacity:1}50%{opacity:.3}}
+#btn-sync{width:100%;padding:8px;border-radius:8px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--surface);transition:.2s}
+#btn-sync:hover{background:#f0ebe0}
+#jsonbin-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center}
+#jsonbin-modal.open{display:flex}
+#jsonbin-modal .inner{background:var(--surface);border-radius:var(--radius);padding:24px;width:90%;max-width:480px}
+#jsonbin-modal h3{margin-bottom:10px;color:var(--primary-dark);font-size:16px}
+#jsonbin-modal p{font-size:13px;color:var(--text-light);line-height:1.7;margin-bottom:14px}
+#jsonbin-modal input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:8px;font-family:inherit}
+#jsonbin-modal input:focus{outline:none;border-color:var(--primary)}
+</style>
+</head>
+<body>
+<div id="app">
+<nav id="sidebar">
+  <h1>📔 <span>私の日記</span></h1>
+  <button class="nav-btn active" onclick="showPage('calendar')" id="nav-calendar"><span class="icon">📅</span><span>カレンダー</span></button>
+  <button class="nav-btn" onclick="showPage('timeline')" id="nav-timeline"><span class="icon">⏳</span><span>タイムライン</span></button>
+  <button class="nav-btn" onclick="showPage('search')" id="nav-search"><span class="icon">🔍</span><span>検索</span></button>
+  <button class="nav-btn" onclick="showPage('anniversary')" id="nav-anniversary"><span class="icon">🎉</span><span>記念日</span></button>
+  <button class="nav-btn" onclick="showPage('media')" id="nav-media"><span class="icon">🎬</span><span>映画・本</span></button>
+  <button class="nav-btn" onclick="showPage('todo')" id="nav-todo"><span class="icon">🎯</span><span>Ambition・Aspiration</span></button>
+  <div id="sync-area">
+    <div class="sync-status"><div class="sync-dot" id="sync-dot"></div><span id="sync-label">未設定</span></div>
+    <button id="btn-sync" onclick="SYNC.openSettings()">⚙️ 同期設定</button>
+    <button class="nav-btn" style="font-size:11px;padding:6px 10px;margin-top:4px" onclick="SYNC.push()">☁️ アップロード</button>
+    <button class="nav-btn" style="font-size:11px;padding:6px 10px;margin-top:2px" onclick="SYNC.pullAndReload()">📲 ダウンロード</button>
+    <button class="nav-btn" style="font-size:11px;padding:6px 10px;margin-top:2px" onclick="exportData()">📤 バックアップ</button>
+    <button class="nav-btn" style="font-size:11px;padding:6px 10px" onclick="importData()">📥 復元</button>
+  </div>
+</nav>
+<main id="main">
+  <!-- Calendar -->
+  <div class="page active" id="page-calendar">
+    <div id="anniv-banner"><h3>🎉 今日の記念日</h3><div class="anniv-items" id="banner-items"></div></div>
+    <div class="cal-nav">
+      <button class="btn" onclick="calMove(-1)">◀</button>
+      <h2 id="cal-title"></h2>
+      <button class="btn" onclick="calMove(1)">▶</button>
+      <button class="btn btn-primary" onclick="goToday()">今日</button>
+    </div>
+    <div class="cal-grid" id="cal-grid">
+      <div class="cal-header">日</div><div class="cal-header">月</div><div class="cal-header">火</div>
+      <div class="cal-header">水</div><div class="cal-header">木</div><div class="cal-header">金</div>
+      <div class="cal-header">土</div>
+    </div>
+  </div>
+  <!-- Timeline -->
+  <div class="page" id="page-timeline">
+    <div class="page-title" id="tl-title">タイムライン</div>
+    <div id="tl-date-nav" style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <label style="font-size:13px;color:var(--text-muted)">日付を選択:</label>
+      <input type="date" id="tl-date-input" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+      <button class="btn btn-primary" onclick="renderTimeline()">表示</button>
+    </div>
+    <div class="timeline" id="timeline-list"></div>
+  </div>
+  <!-- Search -->
+  <div class="page" id="page-search">
+    <div class="page-title">日記を検索</div>
+    <div id="tag-cloud-wrap">
+      <div id="tag-cloud-label">🏷️ タグで絞り込む</div>
+      <div id="tag-cloud"></div>
+    </div>
+    <input type="text" id="searchInput" placeholder="キーワードを入力…" oninput="doSearch(this.value)">
+    <div id="active-tag-bar" style="display:none">
+      <span id="active-tag-text"></span>
+      <button onclick="clearTagFilter()">✕ 解除</button>
+    </div>
+    <div id="search-results"></div>
+  </div>
+  <!-- Anniversary -->
+  <div class="page" id="page-anniversary">
+    <div class="page-title">記念日の管理</div>
+    <div class="anniv-form">
+      <div class="form-row">
+        <input type="text" id="annivName" placeholder="記念日の名前 (例: 結婚記念日)">
+        <input type="text" id="annivDate" placeholder="日付 (例: 06-15)" pattern="\d{2}-\d{2}">
+      </div>
+      <div class="form-row">
+        <input type="text" id="annivDesc" placeholder="メモ（任意）">
+        <button class="btn btn-primary" onclick="addAnniversary()">追加</button>
+      </div>
+    </div>
+    <div class="anniv-list" id="anniv-list"></div>
+  </div>
+  <!-- Media -->
+  <div class="page" id="page-media">
+    <div class="page-title">映画・書籍の記録</div>
+    <div class="media-tabs">
+      <div class="media-tab active" onclick="switchMedia('movie',this)">🎬 映画</div>
+      <div class="media-tab" onclick="switchMedia('book',this)">📚 書籍</div>
+    </div>
+    <div class="anniv-form" id="media-form">
+      <div class="form-row">
+        <input type="text" id="mediaTitle" placeholder="タイトル">
+        <select id="mediaRating">
+          <option value="5">★★★★★</option><option value="4">★★★★☆</option>
+          <option value="3">★★★☆☆</option><option value="2">★★☆☆☆</option>
+          <option value="1">★☆☆☆☆</option>
+        </select>
+        <input type="date" id="mediaDate">
+      </div>
+      <div class="form-row">
+        <textarea id="mediaMemo" placeholder="感想・メモ" rows="2" style="resize:vertical"></textarea>
+        <button class="btn btn-primary" onclick="addMedia()">追加</button>
+      </div>
+    </div>
+    <div class="media-grid" id="media-grid"></div>
+  </div>
+  <!-- Ambition・Aspiration -->
+  <div class="page" id="page-todo">
+    <div class="page-title">Ambition · Aspiration</div>
+    <div class="todo-sections">
+      <div class="section-card">
+        <h3>🏆 Ambition</h3>
+        <div class="todo-add">
+          <input type="text" id="goalInput" placeholder="目標を追加… (Shift+Enterで決定)" onkeydown="if(event.key==='Enter'&&!event.isComposing&&event.shiftKey)addGoal()">
+          <button class="btn btn-primary" onclick="addGoal()">追加</button>
+        </div>
+        <div id="goal-list"></div>
+      </div>
+      <div class="section-card">
+        <h3>✨ Aspiration（毎日の習慣）</h3>
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px">毎日リセット。達成した日数が累積カウントされます。</p>
+        <div class="todo-add">
+          <input type="text" id="visionInput" placeholder="習慣を追加… (Shift+Enterで決定)" onkeydown="if(event.key==='Enter'&&!event.isComposing&&event.shiftKey)addVision()">
+          <button class="btn btn-primary" onclick="addVision()">追加</button>
+        </div>
+        <div id="vision-list"></div>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- Diary Modal -->
+<div id="modal">
+  <div id="modal-inner">
+    <button id="modal-close" onclick="closeModal()">✕</button>
+    <div id="modal-date"></div>
+    <div id="modal-weather"></div>
+    <div class="mood-select" id="mood-select"></div>
+    <div class="tags-row" id="tags-row"></div>
+    <textarea id="diaryText" placeholder="今日の出来事を書いてみましょう…"></textarea>
+    <div class="photo-section">
+      <label class="btn" style="cursor:pointer;display:inline-block">📷 写真を追加 <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="addPhotos(this)"></label>
+      <div class="photo-grid" id="photo-grid"></div>
+    </div>
+    <div class="modal-todo-section">
+      <div style="font-size:13px;font-weight:600;color:var(--primary-dark);margin-bottom:8px">📝 この日のTODO</div>
+      <div class="todo-add" style="margin-bottom:8px">
+        <input type="text" id="modalTodoInput" placeholder="タスクを追加… (Shift+Enterで決定)" onkeydown="if(event.key==='Enter'&&!event.isComposing&&event.shiftKey)addModalTodo()">
+        <button class="btn" onclick="addModalTodo()">追加</button>
+      </div>
+      <div id="modal-todo-list"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="deleteEntry()" id="btn-delete" style="color:#c00;border-color:#fcc">削除</button>
+      <button class="btn" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveEntry()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- JSONbin Settings Modal -->
+<div id="jsonbin-modal">
+  <div class="inner">
+    <h3>☁️ クラウド同期設定（GitHub Gist）</h3>
+    <p>
+      <strong>手順：</strong><br>
+      1. <a href="https://github.com/settings/tokens/new" target="_blank">GitHub → Settings → Personal access tokens</a><br>
+      2. Note に「diary」と入力、<strong>Expiration: No expiration</strong><br>
+      3. Scopes で <strong>gist</strong> にチェック → Generate token<br>
+      4. 表示されたトークンをコピーして下に貼り付け
+    </p>
+    <input type="text" id="jsonbinKeyInput" placeholder="GitHubトークンを貼り付け（ghp_...）">
+    <input type="text" id="jsonbinBinInput" placeholder="Gist ID（2台目以降：既存のIDを入力）">
+    <p style="font-size:11px;color:var(--text-muted)">※ 初回はGist IDを空欄にすると自動作成されます</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="document.getElementById('jsonbin-modal').classList.remove('open')">キャンセル</button>
+      <button class="btn btn-primary" onclick="SYNC.saveSettings()">保存して同期</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div id="lightbox" onclick="closeLightbox()">
+  <span id="lightbox-close">✕</span>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<script>
+// ─── Data ────────────────────────────────────────────────────────────────────
+const DB = {
+  getEntries(){ return JSON.parse(localStorage.getItem('diary_entries')||'{}') },
+  setEntries(d){ localStorage.setItem('diary_entries', JSON.stringify(d)); SYNC.schedule(); },
+  getAnniversaries(){ return JSON.parse(localStorage.getItem('diary_annivs')||'[]') },
+  setAnniversaries(d){ localStorage.setItem('diary_annivs', JSON.stringify(d)); SYNC.schedule(); },
+  getMedia(){ return JSON.parse(localStorage.getItem('diary_media')||'[]') },
+  setMedia(d){ localStorage.setItem('diary_media', JSON.stringify(d)); SYNC.schedule(); },
+  getTodos(){ return JSON.parse(localStorage.getItem('diary_todos')||'[]') },
+  setTodos(d){ localStorage.setItem('diary_todos', JSON.stringify(d)); SYNC.schedule(); },
+  getGoals(){ return JSON.parse(localStorage.getItem('diary_goals')||'[]') },
+  setGoals(d){ localStorage.setItem('diary_goals', JSON.stringify(d)); SYNC.schedule(); },
+  getVisions(){ return JSON.parse(localStorage.getItem('diary_visions')||'[]') },
+  setVisions(d){ localStorage.setItem('diary_visions', JSON.stringify(d)); SYNC.schedule(); },
+};
+
+function dateKey(y,m,d){ return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}` }
+function today(){ const n=new Date(); return dateKey(n.getFullYear(),n.getMonth()+1,n.getDate()) }
+function todayDate(){ return new Date() }
+
+// ─── Navigation ──────────────────────────────────────────────────────────────
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  if(name==='calendar') renderCalendar();
+  if(name==='timeline') initTimeline();
+  if(name==='search') renderTagCloud();
+  if(name==='anniversary') renderAnniversaries();
+  if(name==='media') renderMedia();
+  if(name==='todo'){ renderGoals(); renderVisions(); }
+}
+
+// ─── Calendar ────────────────────────────────────────────────────────────────
+let calYear, calMonth;
+function initCalendar(){
+  const n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth();
+  renderCalendar();
+  showAnnivBanner();
+}
+function calMove(d){
+  calMonth+=d;
+  if(calMonth<0){calMonth=11;calYear--;}
+  if(calMonth>11){calMonth=0;calYear++;}
+  renderCalendar();
+}
+function goToday(){
+  const n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth();
+  renderCalendar();
+}
+function renderCalendar(){
+  const entries=DB.getEntries();
+  const annivs=DB.getAnniversaries();
+  document.getElementById('cal-title').textContent=`${calYear}年 ${calMonth+1}月`;
+  const grid=document.getElementById('cal-grid');
+  // Remove day cells (keep headers)
+  while(grid.children.length>7) grid.removeChild(grid.lastChild);
+
+  const first=new Date(calYear,calMonth,1);
+  const last=new Date(calYear,calMonth+1,0);
+  const startDay=first.getDay();
+  const n=new Date();
+  const todayKey=dateKey(n.getFullYear(),n.getMonth()+1,n.getDate());
+
+  // Prev month fill
+  for(let i=0;i<startDay;i++){
+    const d=new Date(calYear,calMonth,1-startDay+i);
+    addCalCell(grid, d.getFullYear(), d.getMonth()+1, d.getDate(), true, entries, annivs, todayKey);
+  }
+  // This month
+  for(let d=1;d<=last.getDate();d++){
+    addCalCell(grid, calYear, calMonth+1, d, false, entries, annivs, todayKey);
+  }
+  // Next month fill
+  const total=grid.children.length-7;
+  const remaining=total%7===0?0:7-(total%7);
+  for(let d=1;d<=remaining;d++){
+    addCalCell(grid, calYear, calMonth+2>12?calYear+1:calYear, calMonth+2>12?1:calMonth+2, d, true, entries, annivs, todayKey);
+  }
+}
+const MOOD_BG={
+  '😊':'#e8f5e9','😄':'#fffde7','😐':'#f0f0f0','😔':'#e3f2fd',
+  '😢':'#e8eaf6','😡':'#ffebee','😰':'#fce4ec','🥰':'#fce4ec',
+  '😴':'#ede7f6','🤒':'#f1f8e9'
+};
+function addCalCell(grid,y,m,d,other,entries,annivs,todayKey){
+  const key=dateKey(y,m,d);
+  const cell=document.createElement('div');
+  cell.className='cal-day';
+  if(other) cell.classList.add('other-month');
+  if(key===todayKey) cell.classList.add('today');
+  const dow=new Date(y,m-1,d).getDay();
+  if(dow===0) cell.classList.add('sun');
+  if(dow===6) cell.classList.add('sat');
+  const entry=entries[key];
+  const mmdd=`${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  if(annivs.some(a=>a.date===mmdd)) cell.classList.add('has-anniversary');
+
+  // Background color from mood
+  if(entry&&entry.mood&&MOOD_BG[entry.mood]){
+    cell.style.background=MOOD_BG[entry.mood];
+  } else if(entry&&(entry.content||entry.photos&&entry.photos.length)){
+    cell.style.background='#eef5ee';
+  }
+
+  // Date number
+  const numEl=document.createElement('div');
+  numEl.className='cal-num';
+  numEl.textContent=d;
+  cell.appendChild(numEl);
+
+  // Mood + Weather emoji
+  const moodWeather=(entry?.mood||'')+(entry?.weather?.e||'');
+  if(moodWeather){
+    const moodEl=document.createElement('div');
+    moodEl.className='cal-mood';
+    moodEl.textContent=moodWeather;
+    cell.appendChild(moodEl);
+  }
+
+  // Photo thumbnail (first photo)
+  if(entry&&entry.photos&&entry.photos.length>0){
+    const img=document.createElement('img');
+    img.className='cal-thumb';
+    img.src=entry.photos[0];
+    img.alt='';
+    cell.appendChild(img);
+    // Photo count badge
+    if(entry.photos.length>1){
+      const badge=document.createElement('div');
+      badge.style.cssText='position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.5);color:#fff;font-size:9px;border-radius:8px;padding:0 4px;z-index:3';
+      badge.textContent=`+${entry.photos.length-1}`;
+      cell.appendChild(badge);
+    }
+  }
+
+  cell.onclick=()=>openModal(y,m,d);
+  grid.appendChild(cell);
+}
+function showAnnivBanner(){
+  const n=new Date();
+  const mmdd=`${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+  const annivs=DB.getAnniversaries().filter(a=>a.date===mmdd);
+  const banner=document.getElementById('anniv-banner');
+  if(annivs.length===0){banner.style.display='none';return;}
+  banner.style.display='block';
+  const year=n.getFullYear();
+  document.getElementById('banner-items').innerHTML=annivs.map(a=>{
+    const [ay,am,ad]=a.date.split('-');
+    // calculate years if original year stored
+    return `🎊 ${a.name}${a.desc?' — '+a.desc:''}`;
+  }).join('<br>');
+}
+
+// ─── Modal / Editor ──────────────────────────────────────────────────────────
+let currentKey='', currentPhotos=[], currentTags=[], currentMood='', currentModalTodos=[], currentWeather=null;
+
+// ─── Weather ──────────────────────────────────────────────────────────────────
+function wmoToInfo(code){
+  if(code===0)         return {e:'☀️',d:'快晴'};
+  if(code<=2)          return {e:'🌤️',d:'晴れ'};
+  if(code===3)         return {e:'☁️',d:'曇り'};
+  if(code<=48)         return {e:'🌫️',d:'霧'};
+  if(code<=55)         return {e:'🌦️',d:'霧雨'};
+  if(code<=65)         return {e:'🌧️',d:'雨'};
+  if(code<=77)         return {e:'🌨️',d:'雪'};
+  if(code<=82)         return {e:'🌦️',d:'にわか雨'};
+  if(code<=86)         return {e:'❄️',d:'吹雪'};
+  return               {e:'⛈️',d:'雷雨'};
+}
+async function fetchWeather(dateStr){
+  return new Promise((resolve)=>{
+    if(!navigator.geolocation){resolve(null);return;}
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      try{
+        const {latitude:lat,longitude:lon}=pos.coords;
+        const isToday=dateStr===today();
+        const base=isToday
+          ?'https://api.open-meteo.com/v1/forecast'
+          :'https://archive-api.open-meteo.com/v1/archive';
+        const url=`${base}?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=temperature_2m,weathercode&timezone=auto&start_date=${dateStr}&end_date=${dateStr}`;
+        const r=await fetch(url);
+        const j=await r.json();
+        const idx=j.hourly.time.findIndex(t=>t.endsWith('T12:00'));
+        const i=idx>=0?idx:12;
+        const temp=Math.round(j.hourly.temperature_2m[i]);
+        const code=j.hourly.weathercode[i];
+        const info=wmoInfo(code);
+        resolve({temp,code,...info});
+      }catch(e){resolve(null);}
+    },()=>resolve(null),{timeout:5000});
+  });
+}
+function wmoInfo(code){ return wmoToInfo(code); }
+const MOODS=['😊','😄','😐','😔','😢','😡','😰','🥰','😴','🤒'];
+const DEFAULT_TAGS=['仕事','家族','友人','旅行','食事','健康','趣味','勉強','買い物','出張'];
+
+function openModal(y,m,d){
+  const key=dateKey(y,m,d);
+  currentKey=key;
+  const entries=DB.getEntries();
+  const entry=entries[key]||{};
+  document.getElementById('modal-date').textContent=`${y}年${m}月${d}日（${['日','月','火','水','木','金','土'][new Date(y,m-1,d).getDay()]}）`;
+  document.getElementById('diaryText').value=entry.content||'';
+  currentPhotos=[...(entry.photos||[])];
+  currentTags=[...(entry.tags||[])];
+  currentMood=entry.mood||'';
+  currentModalTodos=JSON.parse(JSON.stringify(entry.todos||[]));
+  currentWeather=entry.weather||null;
+
+  // Weather
+  const wEl=document.getElementById('modal-weather');
+  if(currentWeather){
+    wEl.innerHTML=`<span class="weather-badge">${currentWeather.e} ${currentWeather.temp}°C・${currentWeather.d}（12時）</span>`;
+  } else {
+    wEl.innerHTML='<span style="color:var(--text-muted);font-size:12px">🌡️ 天気取得中…</span>';
+    fetchWeather(key).then(w=>{
+      currentWeather=w;
+      if(w) wEl.innerHTML=`<span class="weather-badge">${w.e} ${w.temp}°C・${w.d}（12時）</span>`;
+      else  wEl.innerHTML='<span style="color:var(--text-muted);font-size:12px">🌡️ 天気取得不可（位置情報を許可してください）</span>';
+    });
+  }
+
+  // Mood
+  const moodSel=document.getElementById('mood-select');
+  moodSel.innerHTML='<span style="font-size:13px;color:var(--text-muted);align-self:center">気分:</span>';
+  MOODS.forEach(m=>{
+    const btn=document.createElement('button');
+    btn.className='mood-btn'+(currentMood===m?' selected':'');
+    btn.textContent=m;
+    btn.onclick=()=>{currentMood=m;document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');};
+    moodSel.appendChild(btn);
+  });
+
+  // Tags
+  renderTagsRow();
+  // Photos
+  renderPhotoGrid();
+  // Modal TODOs
+  renderModalTodos();
+  // Delete btn
+  document.getElementById('btn-delete').style.display=entry.content?'':'none';
+  document.getElementById('modal').classList.add('open');
+}
+function getUserTags(){
+  return JSON.parse(localStorage.getItem('diary_user_tags')||'[]');
+}
+function saveUserTag(tag){
+  if(DEFAULT_TAGS.includes(tag)) return;
+  const tags=getUserTags();
+  if(!tags.includes(tag)){ tags.push(tag); localStorage.setItem('diary_user_tags',JSON.stringify(tags)); }
+}
+function allTags(){ return [...DEFAULT_TAGS,...getUserTags()]; }
+
+function renderTagsRow(){
+  const row=document.getElementById('tags-row');
+  row.innerHTML='<span style="font-size:13px;color:var(--text-muted);align-self:center">タグ:</span>';
+  allTags().forEach(t=>{
+    const chip=document.createElement('div');
+    chip.className='tag-chip'+(currentTags.includes(t)?' active':'');
+    chip.textContent=t;
+    chip.onclick=()=>{
+      if(currentTags.includes(t)) currentTags=currentTags.filter(x=>x!==t);
+      else currentTags.push(t);
+      chip.classList.toggle('active');
+    };
+    row.appendChild(chip);
+  });
+  const inp=document.createElement('input');
+  inp.type='text'; inp.id='tagInput'; inp.placeholder='新しいタグ…';
+  inp.onkeydown=e=>{
+    if(e.key==='Enter'&&!e.isComposing&&inp.value.trim()){
+      const t=inp.value.trim();
+      saveUserTag(t);
+      if(!currentTags.includes(t)) currentTags.push(t);
+      inp.value=''; renderTagsRow();
+    }
+  };
+  row.appendChild(inp);
+}
+function renderPhotoGrid(){
+  const grid=document.getElementById('photo-grid');
+  grid.innerHTML='';
+  currentPhotos.forEach((src,i)=>{
+    const wrap=document.createElement('div'); wrap.className='photo-wrap';
+    const img=document.createElement('img'); img.className='photo-thumb'; img.src=src;
+    img.onclick=()=>openLightbox(src);
+    const del=document.createElement('button'); del.className='photo-del'; del.textContent='×';
+    del.onclick=e=>{e.stopPropagation();currentPhotos.splice(i,1);renderPhotoGrid();};
+    wrap.appendChild(img); wrap.appendChild(del); grid.appendChild(wrap);
+  });
+}
+function compressImage(file, maxSize=1200, quality=0.75){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        let {width:w,height:h}=img;
+        if(w>maxSize||h>maxSize){
+          if(w>h){h=Math.round(h*maxSize/w);w=maxSize;}
+          else{w=Math.round(w*maxSize/h);h=maxSize;}
+        }
+        const canvas=document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function addPhotos(input){
+  const files=[...input.files];
+  let loaded=0;
+  files.forEach(f=>{
+    compressImage(f).then(dataUrl=>{
+      currentPhotos.push(dataUrl);
+      loaded++;
+      if(loaded===files.length) renderPhotoGrid();
+    });
+  });
+  input.value='';
+}
+function saveEntry(){
+  const entries=DB.getEntries();
+  const content=document.getElementById('diaryText').value.trim();
+  if(!content&&currentPhotos.length===0&&!currentMood&&currentTags.length===0){
+    delete entries[currentKey];
+  } else {
+    entries[currentKey]={content,mood:currentMood,tags:currentTags,photos:currentPhotos,todos:currentModalTodos,weather:currentWeather,updatedAt:Date.now()};
+  }
+  try{
+    DB.setEntries(entries);
+  } catch(e){
+    alert('保存に失敗しました。写真のサイズが大きすぎる可能性があります。\n写真を減らして再度お試しください。');
+    return;
+  }
+  closeModal();
+  renderCalendar();
+}
+function deleteEntry(){
+  if(!confirm('この日記を削除しますか？')) return;
+  const entries=DB.getEntries();
+  delete entries[currentKey];
+  DB.setEntries(entries);
+  closeModal(); renderCalendar();
+}
+function closeModal(){
+  document.getElementById('modal').classList.remove('open');
+}
+
+// ─── Timeline ────────────────────────────────────────────────────────────────
+function initTimeline(){
+  const inp=document.getElementById('tl-date-input');
+  if(!inp.value) inp.value=today();
+  renderTimeline();
+}
+function renderTimeline(){
+  const inp=document.getElementById('tl-date-input');
+  const val=inp.value||today();
+  const [baseY,baseM,baseD]=val.split('-').map(Number);
+  document.getElementById('tl-title').textContent=`${baseM}月${baseD}日 のタイムライン`;
+
+  const entries=DB.getEntries();
+  const now=new Date();
+  const currentYear=now.getFullYear();
+
+  const list=document.getElementById('timeline-list');
+  list.innerHTML='';
+
+  // Build years: past (current to 2010) + future (current+1 to current+10)
+  const years=[];
+  for(let y=currentYear;y>=2010;y--) years.push({y,future:false});
+  for(let y=currentYear+1;y<=currentYear+10;y++) years.push({y,future:true});
+
+  years.forEach(({y,future})=>{
+    const key=dateKey(y,baseM,baseD);
+    // Validate date (e.g. Feb 30 doesn't exist)
+    const dt=new Date(y,baseM-1,baseD);
+    if(dt.getMonth()!==baseM-1) return;
+
+    const entry=entries[key];
+    const diff=currentYear-y;
+    let label='';
+    if(y===currentYear) label='今年';
+    else if(!future && diff===1) label='1年前の今日';
+    else if(!future) label=`${diff}年前の今日`;
+    else label=`${y-currentYear}年後`;
+
+    const item=document.createElement('div');
+    item.className='tl-item'+(future?' future':'')+(y===currentYear?' today-year':'');
+    const card=document.createElement('div');
+    card.className='tl-card'+(future&&!entry?' future':'');
+
+    const labelEl=`<div class="tl-label ${future&&!entry?'future-label':''}">${label}</div>`;
+    const yearEl=`<div class="tl-year"><strong>${y}年${baseM}月${baseD}日</strong></div>`;
+    let body='';
+    if(entry){
+      body=`${entry.mood?`<span class="tl-mood">${entry.mood}</span>`:''}
+      ${entry.tags&&entry.tags.length?`<div style="margin-bottom:6px">${entry.tags.map(t=>`<span class="tag-chip">${t}</span>`).join(' ')}</div>`:''}
+      <div class="tl-preview">${escHtml(entry.content||'').substring(0,200)}</div>
+      ${entry.photos&&entry.photos.length?`<div style="font-size:12px;color:var(--text-muted);margin-top:4px">📷 ${entry.photos.length}枚</div>`:''}`;
+    } else if(future){
+      body=`<div style="font-size:13px;color:var(--text-muted);font-style:italic">クリックして未来日記を書く…</div>`;
+    } else {
+      body=`<div style="font-size:13px;color:var(--text-muted)">記録なし</div>`;
+    }
+    card.innerHTML=yearEl+labelEl+body;
+    card.onclick=()=>openModal(y,baseM,baseD);
+    item.appendChild(card);
+    list.appendChild(item);
+  });
+}
+
+// ─── Search & Tag Cloud ──────────────────────────────────────────────────────
+let activeTagFilter=null;
+
+const TAG_COLORS=[
+  {bg:'#e8f0e9',fg:'#3a7a3e'},{bg:'#fff3e0',fg:'#b56a00'},{bg:'#e8eaf6',fg:'#3949ab'},
+  {bg:'#fce4ec',fg:'#c2185b'},{bg:'#e0f7fa',fg:'#00838f'},{bg:'#f3e5f5',fg:'#7b1fa2'},
+  {bg:'#e8f5e9',fg:'#2e7d32'},{bg:'#fff8e1',fg:'#f57f17'}
+];
+function tagColor(tag,allTags){
+  const i=allTags.indexOf(tag)%TAG_COLORS.length;
+  return TAG_COLORS[i<0?0:i];
+}
+
+function renderTagCloud(){
+  const entries=DB.getEntries();
+  const counts={};
+  Object.values(entries).forEach(v=>(v.tags||[]).forEach(t=>{counts[t]=(counts[t]||0)+1;}));
+  const tags=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+  const cloud=document.getElementById('tag-cloud');
+  if(!cloud) return;
+  if(tags.length===0){cloud.innerHTML='<span style="font-size:12px;color:var(--text-muted)">タグがまだありません</span>';return;}
+  const max=Math.max(...Object.values(counts));
+  const allTags=tags;
+  cloud.innerHTML=tags.map(t=>{
+    const c=counts[t];
+    const ratio=c/max;
+    const size=Math.round(11+ratio*6);
+    const {bg,fg}=tagColor(t,allTags);
+    const sel=activeTagFilter===t?'selected':'';
+    return `<span class="tag-cloud-chip ${sel}" style="background:${bg};color:${fg};font-size:${size}px" onclick="filterByTag('${escHtml(t)}')">
+      ${escHtml(t)}<span class="cnt">${c}</span>
+    </span>`;
+  }).join('');
+}
+
+function filterByTag(tag){
+  activeTagFilter=activeTagFilter===tag?null:tag;
+  renderTagCloud();
+  const bar=document.getElementById('active-tag-bar');
+  if(activeTagFilter){
+    bar.style.display='flex';
+    document.getElementById('active-tag-text').textContent='🏷️ '+activeTagFilter+' の日記';
+    document.getElementById('searchInput').value='';
+  } else {
+    bar.style.display='none';
+  }
+  doSearch(document.getElementById('searchInput').value);
+}
+
+function clearTagFilter(){
+  activeTagFilter=null;
+  document.getElementById('active-tag-bar').style.display='none';
+  renderTagCloud();
+  doSearch(document.getElementById('searchInput').value);
+}
+
+function doSearch(q){
+  const res=document.getElementById('search-results');
+  const entries=DB.getEntries();
+  let results=Object.entries(entries).sort((a,b)=>b[0].localeCompare(a[0]));
+  if(activeTagFilter) results=results.filter(([,v])=>(v.tags||[]).includes(activeTagFilter));
+  if(q.trim()) results=results.filter(([,v])=>
+    (v.content||'').toLowerCase().includes(q.toLowerCase())||
+    (v.tags||[]).some(t=>t.toLowerCase().includes(q.toLowerCase()))
+  );
+  if(!q.trim()&&!activeTagFilter){res.innerHTML='';return;}
+  if(results.length===0){res.innerHTML='<div class="empty">見つかりませんでした</div>';return;}
+  res.innerHTML=results.map(([key,v])=>{
+    const [y,m,d]=key.split('-');
+    const snippet=q.trim()
+      ? escHtml(v.content||'').replace(new RegExp(escRegex(escHtml(q)),'gi'),s=>`<mark>${s}</mark>`).substring(0,150)
+      : escHtml((v.content||'').substring(0,150));
+    const tagsHtml=(v.tags||[]).map(t=>{
+      const{bg,fg}=tagColor(t,Object.keys({}));
+      return `<span style="font-size:11px;background:#e8f0e9;color:#3a7a3e;border-radius:10px;padding:1px 7px">${escHtml(t)}</span>`;
+    }).join(' ');
+    return `<div class="search-result" onclick="openModal(${y},${m},${d})">
+      <div class="date">${y}年${Number(m)}月${Number(d)}日 ${v.mood||''} ${v.weather?v.weather.e:''}</div>
+      ${tagsHtml?`<div style="margin:4px 0;display:flex;flex-wrap:wrap;gap:4px">${tagsHtml}</div>`:''}
+      <div class="snippet">${snippet}${(v.content||'').length>150?'…':''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Anniversary ─────────────────────────────────────────────────────────────
+function addAnniversary(){
+  const name=document.getElementById('annivName').value.trim();
+  const date=document.getElementById('annivDate').value.trim();
+  const desc=document.getElementById('annivDesc').value.trim();
+  if(!name||!date){alert('名前と日付を入力してください');return;}
+  if(!/^\d{2}-\d{2}$/.test(date)){alert('日付は MM-DD 形式で入力してください（例: 06-15）');return;}
+  const annivs=DB.getAnniversaries();
+  annivs.push({id:Date.now(),name,date,desc});
+  DB.setAnniversaries(annivs);
+  document.getElementById('annivName').value='';
+  document.getElementById('annivDate').value='';
+  document.getElementById('annivDesc').value='';
+  renderAnniversaries();
+  showAnnivBanner();
+}
+function renderAnniversaries(){
+  const annivs=DB.getAnniversaries();
+  const list=document.getElementById('anniv-list');
+  if(annivs.length===0){list.innerHTML='<div class="empty">記念日はまだありません</div>';return;}
+  list.innerHTML=annivs.map(a=>`
+    <div class="anniv-list"><div class="card">
+      <div class="info">
+        <div class="name">🎉 ${escHtml(a.name)}</div>
+        <div class="meta">${a.date.split('-').map(Number).join('月')}日${a.desc?' — '+escHtml(a.desc):''}</div>
+      </div>
+      <button class="card-del" onclick="delAnniversary(${a.id})">削除</button>
+    </div></div>`).join('');
+}
+function delAnniversary(id){
+  const annivs=DB.getAnniversaries().filter(a=>a.id!==id);
+  DB.setAnniversaries(annivs);
+  renderAnniversaries(); showAnnivBanner();
+}
+
+// ─── Media ───────────────────────────────────────────────────────────────────
+let mediaType='movie';
+function switchMedia(type,el){
+  mediaType=type;
+  document.querySelectorAll('.media-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderMedia();
+}
+function addMedia(){
+  const title=document.getElementById('mediaTitle').value.trim();
+  const rating=Number(document.getElementById('mediaRating').value);
+  const memo=document.getElementById('mediaMemo').value.trim();
+  const date=document.getElementById('mediaDate').value||today();
+  if(!title){alert('タイトルを入力してください');return;}
+  const media=DB.getMedia();
+  media.unshift({id:Date.now(),type:mediaType,title,rating,memo,date});
+  DB.setMedia(media);
+  document.getElementById('mediaTitle').value='';
+  document.getElementById('mediaMemo').value='';
+  renderMedia();
+}
+function renderMedia(){
+  const media=DB.getMedia().filter(m=>m.type===mediaType);
+  const grid=document.getElementById('media-grid');
+  if(media.length===0){grid.innerHTML='<div class="empty">記録がありません</div>';return;}
+  grid.innerHTML=media.map(m=>`
+    <div class="media-card">
+      <div class="title">${escHtml(m.title)}</div>
+      <div class="stars">${'★'.repeat(m.rating)}${'☆'.repeat(5-m.rating)}</div>
+      ${m.memo?`<div class="memo">${escHtml(m.memo)}</div>`:''}
+      <div class="date" style="display:flex;justify-content:space-between;align-items:center">
+        <span>${m.date}</span>
+        <button class="card-del" onclick="delMedia(${m.id})">削除</button>
+      </div>
+    </div>`).join('');
+}
+function delMedia(id){
+  DB.setMedia(DB.getMedia().filter(m=>m.id!==id));
+  renderMedia();
+}
+
+// ─── Modal TODO ──────────────────────────────────────────────────────────────
+function addModalTodo(){
+  const inp=document.getElementById('modalTodoInput');
+  const val=inp.value.trim();
+  if(!val) return;
+  currentModalTodos.unshift({id:Date.now(),text:val,done:false});
+  inp.value='';
+  renderModalTodos();
+}
+function renderModalTodos(){
+  const list=document.getElementById('modal-todo-list');
+  if(!list) return;
+  if(currentModalTodos.length===0){list.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:4px 0">なし</div>';return;}
+  list.innerHTML=currentModalTodos.map(t=>`
+    <div class="todo-item">
+      <input type="checkbox" ${t.done?'checked':''} onchange="toggleModalTodo(${t.id},this.checked)">
+      <span class="text ${t.done?'done':''}">${escHtml(t.text)}</span>
+      <span class="del" onclick="delModalTodo(${t.id})">✕</span>
+    </div>`).join('');
+}
+function toggleModalTodo(id,done){
+  currentModalTodos=currentModalTodos.map(t=>t.id===id?{...t,done}:t);
+  renderModalTodos();
+}
+function delModalTodo(id){
+  currentModalTodos=currentModalTodos.filter(t=>t.id!==id);
+  renderModalTodos();
+}
+
+// ─── TODO（グローバル） ───────────────────────────────────────────────────────
+function addTodo(){
+  const val=document.getElementById('todoInput').value.trim();
+  if(!val) return;
+  const todos=DB.getTodos();
+  todos.unshift({id:Date.now(),text:val,done:false});
+  DB.setTodos(todos);
+  document.getElementById('todoInput').value='';
+  renderTodos();
+}
+function renderTodos(){
+  const todos=DB.getTodos();
+  const list=document.getElementById('todo-list');
+  if(!list) return;
+  if(todos.length===0){list.innerHTML='<div class="empty" style="padding:20px">TODOはありません</div>';return;}
+  list.innerHTML=todos.map(t=>`
+    <div class="todo-item">
+      <input type="checkbox" ${t.done?'checked':''} onchange="toggleTodo(${t.id},this.checked)">
+      <span class="text ${t.done?'done':''}">${escHtml(t.text)}</span>
+      <span class="del" onclick="delTodo(${t.id})">✕</span>
+    </div>`).join('');
+}
+function toggleTodo(id,done){
+  const todos=DB.getTodos().map(t=>t.id===id?{...t,done}:t);
+  DB.setTodos(todos); renderTodos();
+}
+function delTodo(id){
+  DB.setTodos(DB.getTodos().filter(t=>t.id!==id)); renderTodos();
+}
+
+// ─── Goals ───────────────────────────────────────────────────────────────────
+function addGoal(){
+  const val=document.getElementById('goalInput').value.trim();
+  if(!val) return;
+  const goals=DB.getGoals();
+  goals.unshift({id:Date.now(),text:val,progress:0});
+  DB.setGoals(goals);
+  document.getElementById('goalInput').value='';
+  renderGoals();
+}
+function renderGoals(){
+  const goals=DB.getGoals();
+  const list=document.getElementById('goal-list');
+  if(goals.length===0){list.innerHTML='<div class="empty" style="padding:20px">目標はありません</div>';return;}
+  list.innerHTML=goals.map(g=>`
+    <div class="goal-item">
+      <div class="goal-text">
+        <span class="goal-label" onclick="startEditGoal(${g.id},this)" title="クリックして編集">${escHtml(g.text)}</span>
+        <span style="display:flex;gap:6px;align-items:center">
+          <span class="goal-pct">${g.progress}%</span>
+          <button class="card-del" onclick="delGoal(${g.id})">削除</button>
+        </span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${g.progress}%"></div></div>
+      <input type="range" min="0" max="100" value="${g.progress}" style="width:100%;margin-top:4px;accent-color:var(--primary)" oninput="updateGoalProgress(${g.id},this.value)">
+    </div>`).join('');
+}
+function startEditGoal(id,el){
+  const current=DB.getGoals().find(g=>g.id===id);
+  if(!current) return;
+  const inp=document.createElement('input');
+  inp.type='text';
+  inp.value=current.text;
+  inp.style.cssText='flex:1;padding:2px 6px;border:1px solid var(--primary);border-radius:6px;font-size:13px;font-family:inherit';
+  el.replaceWith(inp);
+  inp.focus();
+  inp.select();
+  const commit=()=>{
+    const newText=inp.value.trim();
+    if(newText) updateGoalText(id,newText);
+    else renderGoals();
+  };
+  inp.onblur=commit;
+  inp.onkeydown=e=>{if(e.key==='Enter')inp.blur(); if(e.key==='Escape'){inp.onblur=null;renderGoals();}};
+}
+function updateGoalText(id,text){
+  const goals=DB.getGoals().map(g=>g.id===id?{...g,text}:g);
+  DB.setGoals(goals); renderGoals();
+}
+function updateGoalProgress(id,val){
+  const goals=DB.getGoals().map(g=>g.id===id?{...g,progress:Number(val)}:g);
+  DB.setGoals(goals); renderGoals();
+}
+function delGoal(id){
+  DB.setGoals(DB.getGoals().filter(g=>g.id!==id)); renderGoals();
+}
+
+// ─── Vision ──────────────────────────────────────────────────────────────────
+function addVision(){
+  const val=document.getElementById('visionInput').value.trim();
+  if(!val) return;
+  const visions=DB.getVisions();
+  visions.unshift({id:Date.now(),text:val,checkedDates:[]});
+  DB.setVisions(visions);
+  document.getElementById('visionInput').value='';
+  renderVisions();
+}
+function renderVisions(){
+  const visions=DB.getVisions();
+  const list=document.getElementById('vision-list');
+  if(!list) return;
+  if(visions.length===0){list.innerHTML='<div class="empty" style="padding:20px">習慣がありません</div>';return;}
+  const td=today();
+  list.innerHTML=visions.map(v=>{
+    const checked=v.checkedDates.includes(td);
+    const count=v.checkedDates.length;
+    return `<div class="vision-item">
+      <input type="checkbox" ${checked?'checked':''} onchange="toggleVision(${v.id},this.checked)">
+      <span class="text">${escHtml(v.text)}</span>
+      <span class="count">🔥 ${count}日</span>
+      <span class="del" onclick="delVision(${v.id})">✕</span>
+    </div>`;
+  }).join('');
+}
+function toggleVision(id,checked){
+  const td=today();
+  const visions=DB.getVisions().map(v=>{
+    if(v.id!==id) return v;
+    const dates=v.checkedDates.filter(d=>d!==td);
+    if(checked) dates.push(td);
+    return {...v,checkedDates:dates};
+  });
+  DB.setVisions(visions); renderVisions();
+}
+function delVision(id){
+  DB.setVisions(DB.getVisions().filter(v=>v.id!==id)); renderVisions();
+}
+
+// ─── Lightbox ────────────────────────────────────────────────────────────────
+function openLightbox(src){
+  document.getElementById('lightbox-img').src=src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox(){ document.getElementById('lightbox').classList.remove('open'); }
+
+// ─── Utilities ───────────────────────────────────────────────────────────────
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function escRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') }
+
+// Close modal on backdrop click
+document.getElementById('modal').addEventListener('click',e=>{
+  if(e.target===document.getElementById('modal')) closeModal();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ closeModal(); closeLightbox(); }
+});
+
+// ─── Export / Import ─────────────────────────────────────────────────────────
+function exportData(){
+  const d={
+    entries:localStorage.getItem('diary_entries'),
+    annivs:localStorage.getItem('diary_annivs'),
+    media:localStorage.getItem('diary_media'),
+    todos:localStorage.getItem('diary_todos'),
+    goals:localStorage.getItem('diary_goals')
+  };
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(d)],{type:'application/json'}));
+  a.download='diary-backup.json';
+  a.click();
+}
+function importData(){
+  const input=document.createElement('input');
+  input.type='file'; input.accept='.json';
+  input.onchange=e=>{
+    const r=new FileReader();
+    r.onload=ev=>{
+      const d=JSON.parse(ev.target.result);
+      if(d.entries) localStorage.setItem('diary_entries',d.entries);
+      if(d.annivs)  localStorage.setItem('diary_annivs',d.annivs);
+      if(d.media)   localStorage.setItem('diary_media',d.media);
+      if(d.todos)   localStorage.setItem('diary_todos',d.todos);
+      if(d.goals)   localStorage.setItem('diary_goals',d.goals);
+      alert('復元完了！');
+      renderCurrentPage();
+    };
+    r.readAsText(e.target.files[0]);
+  };
+  input.click();
+}
+
+// ─── GitHub Gist Sync ────────────────────────────────────────────────────────
+const SYNC = {
+  BASE: 'https://api.github.com/gists',
+  FILE: 'diary-data.json',
+  get key(){ return localStorage.getItem('gh_token')||''; },
+  get gistId(){ return localStorage.getItem('gh_gist')||''; },
+  timer: null,
+
+  init(){
+    // 旧JSONbinのキーを削除
+    localStorage.removeItem('jb_key');
+    localStorage.removeItem('jb_bin');
+    if(this.key) this.pull().catch(()=>updateSyncUI('error'));
+    else updateSyncUI('no-key');
+  },
+
+  openSettings(){
+    document.getElementById('jsonbinKeyInput').value = this.key;
+    document.getElementById('jsonbinBinInput').value = this.gistId;
+    document.getElementById('jsonbin-modal').classList.add('open');
+  },
+
+  async saveSettings(){
+    const key = document.getElementById('jsonbinKeyInput').value.trim();
+    const gist = document.getElementById('jsonbinBinInput').value.trim();
+    if(!key){ alert('トークンを入力してください'); return; }
+    localStorage.setItem('gh_token', key);
+    if(gist) localStorage.setItem('gh_gist', gist);
+    document.getElementById('jsonbin-modal').classList.remove('open');
+    updateSyncUI('syncing');
+    try{
+      if(!this.gistId) await this.createGist();
+      else await this.push();
+    } catch(e){ updateSyncUI('error'); alert('同期エラー: '+e.message); }
+  },
+
+  schedule(){
+    if(!this.key) return;
+    updateSyncUI('pending');
+    clearTimeout(this.timer);
+    this.timer = setTimeout(()=>this.push(), 3000);
+  },
+
+  getData(){
+    return {
+      entries: DB.getEntries(), annivs: DB.getAnniversaries(),
+      media: DB.getMedia(), todos: DB.getTodos(), goals: DB.getGoals(), visions: DB.getVisions(),
+      userTags: getUserTags(),
+      updatedAt: Date.now()
+    };
+  },
+
+  headers(){
+    return {'Authorization':'Bearer '+this.key,'Content-Type':'application/json','Accept':'application/vnd.github+json'};
+  },
+
+  async createGist(){
+    updateSyncUI('syncing');
+    const r = await fetch(this.BASE,{
+      method:'POST', headers:this.headers(),
+      body: JSON.stringify({description:'Diary Data',public:false,files:{[this.FILE]:{content:JSON.stringify(this.getData())}}})
+    });
+    if(!r.ok) throw new Error((await r.json()).message||r.status);
+    const j = await r.json();
+    localStorage.setItem('gh_gist', j.id);
+    updateSyncUI('synced');
+  },
+
+  async push(){
+    if(!this.key||!this.gistId) return;
+    updateSyncUI('syncing');
+    const r = await fetch(`${this.BASE}/${this.gistId}`,{
+      method:'PATCH', headers:this.headers(),
+      body: JSON.stringify({files:{[this.FILE]:{content:JSON.stringify(this.getData())}}})
+    });
+    if(!r.ok) throw new Error((await r.json()).message||r.status);
+    updateSyncUI('synced');
+  },
+
+  async pull(){
+    if(!this.key||!this.gistId) return;
+    updateSyncUI('syncing');
+    const r = await fetch(`${this.BASE}/${this.gistId}`,{headers:this.headers()});
+    if(!r.ok) throw new Error('Gist取得失敗: '+(await r.json()).message||r.status);
+    const j = await r.json();
+    const fileInfo = j.files[this.FILE];
+    if(!fileInfo) throw new Error('Gistにデータファイルが見つかりません');
+    // Handle GitHub Gist truncation (files > 1MB are truncated)
+    let content;
+    if(fileInfo.truncated){
+      // Try with auth first, fallback without
+      let rawR = await fetch(fileInfo.raw_url, {headers:{'Authorization':'Bearer '+this.key}});
+      if(!rawR.ok) rawR = await fetch(fileInfo.raw_url);
+      if(!rawR.ok) throw new Error('rawデータ取得失敗: '+rawR.status);
+      content = await rawR.text();
+    } else {
+      content = fileInfo.content;
+    }
+    if(!content) throw new Error('データが空です');
+    let d;
+    try { d = JSON.parse(content); }
+    catch(e){ throw new Error('データ解析エラー: '+e.message); }
+    const errors=[];
+    const trySet=(key,val)=>{
+      try{ localStorage.setItem(key, JSON.stringify(val)); }
+      catch(e){ errors.push(key+': '+e.message); }
+    };
+    if(d.entries) trySet('diary_entries', d.entries);
+    if(d.annivs)  trySet('diary_annivs',  d.annivs);
+    if(d.media)   trySet('diary_media',   d.media);
+    if(d.todos)   trySet('diary_todos',   d.todos);
+    if(d.goals)   trySet('diary_goals',   d.goals);
+    if(d.visions)   trySet('diary_visions',    d.visions);
+    if(d.userTags)  trySet('diary_user_tags',  d.userTags);
+    if(errors.length) alert('一部のデータを保存できませんでした:\n'+errors.join('\n'));
+    updateSyncUI('synced');
+    renderCurrentPage();
+  },
+
+  async pullAndReload(){
+    if(!this.key){ alert('同期設定からトークンを設定してください'); return; }
+    if(!this.gistId){ alert('同期設定からGist IDを設定してください'); return; }
+    try{
+      updateSyncUI('syncing');
+      await this.pull();
+      // Force full reload so all pages reflect new data
+      setTimeout(()=>location.reload(), 300);
+    } catch(e){
+      updateSyncUI('error');
+      alert('ダウンロードエラー: '+e.message);
+    }
+  }
+};
+
+function updateSyncUI(state){
+  const dot=document.getElementById('sync-dot');
+  const label=document.getElementById('sync-label');
+  const btn=document.getElementById('btn-sync');
+  const map={
+    'no-key':   ['','未設定','⚙️ 同期設定'],
+    'syncing':  ['orange','同期中…','⚙️ 同期設定'],
+    'pending':  ['orange','変更あり…','⚙️ 同期設定'],
+    'synced':   ['green','同期済み ✓','⚙️ 同期設定'],
+    'error':    ['red','同期エラー','⚙️ 同期設定'],
+  };
+  const [dotClass,text,btnText]=map[state]||map['no-key'];
+  dot.className='sync-dot'+(dotClass?' '+dotClass:'');
+  label.textContent=text;
+  if(btn) btn.textContent=btnText;
+}
+
+function renderCurrentPage(){
+  const active = document.querySelector('.page.active');
+  if(!active) return;
+  const id = active.id.replace('page-','');
+  if(id==='calendar'){ renderCalendar(); showAnnivBanner(); }
+  else if(id==='timeline') renderTimeline();
+  else if(id==='search') renderTagCloud();
+  else if(id==='anniversary') renderAnniversaries();
+  else if(id==='media') renderMedia();
+  else if(id==='todo'){ renderGoals(); renderVisions(); }
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+SYNC.init();
+initCalendar();
+</script>
+</body>
+</html>
