@@ -98,6 +98,23 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .anniv-icon-btn{font-size:20px;width:38px;height:38px;border:2px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
 .anniv-icon-btn.selected{border-color:var(--primary);background:#e8f5e9}
 .anniv-form{background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:20px}
+/* Anniversary Timeline */
+.anniv-timeline{position:relative;padding-left:28px}
+.anniv-timeline::before{content:'';position:absolute;left:12px;top:0;bottom:0;width:2px;background:var(--border)}
+.anniv-month-group{margin-bottom:8px}
+.anniv-month-header{position:relative;display:flex;align-items:center;gap:8px;margin-bottom:6px;margin-top:4px}
+.anniv-month-header::before{content:'';position:absolute;left:-20px;width:16px;height:16px;border-radius:50%;background:var(--border);border:2px solid var(--surface);top:50%;transform:translateY(-50%)}
+.anniv-month-group.current-month .anniv-month-header::before{background:var(--accent);width:18px;height:18px;left:-21px}
+.anniv-month-label{font-size:13px;font-weight:700;color:var(--text-muted)}
+.anniv-month-group.current-month .anniv-month-label{color:var(--accent);font-size:14px}
+.anniv-tl-item{position:relative;margin-bottom:6px;margin-left:4px}
+.anniv-tl-item::before{content:'';position:absolute;left:-20px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;background:var(--primary);border:2px solid var(--surface)}
+.anniv-tl-item.is-today::before{background:var(--accent);width:10px;height:10px;left:-21px}
+.anniv-tl-card{background:var(--surface);border-radius:8px;padding:10px 12px;box-shadow:var(--shadow);display:flex;align-items:center;gap:10px}
+.anniv-tl-item.is-today .anniv-tl-card{border-left:3px solid var(--accent);background:#fff8f0}
+.anniv-tl-day{font-size:13px;font-weight:700;color:var(--primary-dark);min-width:28px}
+.anniv-tl-name{font-size:13px;flex:1}
+.anniv-tl-desc{font-size:11px;color:var(--text-muted);margin-top:1px}
 .form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .form-row input,.form-row select,.form-row textarea{flex:1;min-width:140px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit}
 .form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:var(--primary)}
@@ -1070,14 +1087,43 @@ function renderAnniversaries(){
   const annivs=DB.getAnniversaries();
   const list=document.getElementById('anniv-list');
   if(annivs.length===0){list.innerHTML='<div class="empty">記念日はまだありません</div>';return;}
-  list.innerHTML=annivs.map(a=>`
-    <div class="anniv-list"><div class="card">
-      <div class="info">
-        <div class="name">${a.icon||'🎉'} ${escHtml(a.name)}</div>
-        <div class="meta">${a.date.split('-').map(Number).join('月')}日${a.desc?' — '+escHtml(a.desc):''}</div>
-      </div>
-      <button class="card-del" onclick="delAnniversary(${a.id})">削除</button>
-    </div></div>`).join('');
+  const today=new Date();
+  const todayMM=String(today.getMonth()+1).padStart(2,'0');
+  const todayDD=String(today.getDate()).padStart(2,'0');
+  const todayMmdd=`${todayMM}-${todayDD}`;
+  // 月ごとにグループ化
+  const byMonth={};
+  for(let i=1;i<=12;i++) byMonth[String(i).padStart(2,'0')]=[];
+  annivs.forEach(a=>{
+    const mm=(a.date||'').split('-')[0];
+    if(byMonth[mm]) byMonth[mm].push(a);
+  });
+  let html='<div class="anniv-timeline">';
+  for(let i=1;i<=12;i++){
+    const mm=String(i).padStart(2,'0');
+    const items=byMonth[mm].sort((a,b)=>a.date<b.date?-1:1);
+    if(items.length===0) continue;
+    const isCurrent=(mm===todayMM);
+    html+=`<div class="anniv-month-group${isCurrent?' current-month':''}">`;
+    html+=`<div class="anniv-month-header"><span class="anniv-month-label">${i}月</span></div>`;
+    items.forEach(a=>{
+      const dd=Number((a.date||'').split('-')[1]);
+      const isToday=(a.date===todayMmdd);
+      html+=`<div class="anniv-tl-item${isToday?' is-today':''}">
+        <div class="anniv-tl-card">
+          <span style="font-size:18px">${a.icon||'🎉'}</span>
+          <div style="flex:1;min-width:0">
+            <div class="anniv-tl-name"><span class="anniv-tl-day">${dd}日</span> ${escHtml(a.name)}${isToday?' 🎂':''}</div>
+            ${a.desc?`<div class="anniv-tl-desc">${escHtml(a.desc)}</div>`:''}
+          </div>
+          <button class="card-del" onclick="delAnniversary(${a.id})">削除</button>
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+  }
+  html+='</div>';
+  list.innerHTML=html;
 }
 function delAnniversary(id){
   const annivs=DB.getAnniversaries().filter(a=>a.id!==id);
