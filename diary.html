@@ -17,10 +17,11 @@
   --accent:#c4956a;--text:#333;--text-light:#666;--text-muted:#999;
   --border:#e0d8cc;--shadow:0 2px 8px rgba(0,0,0,.1);--radius:12px
 }
-body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
-#app{display:flex;min-height:100vh}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(--bg);color:var(--text)}
+#app{display:flex;height:100%;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 /* Sidebar */
-#sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0;flex-shrink:0;box-shadow:var(--shadow)}
+#sidebar{width:220px;height:100%;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0;flex-shrink:0;box-shadow:var(--shadow);overflow-y:auto}
 #sidebar h1{font-size:18px;font-weight:700;color:var(--primary-dark);padding:0 20px 20px;border-bottom:1px solid var(--border)}
 #sidebar h1 span{display:block;font-size:12px;color:var(--text-muted);font-weight:400;margin-top:2px}
 .nav-btn{display:flex;align-items:center;gap:10px;padding:12px 20px;cursor:pointer;font-size:14px;color:var(--text-light);border:none;background:none;width:100%;text-align:left;transition:.2s}
@@ -28,7 +29,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 .nav-btn.active{background:#e8f0e9;color:var(--primary-dark);font-weight:600;border-right:3px solid var(--primary)}
 .nav-btn .icon{font-size:18px;width:24px;text-align:center}
 /* Main */
-#main{flex:1;overflow-y:auto;padding:24px}
+#main{flex:1;height:100%;overflow-y:auto;padding:24px}
 .page{display:none}
 .page.active{display:block}
 .page-title{font-size:20px;font-weight:700;color:var(--primary-dark);margin-bottom:20px}
@@ -261,12 +262,12 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <button class="nav-btn" style="font-size:11px;padding:6px 10px" onclick="importData()">📥 復元</button>
   </div>
 </nav>
-<div id="restore-banner" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 16px;margin:8px;font-size:13px">
+<main id="main">
+<div id="restore-banner" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px">
   ⚠️ 映画・本 / Ambitionのデータが見つかりません。Gistの旧バージョンから復元しますか？
   <button onclick="restoreFromGistV26()" style="margin-left:12px;padding:4px 14px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-weight:600">復元する</button>
   <button onclick="document.getElementById('restore-banner').style.display='none'" style="margin-left:6px;padding:4px 10px;background:transparent;border:1px solid #aaa;border-radius:6px;cursor:pointer">閉じる</button>
 </div>
-<main id="main">
   <!-- Calendar -->
   <div class="page active" id="page-calendar">
     <div id="anniv-banner"><h3 style="display:flex;align-items:center;justify-content:space-between">🎉 今週の記念日<button onclick="showPage('anniversary')" style="font-size:11px;padding:2px 8px;border:1px solid var(--primary);color:var(--primary);background:white;border-radius:6px;cursor:pointer">＋ 追加</button></h3><div class="anniv-items" id="banner-items"></div></div>
