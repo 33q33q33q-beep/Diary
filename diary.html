@@ -406,10 +406,12 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <input type="text" id="jsonbinKeyInput" placeholder="GitHubトークンを貼り付け（ghp_...）">
     <input type="text" id="jsonbinBinInput" placeholder="Gist ID（2台目以降：既存のIDを入力）">
     <p style="font-size:11px;color:var(--text-muted)">※ 初回はGist IDを空欄にすると自動作成されます</p>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn" onclick="SYNC.copySetupLink()" style="font-size:11px">📱 設定リンクをコピー</button>
       <button class="btn" onclick="document.getElementById('jsonbin-modal').classList.remove('open')">キャンセル</button>
       <button class="btn btn-primary" onclick="SYNC.saveSettings()">保存して同期</button>
     </div>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:8px">📱 iPhoneなど他の端末でも使う場合：「設定リンクをコピー」→ Safariで開くと自動設定されます</p>
   </div>
 </div>
 
@@ -1388,6 +1390,14 @@ const SYNC = {
     document.getElementById('jsonbin-modal').classList.add('open');
   },
 
+  copySetupLink(){
+    const t=document.getElementById('jsonbinKeyInput').value.trim()||this.key;
+    const g=document.getElementById('jsonbinBinInput').value.trim()||this.gistId;
+    if(!t){ alert('先にトークンを入力してください'); return; }
+    const url=location.origin+location.pathname+'#token='+encodeURIComponent(t)+(g?'&gist='+encodeURIComponent(g):'');
+    navigator.clipboard.writeText(url).then(()=>alert('設定リンクをコピーしました！\niPhoneのSafariで開くと自動設定されます。\n\n※このリンクにはトークンが含まれます。人に共有しないでください。')).catch(()=>{prompt('このリンクをコピーしてください：',url);});
+  },
+
   async saveSettings(){
     const key = document.getElementById('jsonbinKeyInput').value.trim();
     const gist = document.getElementById('jsonbinBinInput').value.trim();
@@ -1532,6 +1542,17 @@ function renderCurrentPage(){
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────────
+// URLハッシュから同期設定を自動読み込み
+(function(){
+  const h=location.hash.slice(1);
+  if(!h) return;
+  const p=new URLSearchParams(h);
+  const t=p.get('token'), g=p.get('gist');
+  if(t){ localStorage.setItem('gh_token',t); }
+  if(g){ localStorage.setItem('gh_gist',g); }
+  if(t||g){ history.replaceState(null,'',location.pathname); }
+})();
+
 SYNC.init();
 initCalendar();
 
