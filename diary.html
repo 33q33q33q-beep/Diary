@@ -245,7 +245,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 <main id="main">
   <!-- Calendar -->
   <div class="page active" id="page-calendar">
-    <div id="anniv-banner"><h3>🎉 今週の記念日</h3><div class="anniv-items" id="banner-items"></div></div>
+    <div id="anniv-banner"><h3 style="display:flex;align-items:center;justify-content:space-between">🎉 今週の記念日<button onclick="showPage('anniversary')" style="font-size:11px;padding:2px 8px;border:1px solid var(--primary);color:var(--primary);background:white;border-radius:6px;cursor:pointer">＋ 追加</button></h3><div class="anniv-items" id="banner-items"></div></div>
     <div class="cal-nav">
       <button class="btn" onclick="calMove(-1)">◀</button>
       <h2 id="cal-title"></h2>
@@ -355,6 +355,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   <div id="modal-inner">
     <button id="modal-close" onclick="closeModal()">✕</button>
     <div id="modal-date"></div>
+    <div id="modal-birthday" style="display:none;background:#fff8f0;border:1px solid #f0c080;border-radius:8px;padding:7px 12px;margin-bottom:8px;font-size:13px;color:#a05000"></div>
     <div id="modal-weather"></div>
     <div class="mood-select" id="mood-select"></div>
     <div class="tags-row" id="tags-row"></div>
@@ -565,6 +566,15 @@ function addCalCell(grid,y,m,d,other,entries,annivs,todayKey,media){
   cell.onclick=()=>openModal(y,m,d);
   grid.appendChild(cell);
 }
+function deleteAnniversaryById(id){
+  const annivs=JSON.parse(localStorage.getItem('diary_annivs')||'[]').filter(a=>a.id!==id);
+  localStorage.setItem('diary_annivs',JSON.stringify(annivs));
+  const fb=JSON.parse(localStorage.getItem('diary_fb_birthdays')||'[]').filter(a=>a.id!==id);
+  localStorage.setItem('diary_fb_birthdays',JSON.stringify(fb));
+  SYNC.schedule();
+  renderCalendar();
+  showAnnivBanner();
+}
 function showAnnivBanner(){
   const n=new Date();
   const dow=n.getDay();
@@ -589,8 +599,8 @@ function showAnnivBanner(){
   banner.style.display='block';
   document.getElementById('banner-items').innerHTML=weekAnnivs.map(a=>{
     const today=a.isToday?' 🎂':'';
-    return `🎊 <b>${a.label}</b> ${a.name}${today}`;
-  }).join('<br>');
+    return `<div style="display:flex;align-items:center;gap:8px;margin:3px 0"><span>🎊 <b>${a.label}</b> ${a.name}${today}</span><button onclick="deleteAnniversaryById(${a.id})" style="font-size:11px;padding:1px 7px;border:1px solid #fcc;color:#c00;background:white;border-radius:4px;cursor:pointer">削除</button></div>`;
+  }).join('');
 }
 
 // ─── Modal / Editor ──────────────────────────────────────────────────────────
@@ -659,6 +669,11 @@ function openModal(y,m,d){
   const entries=DB.getEntries();
   const entry=entries[key]||{};
   document.getElementById('modal-date').textContent=`${y}年${m}月${d}日（${['日','月','火','水','木','金','土'][new Date(y,m-1,d).getDay()]}）`;
+  const _mmdd=`${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const _bdays=DB.getAnniversaries().filter(a=>a.date===_mmdd);
+  const _bEl=document.getElementById('modal-birthday');
+  if(_bdays.length){_bEl.innerHTML='🎂 '+_bdays.map(a=>a.name).join('　');_bEl.style.display='block';}
+  else{_bEl.style.display='none';}
   document.getElementById('diaryText').value=entry.content||'';
   currentPhotos=[...(entry.photos||[])];
   currentTags=[...(entry.tags||[])];
