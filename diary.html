@@ -491,7 +491,7 @@ function renderCalendar(){
   const total=grid.children.length-7;
   const remaining=total%7===0?0:7-(total%7);
   for(let d=1;d<=remaining;d++){
-    addCalCell(grid, calYear, calMonth+2>12?calYear+1:calYear, calMonth+2>12?1:calMonth+2, d, true, entries, annivs, todayKey, media);
+    addCalCell(grid, calMonth+2>12?calYear+1:calYear, calMonth+2>12?1:calMonth+2, d, true, entries, annivs, todayKey, media);
   }
 }
 const MOOD_BG={
