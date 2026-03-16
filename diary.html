@@ -525,20 +525,21 @@ function initCalendar(){
   const n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth();
   renderCalendar();
   showAnnivBanner();
-  // スワイプで月移動
+  // スワイプ・ドラッグで月移動（タッチ・マウス共通）
   const page=document.getElementById('page-calendar');
-  let _tx=0, _ty=0;
-  page.addEventListener('touchstart',e=>{
-    _tx=e.touches[0].clientX;
-    _ty=e.touches[0].clientY;
-  },{passive:true});
-  page.addEventListener('touchend',e=>{
-    const dx=e.changedTouches[0].clientX-_tx;
-    const dy=e.changedTouches[0].clientY-_ty;
+  let _px=0,_py=0,_dragging=false;
+  page.addEventListener('pointerdown',e=>{
+    _px=e.clientX; _py=e.clientY; _dragging=true;
+  });
+  page.addEventListener('pointerup',e=>{
+    if(!_dragging) return;
+    _dragging=false;
+    const dx=e.clientX-_px, dy=e.clientY-_py;
     if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){
       calMove(dx<0?1:-1);
     }
-  },{passive:true});
+  });
+  page.addEventListener('pointercancel',()=>{_dragging=false;});
 }
 function calMove(d){
   calMonth+=d;
