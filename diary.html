@@ -259,8 +259,9 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <div class="sync-status"><div class="sync-dot" id="sync-dot"></div><span id="sync-label">未設定</span></div>
     <button class="nav-btn" style="font-size:12px;padding:8px 10px;margin-top:4px;font-weight:600" onclick="SYNC.smartSync()">🔄 同期</button>
     <button class="nav-btn" style="font-size:11px;padding:5px 10px;color:var(--text-muted)" onclick="SYNC.openSettings()">⚙️ 設定変更</button>
-    <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="exportData()">📤 バックアップ</button>
-    <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="importData()">📥 復元</button>
+    <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="SYNC.gistRestore()">☁️ Gistから復元</button>
+    <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="exportData()">📤 ファイル保存</button>
+    <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="importData()">📥 ファイル復元</button>
   </div>
 </nav>
 <main id="main">
@@ -1641,6 +1642,50 @@ const SYNC = {
     } catch(e){
       updateSyncUI('error');
       alert('ダウンロードエラー: '+e.message);
+    }
+  },
+
+  // Gist履歴から最もデータが多いバージョンを探して復元
+  async gistRestore(){
+    if(!this.key||!this.gistId){ this.openSettings(); return; }
+    if(!confirm('Gistの履歴から最もデータが多いバージョンを探して復元します。\n現在のローカルデータは上書きされる場合があります。続けますか？')) return;
+    updateSyncUI('syncing');
+    try{
+      const r=await fetch(`${this.BASE}/${this.gistId}`,{headers:this.headers()});
+      const j=await r.json();
+      const history=j.history||[];
+      const results=[];
+      let done=0;
+      await Promise.all(history.map(async(h,i)=>{
+        try{
+          const rv=await fetch(`${this.BASE}/${this.gistId}/${h.version}`,{headers:this.headers()});
+          const v=await rv.json();
+          const file=v.files?v.files[Object.keys(v.files)[0]]:null;
+          if(!file||file.truncated){done++;return;}
+          const d=JSON.parse(file.content||'{}');
+          results.push({
+            i, version:h.version, date:h.committed_at, data:d,
+            score: Object.keys(d.entries||{}).length+(d.media||[]).length+(d.goals||[]).length+(d.todos||[]).length
+          });
+        }catch(e){}
+        done++;
+      }));
+      if(!results.length){ alert('復元できるバージョンが見つかりませんでした'); updateSyncUI('error'); return; }
+      const best=results.reduce((a,b)=>a.score>=b.score?a:b);
+      const d=best.data;
+      const eCount=Object.keys(d.entries||{}).length;
+      if(!confirm(`最多データバージョンを見つけました (${best.date.substring(0,10)})\n日記=${eCount}件 メディア=${(d.media||[]).length}件 Goals=${(d.goals||[]).length}件\n\nこのバージョンで復元しますか？`)) { updateSyncUI('synced'); return; }
+      if(eCount>0) localStorage.setItem('diary_entries',JSON.stringify(d.entries));
+      if((d.media||[]).length>0)  localStorage.setItem('diary_media',  JSON.stringify(d.media));
+      if((d.goals||[]).length>0)  localStorage.setItem('diary_goals',  JSON.stringify(d.goals));
+      if((d.todos||[]).length>0)  localStorage.setItem('diary_todos',  JSON.stringify(d.todos));
+      if((d.annivs||[]).length>0) localStorage.setItem('diary_annivs', JSON.stringify(d.annivs));
+      sessionStorage.setItem('needs_push','1');
+      alert('復元完了！Gistへ同期してリロードします。');
+      location.reload();
+    }catch(e){
+      updateSyncUI('error');
+      alert('Gist復元エラー: '+e.message);
     }
   }
 };
