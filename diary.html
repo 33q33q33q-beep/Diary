@@ -1239,6 +1239,11 @@ function renderAnniversaries(){
   }
   html+='</div>';
   list.innerHTML=html;
+  // 今月へスクロール
+  requestAnimationFrame(()=>{
+    const cur=list.querySelector('.current-month');
+    if(cur) cur.scrollIntoView({behavior:'smooth',block:'start'});
+  });
 }
 function delAnniversary(id){
   const annivs=DB.getAnniversaries().filter(a=>a.id!==id);
