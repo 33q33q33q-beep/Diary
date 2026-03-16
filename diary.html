@@ -213,7 +213,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .photo-del{position:absolute;top:-6px;right:-6px;background:#e00;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
 /* Anniversary banner */
-#anniv-banner{display:none;background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:10px 14px;margin-bottom:14px}
+#anniv-banner{display:none;background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:10px 14px;margin-top:14px}
 #anniv-banner h3{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
 #banner-items{display:flex;flex-wrap:wrap;gap:6px}
 .anniv-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#fff;border:1px solid #f0c080;border-radius:20px;font-size:12px;cursor:context-menu;user-select:none;white-space:nowrap}
@@ -230,13 +230,19 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   #sidebar h1::first-line{font-size:16px}
   .nav-btn span:not(.icon){display:none}
   .nav-btn{padding:14px;justify-content:center}
+  #sync-area{padding:4px 0}
+  #sync-area .sync-status{display:none}
+  #sync-area .nav-btn{padding:10px;font-size:16px}
   #main{padding:12px}
   .cal-day{height:72px;padding:4px 2px}
   .cal-num{font-size:11px}
   .cal-thumb{max-height:56px}
   .cal-mood{font-size:11px}
+  .cal-holiday-name,.cal-memorial-name{font-size:9px}
   .todo-sections{grid-template-columns:1fr}
   #modal-inner{padding:16px}
+  .cal-toggles{gap:4px}
+  .cal-toggle{font-size:11px;padding:3px 8px}
 }
 .empty{text-align:center;padding:40px;color:var(--text-muted);font-size:14px}
 #sync-area{padding:12px 16px;border-top:1px solid var(--border);margin-top:auto}
@@ -284,7 +290,9 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 </div>
   <!-- Calendar -->
   <div class="page active" id="page-calendar">
-    <div id="anniv-banner"><h3 style="display:flex;align-items:center;justify-content:space-between">🎉 今週の記念日<button onclick="showPage('anniversary')" style="font-size:11px;padding:2px 8px;border:1px solid var(--primary);color:var(--primary);background:white;border-radius:6px;cursor:pointer">＋ 追加</button></h3><div class="anniv-items" id="banner-items"></div></div>
+    <div id="mobile-sync-banner" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;text-align:center">
+      ⚙️ 同期が未設定です。<button onclick="SYNC.openSettings()" style="margin-left:8px;padding:3px 12px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-weight:600">設定する</button>
+    </div>
     <div class="cal-nav">
       <button class="btn" onclick="calMove(-1)">◀</button>
       <h2 id="cal-title"></h2>
@@ -300,6 +308,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <div class="cal-header">水</div><div class="cal-header">木</div><div class="cal-header">金</div>
       <div class="cal-header">土</div>
     </div>
+    <div id="anniv-banner" style="margin-top:14px"><h3 style="display:flex;align-items:center;justify-content:space-between">🎉 今週の記念日<button onclick="showPage('anniversary')" style="font-size:11px;padding:2px 8px;border:1px solid var(--primary);color:var(--primary);background:white;border-radius:6px;cursor:pointer">＋ 追加</button></h3><div class="anniv-items" id="banner-items"></div></div>
   </div>
   <!-- Timeline -->
   <div class="page" id="page-timeline">
@@ -1552,8 +1561,20 @@ const SYNC = {
       if(this.key) this.push().catch(()=>updateSyncUI('error'));
       return;
     }
-    if(this.key) this.pull(true).catch(()=>updateSyncUI('error'));
-    else updateSyncUI('no-key');
+    if(this.key){
+      this.pull(true).then(()=>{
+        renderCalendar(); showAnnivBanner();
+      }).catch(e=>{
+        updateSyncUI('error');
+        // モバイルではエラーを目に見える形で表示
+        if(window.innerWidth<=600) alert('同期エラー: '+e.message+'\n\n設定を確認してください');
+      });
+    } else {
+      updateSyncUI('no-key');
+      // モバイルでは未設定バナーを表示
+      const mb=document.getElementById('mobile-sync-banner');
+      if(mb&&window.innerWidth<=600) mb.style.display='block';
+    }
   },
 
   openSettings(){
