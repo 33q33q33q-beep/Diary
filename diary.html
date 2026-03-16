@@ -201,9 +201,11 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .photo-del{position:absolute;top:-6px;right:-6px;background:#e00;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
 /* Anniversary banner */
-#anniv-banner{display:none;background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:12px 16px;margin-bottom:16px}
-#anniv-banner h3{font-size:14px;font-weight:600;color:var(--accent);margin-bottom:6px}
-#anniv-banner .anniv-items{font-size:13px;color:var(--text)}
+#anniv-banner{display:none;background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:10px 14px;margin-bottom:14px}
+#anniv-banner h3{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+#banner-items{display:flex;flex-wrap:wrap;gap:6px}
+.anniv-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#fff;border:1px solid #f0c080;border-radius:20px;font-size:12px;cursor:context-menu;user-select:none;white-space:nowrap}
+.anniv-chip.is-today{background:#ffe0b0;border-color:#e0a040;font-weight:600}
 /* Photo lightbox */
 #lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center}
 #lightbox.open{display:flex}
@@ -667,8 +669,7 @@ function showAnnivBanner(baseDate){
   const weekLabel=isCurrentWeek?'今週の記念日':`${n.getMonth()+1}/${n.getDate()} の週の記念日`;
   banner.querySelector('h3').childNodes[0].textContent=weekLabel+' ';
   document.getElementById('banner-items').innerHTML=weekAnnivs.map(a=>{
-    const todayMark=a.isToday?' ⬅️今日':'';
-    return `<div data-anniv-id="${a.id}" style="padding:2px 0;cursor:context-menu;user-select:none" oncontextmenu="(function(e){e.preventDefault();e.stopPropagation();_ctxAnnivId=${a.id};const m=document.getElementById('anniv-ctx');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.style.display='block';})(event)">${a.icon||'🎉'} <b>${a.label}</b> ${a.name}${todayMark}</div>`;
+    return `<span class="anniv-chip${a.isToday?' is-today':''}" data-anniv-id="${a.id}" oncontextmenu="(function(e){e.preventDefault();e.stopPropagation();_ctxAnnivId=${a.id};const m=document.getElementById('anniv-ctx');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.style.display='block';})(event)">${a.icon||'🎉'} <b>${a.label}</b> ${escHtml(a.name)}${a.isToday?' 🎂':''}</span>`;
   }).join('');
 }
 
@@ -1453,10 +1454,15 @@ const SYNC = {
   init(){
     localStorage.removeItem('jb_key');
     localStorage.removeItem('jb_bin');
-    // ダウンロード後リロード時はpull不要（データはlocalStorageに存在）
     if(sessionStorage.getItem('just_pulled')){
       sessionStorage.removeItem('just_pulled');
       updateSyncUI('synced');
+      return;
+    }
+    // 復元後リロード: Gistへpushして他デバイスに反映
+    if(sessionStorage.getItem('needs_push')){
+      sessionStorage.removeItem('needs_push');
+      if(this.key) this.push().catch(()=>updateSyncUI('error'));
       return;
     }
     if(this.key) this.pull(true).catch(()=>updateSyncUI('error'));
@@ -1738,7 +1744,8 @@ function restoreFromGistV26(){
     if((d.goals||[]).length>0)  localStorage.setItem('diary_goals',  JSON.stringify(d.goals));
     if((d.todos||[]).length>0)  localStorage.setItem('diary_todos',  JSON.stringify(d.todos));
     if((d.annivs||[]).length>0) localStorage.setItem('diary_annivs', JSON.stringify(d.annivs));
-    alert('復元完了！\n日記='+Object.keys(d.entries||{}).length+'件\nメディア='+(d.media||[]).length+'件\nGoals='+(d.goals||[]).length+'件\nOKでリロードします。');
+    sessionStorage.setItem('needs_push','1');
+    alert('復元完了！\n日記='+Object.keys(d.entries||{}).length+'件\nメディア='+(d.media||[]).length+'件\nGoals='+(d.goals||[]).length+'件\nOKでリロード＆Gistへ同期します。');
     location.reload();
   }).catch(e=>{alert('復元失敗: '+e.message);});
 }
