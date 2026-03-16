@@ -255,11 +255,10 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   <button class="nav-btn" onclick="showPage('todo')" id="nav-todo"><span class="icon">🎯</span><span>Ambition・Aspiration</span></button>
   <div id="sync-area">
     <div class="sync-status"><div class="sync-dot" id="sync-dot"></div><span id="sync-label">未設定</span></div>
-    <button id="btn-sync" onclick="SYNC.openSettings()">⚙️ 同期設定</button>
-    <button class="nav-btn" style="font-size:11px;padding:6px 10px;margin-top:4px" onclick="SYNC.push()">☁️ アップロード</button>
-    <button class="nav-btn" style="font-size:11px;padding:6px 10px;margin-top:2px" onclick="SYNC.pullAndReload()">📲 ダウンロード</button>
-    <button class="nav-btn" style="font-size:11px;padding:6px 10px;margin-top:2px" onclick="exportData()">📤 バックアップ</button>
-    <button class="nav-btn" style="font-size:11px;padding:6px 10px" onclick="importData()">📥 復元</button>
+    <button class="nav-btn" style="font-size:12px;padding:8px 10px;margin-top:4px;font-weight:600" onclick="SYNC.smartSync()">🔄 同期</button>
+    <button class="nav-btn" style="font-size:11px;padding:5px 10px;color:var(--text-muted)" onclick="SYNC.openSettings()">⚙️ 設定変更</button>
+    <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="exportData()">📤 バックアップ</button>
+    <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="importData()">📥 復元</button>
   </div>
 </nav>
 <main id="main">
@@ -1460,7 +1459,7 @@ const SYNC = {
       updateSyncUI('synced');
       return;
     }
-    if(this.key) this.pull().catch(()=>updateSyncUI('error'));
+    if(this.key) this.pull(true).catch(()=>updateSyncUI('error'));
     else updateSyncUI('no-key');
   },
 
@@ -1528,15 +1527,17 @@ const SYNC = {
   async push(){
     if(!this.key||!this.gistId) return;
     updateSyncUI('syncing');
+    const data = this.getData();
     const r = await fetch(`${this.BASE}/${this.gistId}`,{
       method:'PATCH', headers:this.headers(),
-      body: JSON.stringify({files:{[this.FILE]:{content:JSON.stringify(this.getData())}}})
+      body: JSON.stringify({files:{[this.FILE]:{content:JSON.stringify(data)}}})
     });
     if(!r.ok) throw new Error((await r.json()).message||r.status);
+    localStorage.setItem('diary_last_synced_at', String(data.updatedAt));
     updateSyncUI('synced');
   },
 
-  async pull(){
+  async pull(silent=false){
     if(!this.key||!this.gistId) return;
     updateSyncUI('syncing');
     const r = await fetch(`${this.BASE}/${this.gistId}`,{headers:this.headers()});
@@ -1544,10 +1545,8 @@ const SYNC = {
     const j = await r.json();
     const fileInfo = j.files[this.FILE];
     if(!fileInfo) throw new Error('Gistにデータファイルが見つかりません');
-    // Handle GitHub Gist truncation (files > 1MB are truncated)
     let content;
     if(fileInfo.truncated){
-      // Try with auth first, fallback without
       let rawR = await fetch(fileInfo.raw_url, {headers:{'Authorization':'Bearer '+this.key}});
       if(!rawR.ok) rawR = await fetch(fileInfo.raw_url);
       if(!rawR.ok) throw new Error('rawデータ取得失敗: '+rawR.status);
@@ -1559,6 +1558,16 @@ const SYNC = {
     let d;
     try { d = JSON.parse(content); }
     catch(e){ throw new Error('データ解析エラー: '+e.message); }
+
+    // updatedAtチェック: Gistが古ければサイレント時はスキップ
+    const gistUpdatedAt = d.updatedAt || 0;
+    const localSyncedAt = parseInt(localStorage.getItem('diary_last_synced_at')||'0');
+    if(silent && gistUpdatedAt > 0 && gistUpdatedAt <= localSyncedAt){
+      console.log('Gistは最新のローカルと同じか古いためスキップ');
+      updateSyncUI('synced');
+      return;
+    }
+
     const errors=[];
     const trySet=(key,val)=>{
       try{ localStorage.setItem(key, JSON.stringify(val)); }
@@ -1566,6 +1575,7 @@ const SYNC = {
     };
     const toArr=v=>Array.isArray(v)?v:[];
     const toObj=v=>(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
+
     if(d.entries){
       const localCount=Object.keys(DB.getEntries()).length;
       const gistCount=Object.keys(toObj(d.entries)).length;
@@ -1575,8 +1585,7 @@ const SYNC = {
         trySet('diary_entries', toObj(d.entries));
       }
     }
-    if(d.annivs)  trySet('diary_annivs',  toArr(d.annivs));
-    // media/todos/goals: Gistが空でローカルにデータがある場合は保持
+    if(d.annivs) trySet('diary_annivs', toArr(d.annivs));
     const gistMedia=toArr(d.media); const localMedia=DB.getMedia();
     if(gistMedia.length===0&&localMedia.length>0){ console.warn('Gistのメディアが0件のためローカルを保持'); }
     else if(d.media) trySet('diary_media', gistMedia);
@@ -1586,19 +1595,41 @@ const SYNC = {
     const gistGoals=toArr(d.goals); const localGoals=DB.getGoals();
     if(gistGoals.length===0&&localGoals.length>0){ console.warn('GistのGoalsが0件のためローカルを保持'); }
     else if(d.goals) trySet('diary_goals', gistGoals);
-    if(d.visions)   trySet('diary_visions',    toArr(d.visions));
-    if(d.userTags)  trySet('diary_user_tags',  toArr(d.userTags));
+    if(d.visions)  trySet('diary_visions',   toArr(d.visions));
+    if(d.userTags) trySet('diary_user_tags', toArr(d.userTags));
+
+    if(gistUpdatedAt) localStorage.setItem('diary_last_synced_at', String(gistUpdatedAt));
     if(errors.length) alert('一部のデータを保存できませんでした:\n'+errors.join('\n'));
     updateSyncUI('synced');
-    alert('取得完了\n日記: '+Object.keys(d.entries||{}).length+'件\n記念日: '+(d.annivs||[]).length+'件\nTODO: '+(d.todos||[]).length+'件');
+    if(!silent) alert('取得完了\n日記: '+Object.keys(d.entries||{}).length+'件\n記念日: '+(d.annivs||[]).length+'件\nTODO: '+(d.todos||[]).length+'件');
+  },
+
+  async smartSync(){
+    if(!this.key||!this.gistId){ this.openSettings(); return; }
+    updateSyncUI('syncing');
+    try{
+      await this.pull(true);   // サイレントでGistの最新を取得
+      await this.push();       // ローカル（マージ済み）をGistへ送信
+      localStorage.setItem('diary_last_synced_at', String(Date.now()));
+      updateSyncUI('synced');
+      renderCalendar(); showAnnivBanner();
+      // ステータスに一時的に「完了」表示
+      const label=document.getElementById('sync-label');
+      const orig=label.textContent;
+      label.textContent='同期完了 ✓';
+      setTimeout(()=>{ label.textContent=orig; }, 2000);
+    } catch(e){
+      updateSyncUI('error');
+      alert('同期エラー: '+e.message);
+    }
   },
 
   async pullAndReload(){
-    if(!this.key){ alert('同期設定からトークンを設定してください'); return; }
-    if(!this.gistId){ alert('同期設定からGist IDを設定してください'); return; }
+    if(!this.key){ this.openSettings(); return; }
+    if(!this.gistId){ this.openSettings(); return; }
     try{
       updateSyncUI('syncing');
-      await this.pull();
+      await this.pull(false);
       sessionStorage.setItem('just_pulled','1');
       location.reload();
     } catch(e){
@@ -1660,7 +1691,7 @@ async function autoPull(){
   if(now-lastAutoPull < 30000) return;
   lastAutoPull=now;
   try{
-    await SYNC.pull();
+    await SYNC.pull(true);
     renderCalendar();
     showAnnivBanner();
   }catch(e){ console.warn('auto pull failed:',e); }
