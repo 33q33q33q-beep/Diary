@@ -57,6 +57,15 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 .cal-thumb{width:100%;max-height:80px;object-fit:contain;border-radius:5px;margin-top:4px;display:block;z-index:0;background:rgba(0,0,0,.04)}
 .cal-anniv-icon{position:absolute;top:2px;right:3px;font-size:9px;z-index:2;line-height:1}
 .cal-day.has-link::before{content:'🔗';position:absolute;bottom:2px;right:3px;font-size:8px;z-index:2}
+.cal-day.holiday{background:#fff0f0!important}
+.cal-day.holiday .cal-num{color:#e05050!important}
+.cal-day.memorial{background:#f0f0f8!important}
+.cal-holiday-name{font-size:8px;color:#e05050;line-height:1.2;text-align:center;z-index:1;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 2px}
+.cal-memorial-name{font-size:8px;color:#666;line-height:1.2;text-align:center;z-index:1;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 2px}
+/* Calendar filter toggles */
+.cal-toggles{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.cal-toggle{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:var(--surface);cursor:pointer;color:var(--text-muted);transition:.15s}
+.cal-toggle.on{background:var(--primary);color:#fff;border-color:var(--primary)}
 .cal-media-icons{font-size:10px;line-height:1;margin-top:2px;z-index:1}
 .cal-tags-dot{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;margin-top:2px;z-index:1}
 .cal-tags-dot span{width:5px;height:5px;border-radius:50%;background:var(--primary-dark);opacity:.5}
@@ -278,6 +287,10 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <h2 id="cal-title"></h2>
       <button class="btn" onclick="calMove(1)">▶</button>
       <button class="btn btn-primary" onclick="goToday()">今日</button>
+    </div>
+    <div class="cal-toggles">
+      <button class="cal-toggle" id="toggle-holiday" onclick="toggleCalFilter('holiday')">🎌 祝日</button>
+      <button class="cal-toggle" id="toggle-memorial" onclick="toggleCalFilter('memorial')">🕯️ 大切な日</button>
     </div>
     <div class="cal-grid" id="cal-grid">
       <div class="cal-header">日</div><div class="cal-header">月</div><div class="cal-header">火</div>
@@ -511,11 +524,53 @@ function goToday(){
   const n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth();
   renderCalendar();
 }
+// ─── 大切な日データ ───────────────────────────────────────────────────────────
+const MEMORIAL_DAYS=[
+  {date:'01-17',name:'阪神・淡路大震災',icon:'🕯️'},
+  {date:'03-11',name:'東日本大震災',    icon:'🕯️'},
+  {date:'06-23',name:'沖縄慰霊の日',    icon:'🕯️'},
+  {date:'08-06',name:'広島原爆の日',    icon:'🕯️'},
+  {date:'08-09',name:'長崎原爆の日',    icon:'🕯️'},
+  {date:'08-15',name:'終戦記念日',      icon:'🕯️'},
+];
+
+let _holidays={};  // { 'YYYY-MM-DD': '元日', ... }
+
+async function loadHolidays(year){
+  const ckey='hol_'+year;
+  const cached=sessionStorage.getItem(ckey);
+  if(cached){Object.assign(_holidays,JSON.parse(cached));return;}
+  try{
+    const r=await fetch(`https://holidays-jp.github.io/api/v1/${year}/date.json`);
+    if(!r.ok) return;
+    const data=await r.json();
+    Object.assign(_holidays,data);
+    sessionStorage.setItem(ckey,JSON.stringify(data));
+  }catch(e){console.warn('祝日API取得失敗',e);}
+}
+
+function getCalFilter(type){return localStorage.getItem('cal_'+type)!=='off';}
+function toggleCalFilter(type){
+  const on=getCalFilter(type);
+  localStorage.setItem('cal_'+type, on?'off':'on');
+  document.getElementById('toggle-'+type).classList.toggle('on',!on);
+  renderCalendar();
+}
+function initCalToggles(){
+  ['holiday','memorial'].forEach(t=>{
+    document.getElementById('toggle-'+t).classList.toggle('on',getCalFilter(t));
+  });
+}
+
 function renderCalendar(){
   const entries=DB.getEntries();
   const annivs=DB.getAnniversaries();
   const media=DB.getMedia();
   document.getElementById('cal-title').textContent=`${calYear}年 ${calMonth+1}月`;
+  // 必要な年の祝日を非同期ロード（まだなければ取得してから再描画）
+  if(!sessionStorage.getItem('hol_'+calYear)){
+    loadHolidays(calYear).then(()=>renderCalendar());
+  }
   const grid=document.getElementById('cal-grid');
   // Remove day cells (keep headers)
   while(grid.children.length>7) grid.removeChild(grid.lastChild);
@@ -558,6 +613,15 @@ function addCalCell(grid,y,m,d,other,entries,annivs,todayKey,media){
   if(dow===6) cell.classList.add('sat');
   const entry=entries[key];
   const mmdd=`${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+  // 祝日
+  const holidayName=getCalFilter('holiday')?_holidays[key]:null;
+  if(holidayName){ cell.classList.add('holiday'); }
+
+  // 大切な日
+  const memorial=getCalFilter('memorial')?MEMORIAL_DAYS.find(x=>x.date===mmdd):null;
+  if(memorial){ cell.classList.add('memorial'); }
+
   const dayAnnivs=annivs.filter(a=>a.date===mmdd);
   if(dayAnnivs.length){const ic=document.createElement('span');ic.className='cal-anniv-icon';ic.textContent=dayAnnivs[0].icon||'🎉';cell.appendChild(ic);}
   if(entry&&entry.link) cell.classList.add('has-link');
@@ -585,6 +649,19 @@ function addCalCell(grid,y,m,d,other,entries,annivs,todayKey,media){
   numEl.className='cal-num';
   numEl.textContent=d;
   cell.appendChild(numEl);
+
+  // 祝日名 or 大切な日名
+  if(holidayName){
+    const hl=document.createElement('div');
+    hl.className='cal-holiday-name';
+    hl.textContent=holidayName;
+    cell.appendChild(hl);
+  } else if(memorial){
+    const ml=document.createElement('div');
+    ml.className='cal-memorial-name';
+    ml.textContent=memorial.icon+' '+memorial.name;
+    cell.appendChild(ml);
+  }
 
   // Mood + Weather emoji
   const moodWeather=(entry?.mood||'')+(entry?.weather?.e||'');
@@ -743,8 +820,14 @@ function openModal(y,m,d){
   document.getElementById('modal-date').textContent=`${y}年${m}月${d}日（${['日','月','火','水','木','金','土'][new Date(y,m-1,d).getDay()]}）`;
   const _mmdd=`${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   const _bdays=DB.getAnniversaries().filter(a=>a.date===_mmdd);
+  const _hday=_holidays[dateKey(y,m,d)];
+  const _memorial=MEMORIAL_DAYS.find(x=>x.date===_mmdd);
   const _bEl=document.getElementById('modal-birthday');
-  if(_bdays.length){_bEl.innerHTML='🎂 '+_bdays.map(a=>a.name).join('　');_bEl.style.display='block';}
+  const parts=[];
+  if(_bdays.length) parts.push('🎂 '+_bdays.map(a=>a.name).join('　'));
+  if(_hday) parts.push('🎌 '+_hday);
+  if(_memorial) parts.push(_memorial.icon+' '+_memorial.name);
+  if(parts.length){_bEl.innerHTML=parts.join('　／　');_bEl.style.display='block';}
   else{_bEl.style.display='none';}
   document.getElementById('diaryText').value=entry.content||'';
   currentPhotos=[...(entry.photos||[])];
@@ -1733,6 +1816,8 @@ function renderCurrentPage(){
 
 SYNC.init();
 initCalendar();
+initCalToggles();
+loadHolidays(new Date().getFullYear());
 
 // ─── 自動同期 ─────────────────────────────────────────────────────────────────
 let lastAutoPull=Date.now();
