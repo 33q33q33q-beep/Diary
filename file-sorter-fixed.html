@@ -1,0 +1,1886 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🗂️ ファイル仕分けアプリ</title>
+  <style>
+    :root {
+      --bg: #f0f0f8;
+      --surface: #ffffff;
+      --surface2: #e8e8f4;
+      --surface3: #dcdcee;
+      --border: #c4c4dc;
+      --accent: #5b4eff;
+      --accent-glow: rgba(91,78,255,0.09);
+      --text: #18182e;
+      --text-muted: #56567a;
+      --text-dim: #9898b8;
+      --success: #1e9653;
+      --warning: #c07010;
+      --error: #d02020;
+      --info: #1e6ec0;
+      --r: 10px;
+      --r-sm: 6px;
+      color-scheme: light;
+    }
+    :root[data-theme="dark"] {
+      --bg: #0d0d14;
+      --surface: #16161f;
+      --surface2: #1e1e2a;
+      --surface3: #252535;
+      --border: #2a2a3a;
+      --accent: #7c6eff;
+      --accent-glow: rgba(124,110,255,0.12);
+      --text: #e2e2ee;
+      --text-muted: #8080a0;
+      --text-dim: #505065;
+      --success: #4dbc7e;
+      --warning: #f5a623;
+      --error: #ff5f5f;
+      --info: #5fb8f5;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    #app { max-width: 860px; margin: 0 auto; padding: 28px 20px 60px; }
+
+    /* Header */
+    header {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 32px; padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo-icon { display: flex; align-items: center; flex-shrink: 0; }
+    .logo-icon svg { width: 54px; height: 54px; border-radius: 13px; display: block; }
+    header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+    header p { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+    .card-title {
+      font-size: 14px; font-weight: 600; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px; color: var(--text);
+    }
+
+    /* Folder zone */
+    .folder-drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--r);
+      padding: 52px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--surface);
+    }
+    .folder-drop-zone:hover { border-color: var(--accent); background: var(--accent-glow); }
+    .folder-drop-zone .dz-icon { font-size: 52px; margin-bottom: 14px; }
+    .folder-drop-zone h2 { font-size: 18px; margin-bottom: 8px; }
+    .folder-drop-zone p { color: var(--text-muted); font-size: 13px; }
+
+    .folder-info {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--r-sm); margin-bottom: 14px;
+    }
+    .folder-info .fi-icon { font-size: 26px; }
+    .folder-info .fi-name { font-weight: 600; font-size: 15px; }
+    .folder-info .fi-stats { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+
+    /* Method cards */
+    .methods-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+      gap: 10px; margin-bottom: 16px;
+    }
+    .method-card {
+      background: var(--surface2); border: 2px solid var(--border);
+      border-radius: var(--r); padding: 16px 12px;
+      cursor: pointer; transition: all 0.18s; text-align: center;
+    }
+    .method-card:hover { border-color: var(--accent); background: var(--surface3); }
+    .method-card.selected { border-color: var(--accent); background: var(--accent-glow); }
+    .method-card .mc-icon { font-size: 30px; margin-bottom: 8px; }
+    .method-card .mc-label { font-size: 13px; font-weight: 600; }
+    .method-card .mc-desc { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Options panel */
+    .options-panel {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 18px; margin-bottom: 14px;
+    }
+    .options-panel h3 { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 14px; }
+    .option-row {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 10px; flex-wrap: wrap;
+    }
+    .option-row label { flex: 1; font-size: 13px; min-width: 180px; }
+    .option-row:last-child { margin-bottom: 0; }
+
+    /* Form controls */
+    input[type="number"], input[type="text"], select {
+      background: var(--surface3); border: 1px solid var(--border);
+      border-radius: var(--r-sm); color: var(--text);
+      padding: 6px 10px; font-size: 13px;
+    }
+    input[type="number"] { width: 72px; }
+    input[type="number"]:focus, input[type="text"]:focus, select:focus {
+      outline: none; border-color: var(--accent);
+    }
+    select { cursor: pointer; }
+
+    .toggle {
+      appearance: none; -webkit-appearance: none;
+      width: 36px; height: 20px; border-radius: 10px;
+      background: var(--border); cursor: pointer;
+      position: relative; transition: background 0.2s; flex-shrink: 0;
+    }
+    .toggle::after {
+      content: ''; position: absolute;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: white; top: 3px; left: 3px;
+      transition: transform 0.2s;
+    }
+    .toggle:checked { background: var(--accent); }
+    .toggle:checked::after { transform: translateX(16px); }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border-radius: var(--r-sm);
+      border: none; cursor: pointer;
+      font-size: 14px; font-weight: 600; transition: all 0.18s;
+      white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: #6a5aff; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--surface3); }
+    .btn-danger { background: var(--error); color: white; }
+    .btn-danger:hover { background: #e04f4f; transform: translateY(-1px); }
+
+    /* Banners */
+    .warning-banner, .info-banner, .error-banner {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px 14px; border-radius: var(--r-sm);
+      font-size: 13px; margin-bottom: 14px;
+    }
+    .warning-banner { background: rgba(245,166,35,0.1); border: 1px solid rgba(245,166,35,0.3); color: var(--warning); }
+    .info-banner { background: rgba(95,184,245,0.1); border: 1px solid rgba(95,184,245,0.3); color: var(--info); }
+    .error-banner { background: rgba(255,95,95,0.1); border: 1px solid rgba(255,95,95,0.3); color: var(--error); }
+
+    /* Preview tree */
+    .preview-tree {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 12px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--r);
+      padding: 16px; max-height: 380px; overflow-y: auto; line-height: 1.9;
+    }
+    .tree-folder { color: var(--accent); font-weight: 600; }
+    .tree-file { color: var(--text-muted); }
+    .tree-count { color: var(--text-dim); font-size: 11px; }
+
+    /* Progress */
+    .progress-bar-outer {
+      background: var(--surface2); border-radius: 999px; height: 8px; overflow: hidden;
+    }
+    .progress-bar-inner {
+      height: 100%; background: linear-gradient(90deg, var(--accent), #a78bff);
+      border-radius: 999px; transition: width 0.25s ease-out; width: 0%;
+    }
+    .progress-info {
+      display: flex; justify-content: space-between;
+      font-size: 12px; color: var(--text-muted); margin-top: 6px;
+    }
+
+    /* Stats */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px; margin-bottom: 16px;
+    }
+    .stat-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 14px; text-align: center;
+    }
+    .stat-value { font-size: 26px; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Result list */
+    .result-list { max-height: 220px; overflow-y: auto; }
+    .result-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 4px; border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .result-item:last-child { border-bottom: none; }
+
+    /* Loading */
+    .loading-overlay {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px 24px; text-align: center;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-lg {
+      width: 44px; height: 44px;
+      border: 3px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    /* Actions row */
+    .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+    /* Category pills */
+    .pill-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 999px;
+      font-size: 12px; background: var(--surface3); border: 1px solid var(--border);
+    }
+
+    /* Theme toggle button */
+    .theme-toggle {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 50%; width: 38px; height: 38px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; flex-shrink: 0;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .theme-toggle:hover { background: var(--surface3); transform: rotate(20deg); }
+
+    /* Duplicate group cards */
+    .dupe-list { display: flex; flex-direction: column; gap: 12px; }
+    .dupe-group-card {
+      border: 1px solid var(--border); border-radius: var(--r);
+      overflow: hidden; background: var(--surface);
+    }
+    .dupe-group-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 14px; background: var(--surface2);
+      font-size: 12px; color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .dupe-group-num {
+      font-weight: 700; color: var(--accent); font-size: 13px;
+    }
+    .dupe-file-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      border-left: 4px solid transparent;
+    }
+    .dupe-file-row:last-child { border-bottom: none; }
+    .dupe-file-row.keep  { border-left-color: var(--success); }
+    .dupe-file-row.move  { border-left-color: var(--warning); }
+    .dupe-file-icon { font-size: 26px; flex-shrink: 0; line-height: 1; }
+    .dupe-file-info { flex: 1; min-width: 0; }
+    .dupe-file-name {
+      font-size: 14px; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .dupe-file-path {
+      font-size: 11px; color: var(--text-dim); margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .dupe-file-badge {
+      font-size: 11px; font-weight: 600; padding: 2px 8px;
+      border-radius: 999px; flex-shrink: 0; white-space: nowrap;
+    }
+    .badge-keep { background: rgba(77,188,126,0.15); color: var(--success); }
+    .badge-move { background: rgba(245,166,35,0.15); color: var(--warning); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+    @media (max-width: 560px) {
+      .methods-grid { grid-template-columns: repeat(2, 1fr); }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <span class="logo-icon" id="header-icon"></span>
+    <div style="flex:1">
+      <h1>ファイル仕分けアプリ</h1>
+      <p>フォルダの中身を自動で整理・分類します</p>
+    </div>
+    <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="ダーク/ライト切替">🌙</button>
+  </header>
+  <main id="main"></main>
+</div>
+
+<script>
+// =====================================================================
+// APP ICON SVG
+// =====================================================================
+const APP_ICON_SVG = `<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF6B9D"/>
+      <stop offset="50%" stop-color="#C44DFF"/>
+      <stop offset="100%" stop-color="#4D9FFF"/>
+    </linearGradient>
+    <linearGradient id="card1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFE066"/>
+      <stop offset="100%" stop-color="#FFB800"/>
+    </linearGradient>
+    <linearGradient id="card2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#66F0C8"/>
+      <stop offset="100%" stop-color="#00C896"/>
+    </linearGradient>
+    <linearGradient id="card3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF8A65"/>
+      <stop offset="100%" stop-color="#FF5722"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="rgba(0,0,0,0.25)"/>
+    </filter>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="512" height="512" rx="110" fill="url(#bg1)"/>
+  <rect width="512" height="256" rx="110" fill="rgba(255,255,255,0.12)"/>
+  <rect y="256" width="512" height="256" rx="0" fill="rgba(0,0,0,0.06)"/>
+  <rect width="512" height="512" rx="110" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="3"/>
+
+  <!-- ファイルカード1（右・後ろ） -->
+  <g filter="url(#shadow)" transform="rotate(14, 256, 256)">
+    <rect x="220" y="120" width="190" height="240" rx="22" fill="url(#card3)"/>
+    <rect x="220" y="120" width="190" height="240" rx="22" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2.5"/>
+    <rect x="248" y="200" width="130" height="14" rx="7" fill="rgba(255,255,255,0.5)"/>
+    <rect x="248" y="226" width="90"  height="14" rx="7" fill="rgba(255,255,255,0.35)"/>
+    <rect x="248" y="252" width="110" height="14" rx="7" fill="rgba(255,255,255,0.35)"/>
+  </g>
+
+  <!-- ファイルカード2（左・後ろ） -->
+  <g filter="url(#shadow)" transform="rotate(-12, 256, 256)">
+    <rect x="100" y="130" width="190" height="240" rx="22" fill="url(#card2)"/>
+    <rect x="100" y="130" width="190" height="240" rx="22" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2.5"/>
+    <rect x="128" y="210" width="130" height="14" rx="7" fill="rgba(255,255,255,0.5)"/>
+    <rect x="128" y="236" width="80"  height="14" rx="7" fill="rgba(255,255,255,0.35)"/>
+    <rect x="128" y="262" width="100" height="14" rx="7" fill="rgba(255,255,255,0.35)"/>
+  </g>
+
+  <!-- メインファイルカード（手前・中央） -->
+  <g filter="url(#shadow)">
+    <rect x="148" y="108" width="216" height="272" rx="24" fill="url(#card1)"/>
+    <rect x="148" y="108" width="216" height="272" rx="24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="3"/>
+    <!-- 折り耳 -->
+    <path d="M316 108 L364 156 L316 156 Z" fill="rgba(0,0,0,0.12)"/>
+    <path d="M316 108 L364 156 L316 108 Z" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+    <!-- コンテンツライン -->
+    <rect x="180" y="200" width="148" height="16" rx="8" fill="rgba(180,120,0,0.35)"/>
+    <rect x="180" y="228" width="110" height="16" rx="8" fill="rgba(180,120,0,0.25)"/>
+    <rect x="180" y="256" width="130" height="16" rx="8" fill="rgba(180,120,0,0.25)"/>
+    <!-- ソート矢印 ↑↓ -->
+    <polygon points="250,298 264,322 236,322" fill="rgba(160,100,0,0.7)"/>
+    <polygon points="276,322 290,298 262,298" fill="rgba(160,100,0,0.7)"/>
+  </g>
+
+  <!-- 装飾ドット -->
+  <circle cx="96"  cy="96"  r="22" fill="#FF6B6B" opacity="0.85"/>
+  <circle cx="416" cy="96"  r="16" fill="#FFE066" opacity="0.9"/>
+  <circle cx="416" cy="416" r="26" fill="#66F0C8" opacity="0.85"/>
+  <circle cx="96"  cy="416" r="18" fill="#C44DFF" opacity="0.85"/>
+  <circle cx="256" cy="62"  r="12" fill="#fff"    opacity="0.5"/>
+</svg>`;
+
+// =====================================================================
+// THEME
+// =====================================================================
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = isDark ? '🌙' : '☀️';
+}
+
+// =====================================================================
+// FILE TYPE DEFINITIONS
+// =====================================================================
+const FILE_TYPES = {
+  '画像':         { ext: ['jpg','jpeg','png','gif','webp','svg','bmp','ico','tiff','heic','heif','raw','cr2','nef','arw','dng'], icon: '🖼️' },
+  '動画':         { ext: ['mp4','avi','mov','mkv','wmv','flv','webm','m4v','mpeg','mpg','3gp','ts'], icon: '🎬' },
+  '音楽':         { ext: ['mp3','wav','flac','aac','m4a','ogg','wma','opus','aiff','alac'], icon: '🎵' },
+  'ドキュメント': { ext: ['pdf','doc','docx','txt','odt','rtf','pages','md','markdown','epub','tex'], icon: '📄' },
+  'スプレッドシート': { ext: ['xls','xlsx','csv','ods','numbers','tsv'], icon: '📊' },
+  'プレゼン':     { ext: ['ppt','pptx','key','odp'], icon: '📽️' },
+  'アーカイブ':   { ext: ['zip','rar','7z','tar','gz','bz2','dmg','iso','pkg','tgz','xz'], icon: '📦' },
+  'コード':       { ext: ['js','ts','jsx','tsx','html','css','py','java','c','cpp','h','hpp','go','rs','rb','php','swift','kt','sh','bash','zsh','json','yaml','yml','toml','xml','sql','vue','svelte','dart','cs','lua','r','m'], icon: '💻' },
+  'フォント':     { ext: ['ttf','otf','woff','woff2','eot'], icon: '🔤' },
+  'その他':       { ext: [], icon: '📎' },
+};
+
+const SIZE_CATS = [
+  { label: '極小（100KB未満）',   max: 100 * 1024,           icon: '🔹' },
+  { label: '小（1MB未満）',       max: 1024 * 1024,          icon: '🔸' },
+  { label: '中（10MB未満）',      max: 10 * 1024 * 1024,     icon: '🟡' },
+  { label: '大（100MB未満）',     max: 100 * 1024 * 1024,    icon: '🟠' },
+  { label: '超大（100MB以上）',   max: Infinity,              icon: '🔴' },
+];
+
+// =====================================================================
+// STATE
+// =====================================================================
+let S = {
+  screen: 'select',     // select | method | preview | executing | result
+  loading: false,
+  dirHandle: null,
+  dirName: '',
+  files: [],            // { name, handle, parentHandle, parentPath, size, ext, type, lastModified }
+  totalSize: 0,
+  method: null,         // type | size | name | date | unused | dupes
+  opts: {
+    recursive: false,
+    includeHidden: false,
+    nameGroupBy: 'letter',
+    includeJapanese: true,
+    dateGroupBy: 'month',
+    dateFrom: '',
+    dateTo: '',
+    unusedDays: 30,
+    dupeKeep: 'newest',
+    sizeActive: [true, true, true, true, true], // one per SIZE_CATS entry
+    typeActive:     Object.fromEntries(Object.keys(FILE_TYPES).map(k => [k, true])),
+    typeFolderName: Object.fromEntries(Object.keys(FILE_TYPES).map(k => [k, k])),
+    extActive:        {},    // ext -> bool; absent/true = ON, false = OFF
+    projectKeywords:  [],    // [{keyword, folder}]
+    projectUnmatched: 'skip',
+  },
+  dupeGroups: null,     // null=未検索 | []| [{size, files:[...]}]
+  dupeScanning: false,
+  dupeError: null,      // エラーメッセージ（null=正常）
+  plan: [],             // [{ file, targetFolder }]
+  results: { ok: 0, err: 0, errors: [] },
+};
+
+// =====================================================================
+// RENDER
+// =====================================================================
+function render() {
+  const el = document.getElementById('main');
+  if (S.loading) {
+    el.innerHTML = renderLoading();
+    return;
+  }
+  switch (S.screen) {
+    case 'select':    el.innerHTML = renderSelect();    break;
+    case 'method':    el.innerHTML = renderMethod();    break;
+    case 'preview':   el.innerHTML = renderPreview();   break;
+    case 'executing': el.innerHTML = renderExecuting(); break;
+    case 'result':    el.innerHTML = renderResult();    break;
+  }
+}
+
+// ── Select ──────────────────────────────────────────────────────────
+function renderSelect() {
+  if (!window.showDirectoryPicker) {
+    return `<div style="text-align:center;padding:64px 24px">
+      <div style="font-size:64px;margin-bottom:16px">⚠️</div>
+      <h2 style="margin-bottom:10px">このブラウザは非対応です</h2>
+      <p style="color:var(--text-muted)">Google Chrome または Microsoft Edge の最新版をお使いください。</p>
+    </div>`;
+  }
+
+  const has = !!S.dirHandle;
+  return `
+    ${has ? `
+      <div class="folder-info">
+        <span class="fi-icon">📁</span>
+        <div>
+          <div class="fi-name">${esc(S.dirName)}</div>
+          <div class="fi-stats">${S.files.length.toLocaleString()}個のファイル ・ ${fmtSize(S.totalSize)}</div>
+        </div>
+        <button class="btn btn-secondary" style="margin-left:auto" onclick="doSelectFolder()">変更</button>
+      </div>
+    ` : `
+      <div class="folder-drop-zone" onclick="doSelectFolder()">
+        <div class="dz-icon">📂</div>
+        <h2>フォルダを選択</h2>
+        <p>クリックして仕分けするフォルダを選択してください</p>
+      </div>
+    `}
+
+    <div class="card" style="margin-top:14px">
+      <div class="card-title">⚙️ スキャン設定</div>
+      <div class="option-row">
+        <label>サブフォルダの中も対象に含める</label>
+        <input type="checkbox" class="toggle" ${S.opts.recursive ? 'checked' : ''}
+          onchange="S.opts.recursive=this.checked">
+      </div>
+      <div class="option-row">
+        <label>隠しファイルを含める（. から始まるファイル）</label>
+        <input type="checkbox" class="toggle" ${S.opts.includeHidden ? 'checked' : ''}
+          onchange="S.opts.includeHidden=this.checked">
+      </div>
+    </div>
+
+    <div class="actions">
+      ${!has ? `<button class="btn btn-primary" onclick="doSelectFolder()">📂 フォルダを選択</button>` : ''}
+      <button class="btn btn-primary" onclick="goMethod()" ${!has ? 'disabled' : ''}>
+        次へ：仕分け方法を選択 →
+      </button>
+    </div>
+  `;
+}
+
+// ── Method ───────────────────────────────────────────────────────────
+function renderMethod() {
+  const methods = [
+    { id:'type',    icon:'🗂️', label:'ファイルの種類',   desc:'画像・動画・文書など' },
+    { id:'size',    icon:'⚖️', label:'ファイルサイズ',   desc:'大・中・小に分類' },
+    { id:'name',    icon:'🔤', label:'ファイル名',       desc:'頭文字でフォルダ分け' },
+    { id:'date',    icon:'📅', label:'更新日',           desc:'年・月ごとに整理' },
+    { id:'unused',  icon:'🕰️', label:'未更新ファイル',   desc:'長期間更新なしを抽出' },
+    { id:'dupes',   icon:'🔍', label:'重複ファイル',     desc:'同じ内容のファイルを検出' },
+    { id:'ext',     icon:'📋', label:'拡張子別',         desc:'.pdf/.jpg/.mp4ごと' },
+    { id:'project', icon:'🏷️', label:'プロジェクト別',   desc:'キーワードで分類' },
+  ];
+
+  return `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="S.screen='select';render()">← 戻る</button>
+      <div style="display:flex;align-items:center;gap:10px;
+                  padding:10px 14px;background:var(--surface2);border:1px solid var(--border);
+                  border-radius:var(--r-sm);flex:1;min-width:0">
+        <span style="font-size:20px;flex-shrink:0">📁</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:14px;
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(S.dirName)}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${S.files.length.toLocaleString()}個 ・ ${fmtSize(S.totalSize)}</div>
+        </div>
+        <button class="btn btn-secondary" style="font-size:12px;padding:5px 12px;flex-shrink:0"
+          onclick="doSelectFolder()">📂 変更</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🗂️ 仕分け方法を選択</div>
+      <div class="methods-grid">
+        ${methods.map(m => `
+          <div class="method-card ${S.method===m.id?'selected':''}" onclick="onMethodSelect('${m.id}')">
+            <div class="mc-icon">${m.icon}</div>
+            <div class="mc-label">${m.label}</div>
+            <div class="mc-desc">${m.desc}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    ${S.method ? renderOptions() : ''}
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="goPreview()" ${canPreview()?'':'disabled'}>
+        プレビューを表示 →
+      </button>
+    </div>
+  `;
+}
+
+function toggleSizeCat(i) {
+  S.opts.sizeActive[i] = !S.opts.sizeActive[i];
+  const on   = S.opts.sizeActive[i];
+  const card = document.getElementById('size-cat-' + i);
+  if (card) {
+    card.style.background   = on ? 'rgba(124,110,255,0.1)' : 'var(--surface3)';
+    card.style.borderColor  = on ? 'rgba(124,110,255,0.4)' : 'var(--border)';
+    const tog = card.querySelector('.toggle');
+    if (tog) tog.checked = on;
+  }
+}
+
+// ── Type options render ───────────────────────────────────────────────
+function renderTypeOptions() {
+  const typeCounts = {};
+  for (const f of S.files) typeCounts[f.type] = (typeCounts[f.type] || 0) + 1;
+
+  const entries = Object.entries(FILE_TYPES);
+  const rows = entries.map(([name, info], i) => {
+    const on     = S.opts.typeActive[name] !== false;
+    const folder = S.opts.typeFolderName[name] ?? name;
+    const count  = typeCounts[name] || 0;
+    const merged = Object.entries(S.opts.typeFolderName)
+      .filter(([k, v]) => v === folder && k !== name && S.opts.typeActive[k] !== false).length > 0;
+    return `
+      <div id="type-cat-${i}"
+           style="display:flex;align-items:center;gap:10px;
+                  padding:9px 12px;border-radius:8px;margin-bottom:6px;
+                  background:${on ? 'rgba(124,110,255,0.1)' : 'var(--surface3)'};
+                  border:1px solid ${on ? 'rgba(124,110,255,0.4)' : 'var(--border)'};
+                  opacity:${count === 0 ? '0.45' : '1'}">
+        <span style="font-size:20px;width:26px;text-align:center;flex-shrink:0">${info.icon}</span>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:13px;font-weight:600;flex-shrink:0">${name}</span>
+            <span style="font-size:11px;color:var(--text-muted);flex-shrink:0">${count > 0 ? count.toLocaleString()+'個' : 'ファイルなし'}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:5px">
+            <span style="font-size:11px;color:var(--text-dim);flex-shrink:0">📁</span>
+            <input type="text" value="${esc(folder)}"
+                   style="font-size:12px;padding:3px 7px;height:26px;flex:1;min-width:80px;max-width:200px;
+                          border-color:${merged ? 'var(--success)' : 'var(--border)'}"
+                   title="フォルダ名（同じ名前にするとまとめられます）"
+                   onclick="event.stopPropagation()"
+                   onchange="updateTypeFolderName(${i},this.value)">
+            ${merged ? `<span style="font-size:10px;color:var(--success);flex-shrink:0">統合中</span>` : ''}
+          </div>
+        </div>
+        <input type="checkbox" class="toggle" ${on ? 'checked' : ''}
+               onclick="event.stopPropagation()" onchange="toggleTypeCat(${i})"
+               style="flex-shrink:0">
+      </div>`;
+  });
+
+  return `
+    <div class="options-panel">
+      <h3>🗂️ 種類別の分類設定</h3>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px"
+          onclick="Object.keys(FILE_TYPES).forEach(k=>{S.opts.typeActive[k]=true});render()">全てON</button>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px"
+          onclick="Object.keys(FILE_TYPES).forEach(k=>{S.opts.typeActive[k]=false});render()">全てOFF</button>
+        <span style="color:var(--text-dim);font-size:11px;align-self:center;margin:0 2px">プリセット:</span>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px"
+          onclick="applyTypePreset('media')" title="画像と動画を同じフォルダへ">🖼️+🎬 メディアにまとめる</button>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px"
+          onclick="applyTypePreset('docs')" title="ドキュメント・スプレッドシート・プレゼンを同じフォルダへ">📄 文書系をまとめる</button>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px"
+          onclick="applyTypePreset('reset')">↺ リセット</button>
+      </div>
+      ${rows.join('')}
+      <p style="font-size:11px;color:var(--text-muted);margin-top:8px">
+        💡 フォルダ名を同じにすると複数カテゴリがひとつのフォルダにまとまります。OFFのカテゴリは移動されません。
+      </p>
+    </div>`;
+}
+
+// ── Type helpers ─────────────────────────────────────────────────────
+function toggleTypeCat(i) {
+  const name = Object.keys(FILE_TYPES)[i];
+  if (name == null) return;
+  S.opts.typeActive[name] = !S.opts.typeActive[name];
+  const on   = S.opts.typeActive[name];
+  const card = document.getElementById('type-cat-' + i);
+  if (!card) return;
+  card.style.background  = on ? 'rgba(124,110,255,0.1)' : 'var(--surface3)';
+  card.style.borderColor = on ? 'rgba(124,110,255,0.4)' : 'var(--border)';
+  const tog = card.querySelector('.toggle');
+  if (tog) tog.checked = on;
+}
+
+function updateTypeFolderName(i, value) {
+  const name = Object.keys(FILE_TYPES)[i];
+  if (name != null) { S.opts.typeFolderName[name] = value.trim(); render(); }
+}
+
+function applyTypePreset(preset) {
+  const keys = Object.keys(FILE_TYPES);
+  keys.forEach(k => { S.opts.typeActive[k] = true; S.opts.typeFolderName[k] = k; });
+  if (preset === 'reset') { render(); return; }
+  if (preset === 'media') {
+    S.opts.typeFolderName['画像'] = 'メディア';
+    S.opts.typeFolderName['動画'] = 'メディア';
+  } else if (preset === 'docs') {
+    S.opts.typeFolderName['ドキュメント']     = '文書';
+    S.opts.typeFolderName['スプレッドシート'] = '文書';
+    S.opts.typeFolderName['プレゼン']         = '文書';
+  }
+  render();
+}
+
+function renderSizeOptions() {
+  // Count files + total bytes per category
+  const counts = SIZE_CATS.map(() => ({ n: 0, bytes: 0 }));
+  for (const f of S.files) {
+    for (let i = 0; i < SIZE_CATS.length; i++) {
+      if (f.size < SIZE_CATS[i].max) { counts[i].n++; counts[i].bytes += f.size; break; }
+    }
+  }
+
+  return `
+    <div class="options-panel">
+      <h3>⚖️ 対象カテゴリを選択</h3>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="btn btn-secondary" style="font-size:12px;padding:5px 12px"
+          onclick="S.opts.sizeActive=S.opts.sizeActive.map(()=>true);render()">全てON</button>
+        <button class="btn btn-secondary" style="font-size:12px;padding:5px 12px"
+          onclick="S.opts.sizeActive=S.opts.sizeActive.map(()=>false);render()">全てOFF</button>
+      </div>
+      ${SIZE_CATS.map((c, i) => {
+        const on = S.opts.sizeActive[i];
+        const { n, bytes } = counts[i];
+        return `
+          <div id="size-cat-${i}"
+               onclick="toggleSizeCat(${i})"
+               style="display:flex;align-items:center;gap:12px;
+                      padding:10px 12px;border-radius:8px;margin-bottom:6px;cursor:pointer;
+                      background:${on ? 'rgba(124,110,255,0.1)' : 'var(--surface3)'};
+                      border:1px solid ${on ? 'rgba(124,110,255,0.4)' : 'var(--border)'};
+                      opacity:${n === 0 ? '0.45' : '1'}">
+            <span style="font-size:22px;width:28px;text-align:center">${c.icon}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600">${c.label}</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:1px">
+                ${n > 0 ? `${n.toLocaleString()}個 ・ ${fmtSize(bytes)}` : 'ファイルなし'}
+              </div>
+            </div>
+            <input type="checkbox" class="toggle" ${on ? 'checked' : ''}
+              onclick="event.stopPropagation()" onchange="toggleSizeCat(${i})">
+          </div>`;
+      }).join('')}
+      <p style="font-size:12px;color:var(--text-muted);margin-top:10px">
+        OFF にしたカテゴリのファイルは移動されずそのまま残ります。
+      </p>
+    </div>`;
+}
+
+function canPreview() {
+  if (!S.method) return false;
+  if (S.method === 'dupes')   return S.dupeGroups && S.dupeGroups.length > 0;
+  if (S.method === 'project') return S.opts.projectKeywords.some(kw => kw.keyword.trim() && kw.folder.trim());
+  return true;
+}
+
+function renderOptions() {
+  switch (S.method) {
+    case 'type': return renderTypeOptions();
+
+    case 'size': return renderSizeOptions();
+
+    case 'name': return `
+      <div class="options-panel">
+        <h3>🔤 ファイル名別の設定</h3>
+        <div class="option-row">
+          <label>グループ分け方法</label>
+          <select onchange="S.opts.nameGroupBy=this.value;render()">
+            <option value="letter" ${S.opts.nameGroupBy==='letter'?'selected':''}>頭文字 1文字ごと（A, B, C…）</option>
+            <option value="range"  ${S.opts.nameGroupBy==='range' ?'selected':''}>範囲まとめ（A-E, F-J…）</option>
+          </select>
+        </div>
+        <div class="option-row">
+          <label>日本語（あ行〜わ行）を区別する</label>
+          <input type="checkbox" class="toggle" ${S.opts.includeJapanese?'checked':''}
+            onchange="S.opts.includeJapanese=this.checked">
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:4px">
+          数字始まりは「0-9」、記号始まりは「#その他」フォルダへ。
+        </p>
+      </div>`;
+
+    case 'date': {
+      const fromCount = S.opts.dateFrom ? S.files.filter(f => {
+        const d = parseDateFilter(S.opts.dateFrom); return d ? f.lastModified >= d : true;
+      }).length : null;
+      const filteredCount = (() => {
+        const from = parseDateFilter(S.opts.dateFrom);
+        const to   = parseDateFilterEnd(S.opts.dateTo);
+        return S.files.filter(f =>
+          (!from || f.lastModified >= from) && (!to || f.lastModified < to)
+        ).length;
+      })();
+      return `
+      <div class="options-panel">
+        <h3>📅 更新日別の設定</h3>
+        <div class="option-row">
+          <label>フォルダ分け単位</label>
+          <select onchange="S.opts.dateGroupBy=this.value;render()">
+            <option value="year"  ${S.opts.dateGroupBy==='year' ?'selected':''}>年（例: 2023）</option>
+            <option value="month" ${S.opts.dateGroupBy==='month'?'selected':''}>年月（例: 2023-05）</option>
+            <option value="day"   ${S.opts.dateGroupBy==='day'  ?'selected':''}>年月日（例: 2023-05-15）</option>
+          </select>
+        </div>
+        <div class="option-row" style="margin-top:4px">
+          <label>期間フィルタ（省略可）</label>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:10px">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">開始（から）</div>
+            <input type="text" placeholder="例: 2023 または 2023-05"
+              style="width:100%"
+              value="${S.opts.dateFrom}"
+              onchange="S.opts.dateFrom=this.value.trim();render()">
+          </div>
+          <span style="color:var(--text-dim);padding-top:18px">〜</span>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">終了（まで）</div>
+            <input type="text" placeholder="例: 2024 または 2024-03"
+              style="width:100%"
+              value="${S.opts.dateTo}"
+              onchange="S.opts.dateTo=this.value.trim();render()">
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">
+          ${(S.opts.dateFrom || S.opts.dateTo)
+            ? `🔍 フィルタ対象: <strong style="color:var(--accent)">${filteredCount.toLocaleString()} 個</strong> / 全 ${S.files.length.toLocaleString()} 個`
+            : `📄 全 ${S.files.length.toLocaleString()} 個が対象（フィルタなし）`}
+        </div>
+        <div class="info-banner" style="margin-bottom:0">
+          <span>ℹ️</span>
+          <span>書式: 年のみ「2023」、年月「2023-05」、年月日「2023-05-15」</span>
+        </div>
+      </div>`;
+    }
+
+    case 'unused': {
+      const days   = Math.max(1, parseInt(S.opts.unusedDays) || 30);
+      const cutoff = new Date(Date.now() - days * 86400000);
+      const cutoffStr = cutoff.toLocaleDateString('ja-JP', { year:'numeric', month:'2-digit', day:'2-digit' });
+      const matchCount = S.files.filter(f => f.lastModified < cutoff).length;
+      return `
+      <div class="options-panel">
+        <h3>🕰️ 未更新ファイルの設定</h3>
+        <div class="option-row">
+          <label>更新されていない日数の閾値</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" min="1" max="9999" value="${S.opts.unusedDays}"
+              onchange="S.opts.unusedDays=Math.max(1,parseInt(this.value)||30);render()">
+            <span style="color:var(--text-muted)">日以上</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin:8px 0 10px">
+          基準日: <strong style="color:var(--text)">${cutoffStr}</strong> より前に更新されたファイルが対象
+          &nbsp;→&nbsp; 該当: <strong style="color:${matchCount > 0 ? 'var(--accent)' : 'var(--text-dim)'}">${matchCount.toLocaleString()} 個</strong>
+        </div>
+        <div class="info-banner" style="margin-bottom:0">
+          <span>ℹ️</span>
+          <span>「最終更新日」が基準です。閲覧のみのファイルは検出できません（ブラウザの制限）。該当が0件の場合はサブフォルダも対象に含めてみてください。</span>
+        </div>
+      </div>`;
+    }
+
+    case 'dupes':   return renderDupeOptions();
+    case 'ext':     return renderExtOptions();
+    case 'project': return renderProjectOptions();
+  }
+  return '';
+}
+
+// ── 拡張子別オプション ────────────────────────────────────────────────
+function renderExtOptions() {
+  const extCounts = {};
+  for (const f of S.files) {
+    const e = f.ext || '';
+    extCounts[e] = (extCounts[e] || 0) + 1;
+  }
+  const exts = Object.entries(extCounts).sort((a, b) => b[1] - a[1]);
+
+  return `
+    <div class="options-panel">
+      <h3>📋 拡張子別の分類設定</h3>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">
+        ファイルを拡張子ごとにフォルダへ分類します（例: <code>.pdf</code>、<code>.jpg</code>）。
+      </p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px"
+          onclick="${exts.map(([e])=>`S.opts.extActive[${JSON.stringify(e)}]=true`).join(';')};render()">全てON</button>
+        <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px"
+          onclick="${exts.map(([e])=>`S.opts.extActive[${JSON.stringify(e)}]=false`).join(';')};render()">全てOFF</button>
+      </div>
+      ${exts.map(([ext, count]) => {
+        const on  = S.opts.extActive[ext] !== false;
+        const eid = 'ext-cat-' + (ext || 'noext');
+        const lbl = ext ? '.' + ext : '（拡張子なし）';
+        return `
+          <div id="${eid}" onclick="toggleExtCat(${JSON.stringify(ext)})"
+               style="display:flex;align-items:center;gap:12px;
+                      padding:9px 12px;border-radius:8px;margin-bottom:6px;cursor:pointer;
+                      background:${on ? 'rgba(124,110,255,0.1)' : 'var(--surface3)'};
+                      border:1px solid ${on ? 'rgba(124,110,255,0.4)' : 'var(--border)'}">
+            <span style="font-size:13px;font-weight:700;color:var(--accent);
+                         min-width:64px;font-family:monospace">${esc(lbl)}</span>
+            <div style="flex:1;font-size:12px;color:var(--text-muted)">${count.toLocaleString()} 個</div>
+            <input type="checkbox" class="toggle" ${on ? 'checked' : ''}
+              onclick="event.stopPropagation()" onchange="toggleExtCat(${JSON.stringify(ext)})">
+          </div>`;
+      }).join('')}
+      ${exts.length === 0 ? `<p style="color:var(--text-dim);font-size:13px;text-align:center;padding:12px">ファイルが見つかりません。</p>` : ''}
+      <p style="font-size:11px;color:var(--text-muted);margin-top:8px">
+        💡 OFFにした拡張子のファイルは移動されずそのまま残ります。
+      </p>
+    </div>`;
+}
+
+function toggleExtCat(ext) {
+  const on = S.opts.extActive[ext] !== false;
+  S.opts.extActive[ext] = !on;
+  const newOn = !on;
+  const card  = document.getElementById('ext-cat-' + (ext || 'noext'));
+  if (card) {
+    card.style.background  = newOn ? 'rgba(124,110,255,0.1)' : 'var(--surface3)';
+    card.style.borderColor = newOn ? 'rgba(124,110,255,0.4)' : 'var(--border)';
+    const tog = card.querySelector('.toggle');
+    if (tog) tog.checked = newOn;
+  }
+}
+
+// ── プロジェクト別オプション ─────────────────────────────────────────
+function renderProjectOptions() {
+  const keywords = S.opts.projectKeywords;
+  return `
+    <div class="options-panel">
+      <h3>🏷️ プロジェクト別の分類設定</h3>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
+        ファイル名にキーワードが含まれる場合、対応するフォルダへ移動します。<br>
+        上から順に判定し、最初にマッチしたルールを使用します（大文字小文字を区別しない）。
+      </p>
+      ${keywords.length === 0 ? `
+        <div style="text-align:center;padding:20px 8px;color:var(--text-dim);font-size:13px;
+                    border:1px dashed var(--border);border-radius:8px;margin-bottom:10px">
+          キーワードがまだ追加されていません。<br>
+          下の「＋ キーワードを追加」ボタンで追加してください。
+        </div>
+      ` : keywords.map((kw, i) => {
+        const matchCount = S.files.filter(f =>
+          kw.keyword.trim() && f.name.toLowerCase().includes(kw.keyword.toLowerCase())
+        ).length;
+        return `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;
+                      padding:9px 12px;background:var(--surface3);border-radius:8px;border:1px solid var(--border)">
+            <span style="color:var(--text-muted);font-size:12px;min-width:20px;text-align:right;flex-shrink:0">${i + 1}.</span>
+            <div style="display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;gap:5px">
+                <span style="font-size:11px;color:var(--text-muted);flex-shrink:0">キーワード</span>
+                <input type="text" value="${esc(kw.keyword)}" placeholder="例: 請求書"
+                  style="width:110px;font-size:12px;padding:3px 7px;height:26px"
+                  onclick="event.stopPropagation()"
+                  onchange="updateProjectKeyword(${i},'keyword',this.value)">
+              </div>
+              <span style="color:var(--text-dim);flex-shrink:0">→</span>
+              <div style="display:flex;align-items:center;gap:5px">
+                <span style="font-size:11px;color:var(--text-muted);flex-shrink:0">📁</span>
+                <input type="text" value="${esc(kw.folder)}" placeholder="例: 請求書類"
+                  style="width:110px;font-size:12px;padding:3px 7px;height:26px"
+                  onclick="event.stopPropagation()"
+                  onchange="updateProjectKeyword(${i},'folder',this.value)">
+              </div>
+              ${kw.keyword.trim() ? `
+                <span style="font-size:11px;flex-shrink:0;color:${matchCount > 0 ? 'var(--accent)' : 'var(--text-dim)'}">
+                  ${matchCount > 0 ? matchCount.toLocaleString() + '個マッチ' : 'マッチなし'}
+                </span>` : ''}
+            </div>
+            <div style="display:flex;gap:3px;flex-shrink:0">
+              ${i > 0
+                ? `<button class="btn btn-secondary" style="padding:2px 7px;font-size:12px" onclick="moveProjectKeyword(${i},-1)">↑</button>`
+                : `<span style="width:33px"></span>`}
+              ${i < keywords.length - 1
+                ? `<button class="btn btn-secondary" style="padding:2px 7px;font-size:12px" onclick="moveProjectKeyword(${i},1)">↓</button>`
+                : `<span style="width:33px"></span>`}
+              <button style="background:var(--error);color:#fff;border:none;cursor:pointer;
+                             padding:2px 7px;font-size:12px;border-radius:var(--r-sm)"
+                onclick="removeProjectKeyword(${i})">✕</button>
+            </div>
+          </div>`;
+      }).join('')}
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn btn-secondary" style="font-size:12px" onclick="addProjectKeyword()">＋ キーワードを追加</button>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:12px;color:var(--text-muted)">マッチしないファイル:</span>
+          <select onchange="S.opts.projectUnmatched=this.value" style="font-size:12px;padding:4px 8px">
+            <option value="skip"  ${S.opts.projectUnmatched==='skip' ?'selected':''}>移動しない（元のまま残す）</option>
+            <option value="other" ${S.opts.projectUnmatched==='other'?'selected':''}>「その他」フォルダへ移動</option>
+          </select>
+        </div>
+      </div>
+    </div>`;
+}
+
+function addProjectKeyword() {
+  S.opts.projectKeywords.push({ keyword: '', folder: '' });
+  render();
+}
+function removeProjectKeyword(i) {
+  S.opts.projectKeywords.splice(i, 1);
+  render();
+}
+function updateProjectKeyword(i, field, value) {
+  if (S.opts.projectKeywords[i] != null)
+    S.opts.projectKeywords[i][field] = value.trim();
+  // render() を呼ばない — フォーカスが飛ぶ
+}
+function moveProjectKeyword(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= S.opts.projectKeywords.length) return;
+  [S.opts.projectKeywords[i], S.opts.projectKeywords[j]] =
+    [S.opts.projectKeywords[j], S.opts.projectKeywords[i]];
+  render();
+}
+
+function renderDupeOptions() {
+  if (S.dupeScanning) {
+    return `
+      <div class="options-panel">
+        <h3>🔍 重複ファイルを検索中...</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;
+                  overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+           id="dupe-label">準備中...</p>
+        <div class="progress-bar-outer">
+          <div class="progress-bar-inner" id="dupe-pb" style="width:0%"></div>
+        </div>
+        <div class="progress-info"><span></span><span id="dupe-pct">0%</span></div>
+      </div>`;
+  }
+
+  if (S.dupeGroups === null) {
+    const noRecursive = !S.opts.recursive;
+    return `
+      <div class="options-panel">
+        <h3>🔍 重複ファイル検出</h3>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:${noRecursive ? '10px' : '16px'}">
+          ファイルの内容を SHA-256 でハッシュ比較します。<br>
+          ファイル数が多い場合は時間がかかることがあります。
+        </p>
+        ${noRecursive ? `
+        <div style="background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.4);
+                    border-radius:var(--r-sm);padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--warning)">
+          ⚠️ <strong>サブフォルダが対象外です。</strong>
+          異なるサブフォルダ間の重複は検出されません。<br>
+          <button style="margin-top:6px;background:none;border:1px solid var(--warning);color:var(--warning);
+                         border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px"
+                  onclick="S.opts.recursive=true;render()">サブフォルダを含めて再スキャン</button>
+        </div>` : ''}
+        <button class="btn btn-primary" onclick="doDetectDupes()">🔍 重複ファイルを検索する</button>
+      </div>`;
+  }
+
+  if (S.dupeGroups.length === 0) {
+    const noRecursive = !S.opts.recursive;
+    return `
+      <div class="options-panel">
+        <h3>🔍 検索完了</h3>
+        ${S.dupeError ? `<div style="background:rgba(255,95,95,0.1);border:1px solid rgba(255,95,95,0.4);
+                         border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--error)">
+          ❌ エラーが発生しました：${S.dupeError}
+        </div>` : ''}
+        <div style="text-align:center;padding:16px 0">
+          <div style="font-size:36px;margin-bottom:8px">✅</div>
+          <p>重複ファイルは見つかりませんでした。</p>
+          ${noRecursive ? `<p style="font-size:12px;color:var(--warning);margin-top:8px">
+            ⚠️ サブフォルダは対象外でした。
+            <button style="background:none;border:none;color:var(--warning);text-decoration:underline;cursor:pointer;font-size:12px"
+                    onclick="S.opts.recursive=true;S.dupeGroups=null;render()">サブフォルダも含めて再検索</button>
+          </p>` : ''}
+        </div>
+        <button class="btn btn-secondary" style="font-size:12px" onclick="S.dupeGroups=null;render()">再検索</button>
+      </div>`;
+  }
+
+  const totalMoves  = S.dupeGroups.reduce((s, g) => s + g.files.length - 1, 0);
+  const wastedBytes = S.dupeGroups.reduce((s, g) => s + g.files[0].size * (g.files.length - 1), 0);
+  return `
+    <div class="options-panel">
+      <h3>🔍 重複ファイル検出完了</h3>
+      <div class="stats-grid" style="margin-bottom:16px">
+        <div class="stat-card">
+          <div class="stat-value">${S.dupeGroups.length.toLocaleString()}</div>
+          <div class="stat-label">重複グループ数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${totalMoves.toLocaleString()}</div>
+          <div class="stat-label">移動対象ファイル</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${fmtSize(wastedBytes)}</div>
+          <div class="stat-label">節約できる容量</div>
+        </div>
+      </div>
+      <div class="option-row">
+        <label>どのファイルを元の場所に残すか</label>
+        <select onchange="S.opts.dupeKeep=this.value">
+          <option value="newest"     ${S.opts.dupeKeep==='newest'    ?'selected':''}>最新（更新日が新しい）を残す</option>
+          <option value="oldest"     ${S.opts.dupeKeep==='oldest'    ?'selected':''}>最古（更新日が古い）を残す</option>
+          <option value="shortest"   ${S.opts.dupeKeep==='shortest'  ?'selected':''}>ファイル名が短いものを残す</option>
+          <option value="shallowest" ${S.opts.dupeKeep==='shallowest'?'selected':''}>浅いパス（上位フォルダ）を残す</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary" style="margin-top:10px;font-size:12px"
+              onclick="S.dupeGroups=null;render()">🔄 再検索</button>
+    </div>`;
+}
+
+// ── Preview ──────────────────────────────────────────────────────────
+function renderPreview() {
+  if (S.method === 'dupes') return renderDupePreview();
+  return renderStandardPreview();
+}
+
+function renderDupePreview() {
+  const plan = S.plan;
+  if (plan.length === 0) {
+    return `
+      <button class="btn btn-secondary" style="margin-bottom:14px" onclick="S.screen='method';render()">← 戻る</button>
+      <div class="card" style="text-align:center;padding:40px">
+        <div style="font-size:48px;margin-bottom:12px">✅</div>
+        <h2>移動対象なし</h2>
+        <p style="color:var(--text-muted);margin-top:8px">全ファイルが既に正しい場所にあります。</p>
+      </div>`;
+  }
+
+  // Build sorted groups for display
+  const displayGroups = S.dupeGroups.map(g => {
+    const sorted = sortDupeGroup(g.files);
+    return { keep: sorted[0], moves: sorted.slice(1) };
+  });
+
+  const totalMoves  = plan.length;
+  const wastedBytes = plan.reduce((s, p) => s + p.file.size, 0);
+
+  return `
+    <button class="btn btn-secondary" style="margin-bottom:14px" onclick="S.screen='method';render()">← 戻る</button>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">${S.dupeGroups.length.toLocaleString()}</div>
+        <div class="stat-label">重複グループ数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${totalMoves.toLocaleString()}</div>
+        <div class="stat-label">移動ファイル数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${fmtSize(wastedBytes)}</div>
+        <div class="stat-label">節約できる容量</div>
+      </div>
+    </div>
+
+    <div class="warning-banner">
+      <span>⚠️</span>
+      <div>
+        <strong>注意：重複ファイルは「重複ファイル」フォルダへ移動されます</strong><br>
+        ✓ マークのファイルは元の場所に残ります。→ マークが移動対象です。
+        実行前に必ずバックアップをお取りください。
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 重複グループ一覧</div>
+      <div class="dupe-list" style="max-height:520px;overflow-y:auto;padding-right:2px">
+        ${displayGroups.slice(0, 80).map((g, i) => `
+          <div class="dupe-group-card">
+            <div class="dupe-group-header">
+              <span class="dupe-group-num">グループ ${i+1}</span>
+              <span>📦 ${fmtSize(g.keep.size)}</span>
+              <span>📄 計 ${g.moves.length + 1} 個</span>
+              <span style="margin-left:auto;color:var(--error);font-size:11px">
+                × ${g.moves.length} 個が移動対象
+              </span>
+            </div>
+            <div class="dupe-file-row keep">
+              <span class="dupe-file-icon">${getFileIcon(g.keep.name)}</span>
+              <div class="dupe-file-info">
+                <div class="dupe-file-name">${esc(g.keep.name)}</div>
+                <div class="dupe-file-path">${g.keep.parentPath ? '📁 ' + esc(g.keep.parentPath) : '📁 (ルート)'}</div>
+              </div>
+              <span class="dupe-file-badge badge-keep">✓ 残す</span>
+            </div>
+            ${g.moves.map(f => `
+              <div class="dupe-file-row move">
+                <span class="dupe-file-icon">${getFileIcon(f.name)}</span>
+                <div class="dupe-file-info">
+                  <div class="dupe-file-name">${esc(f.name)}</div>
+                  <div class="dupe-file-path">${f.parentPath ? '📁 ' + esc(f.parentPath) : '📁 (ルート)'}</div>
+                </div>
+                <span class="dupe-file-badge badge-move">→ 移動</span>
+              </div>
+            `).join('')}
+          </div>
+        `).join('')}
+        ${displayGroups.length > 80 ? `
+          <div style="text-align:center;padding:12px;color:var(--text-dim);font-size:13px">
+            … 他 ${displayGroups.length - 80} グループ
+          </div>` : ''}
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-danger" onclick="doExecute()">
+        ✅ 実行（${totalMoves.toLocaleString()}個を「重複ファイル」フォルダへ移動）
+      </button>
+      <span style="font-size:12px;color:var(--text-muted)">元に戻すことはできません</span>
+    </div>
+  `;
+}
+
+function renderStandardPreview() {
+  const grouped = groupBy(S.plan, p => p.targetFolder);
+  const folders = Object.keys(grouped).sort();
+  const totalFiles = S.plan.length;
+
+  if (totalFiles === 0) {
+    return `
+      <button class="btn btn-secondary" style="margin-bottom:14px" onclick="S.screen='method';render()">← 戻る</button>
+      <div class="card" style="text-align:center;padding:40px">
+        <div style="font-size:48px;margin-bottom:12px">🤷</div>
+        <h2>対象ファイルがありません</h2>
+        <p style="color:var(--text-muted);margin-top:8px">
+          ${S.method==='unused'  ? `${S.opts.unusedDays}日以上更新されていないファイルが見つかりませんでした。`
+          : S.method==='project' ? 'キーワードにマッチするファイルが見つかりませんでした。'
+          : S.method==='ext'     ? '対象の拡張子のファイルが見つかりませんでした。'
+          : '仕分け対象のファイルが見つかりませんでした。'}
+        </p>
+      </div>
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="S.screen='method';render()">← 戻る</button>
+      </div>
+    `;
+  }
+
+  return `
+    <button class="btn btn-secondary" style="margin-bottom:14px" onclick="S.screen='method';render()">← 戻る</button>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">${totalFiles.toLocaleString()}</div>
+        <div class="stat-label">対象ファイル数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${folders.length.toLocaleString()}</div>
+        <div class="stat-label">作成フォルダ数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${fmtSize(S.plan.reduce((s,p)=>s+p.file.size,0))}</div>
+        <div class="stat-label">合計サイズ</div>
+      </div>
+    </div>
+
+    <div class="warning-banner">
+      <span>⚠️</span>
+      <div>
+        <strong>注意：ファイルは移動されます（コピーではありません）</strong><br>
+        実行すると元の場所からファイルが消え、新しいフォルダへ移動します。
+        実行前に必ずバックアップをお取りください。
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 仕分けプレビュー</div>
+      <div class="preview-tree">
+        <div>📁 <span class="tree-folder">${esc(S.dirName)}/</span></div>
+        ${folders.map(folder => {
+          const files = grouped[folder];
+          const show = files.slice(0, 6);
+          const rest = files.length - show.length;
+          return `
+            <div style="margin-left:16px">
+              📁 <span class="tree-folder">${esc(folder)}/</span>
+              <span class="tree-count"> (${files.length.toLocaleString()}個 ・ ${fmtSize(files.reduce((s,p)=>s+p.file.size,0))})</span>
+              ${show.map(p=>`<div style="margin-left:24px">📄 <span class="tree-file">${esc(p.file.name)}</span></div>`).join('')}
+              ${rest>0?`<div style="margin-left:24px;color:var(--text-dim)">… 他 ${rest.toLocaleString()} 個</div>`:''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-danger" onclick="doExecute()">
+        ✅ 仕分けを実行（${totalFiles.toLocaleString()}個のファイルを移動）
+      </button>
+      <span style="font-size:12px;color:var(--text-muted)">元に戻すことはできません</span>
+    </div>
+  `;
+}
+
+// ── Executing ────────────────────────────────────────────────────────
+function renderExecuting() {
+  return `
+    <div class="card" style="padding:40px;text-align:center">
+      <div style="font-size:52px;margin-bottom:16px">⚙️</div>
+      <h2 style="margin-bottom:24px">仕分けを実行中...</h2>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="pb" style="width:0%"></div>
+      </div>
+      <div class="progress-info">
+        <span id="pb-label">準備中...</span>
+        <span id="pb-pct">0%</span>
+      </div>
+      <p style="color:var(--text-muted);font-size:13px;margin-top:16px">
+        処理中はこのウィンドウを閉じないでください。
+      </p>
+    </div>
+  `;
+}
+
+// ── Result ───────────────────────────────────────────────────────────
+function renderResult() {
+  const { ok, err, errors } = S.results;
+  const allOk = err === 0;
+  return `
+    <div class="card" style="text-align:center;padding:36px">
+      <div style="font-size:52px;margin-bottom:12px">${allOk ? '🎉' : '⚠️'}</div>
+      <h2 style="margin-bottom:6px">${allOk ? '仕分け完了！' : '一部エラーが発生しました'}</h2>
+      <p style="color:var(--text-muted)">処理が終了しました。</p>
+    </div>
+
+    <div class="stats-grid" style="margin-top:14px">
+      <div class="stat-card">
+        <div class="stat-value" style="color:var(--success)">${ok.toLocaleString()}</div>
+        <div class="stat-label">移動成功</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color:${err>0?'var(--error)':'var(--text-muted)'}">${err.toLocaleString()}</div>
+        <div class="stat-label">エラー</div>
+      </div>
+    </div>
+
+    ${errors.length > 0 ? `
+      <div class="card">
+        <div class="card-title">❌ エラーのあったファイル</div>
+        <div class="result-list">
+          ${errors.map(e=>`
+            <div class="result-item">
+              <span style="color:var(--error)">✗</span>
+              <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.file)}</span>
+              <span style="color:var(--text-muted);font-size:11px;flex-shrink:0">${esc(e.reason)}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : ''}
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="doReset()">🔄 別のフォルダを仕分けする</button>
+    </div>
+  `;
+}
+
+function renderLoading() {
+  return `
+    <div class="loading-overlay">
+      <div class="spinner-lg"></div>
+      <p style="color:var(--text-muted)">フォルダをスキャン中...</p>
+    </div>
+  `;
+}
+
+// =====================================================================
+// ACTIONS
+// =====================================================================
+async function doSelectFolder() {
+  try {
+    const dh = await window.showDirectoryPicker({ mode: 'readwrite' });
+    S.dirHandle = dh;
+    S.dirName   = dh.name;
+    S.files     = [];
+    S.totalSize = 0;
+    S.loading   = true;
+    render();
+
+    await scanDir(dh, '');
+    S.loading = false;
+    render();
+  } catch (e) {
+    S.loading = false;
+    if (e.name !== 'AbortError') {
+      alert('フォルダの読み込みに失敗しました：' + e.message);
+    }
+    render();
+  }
+}
+
+async function scanDir(dh, basePath) {
+  for await (const [name, handle] of dh.entries()) {
+    if (!S.opts.includeHidden && name.startsWith('.')) continue;
+    if (handle.kind === 'file') {
+      const file = await handle.getFile();
+      const ext  = getExt(name);
+      S.files.push({
+        name, handle,
+        parentHandle: dh,
+        parentPath: basePath,
+        path: basePath ? `${basePath}/${name}` : name,
+        size: file.size,
+        ext,
+        type: getType(ext),
+        lastModified: new Date(file.lastModified),
+      });
+      S.totalSize += file.size;
+    } else if (handle.kind === 'directory' && S.opts.recursive) {
+      await scanDir(handle, basePath ? `${basePath}/${name}` : name);
+    }
+  }
+}
+
+function onMethodSelect(id) {
+  if (S.method !== id) {
+    // Reset dupe state when switching away from dupes
+    S.dupeGroups  = null;
+    S.dupeScanning = false;
+  }
+  S.method = id;
+  render();
+}
+
+function goMethod() {
+  if (!S.dirHandle) return;
+  S.screen = 'method';
+  render();
+}
+
+function goPreview() {
+  if (!S.method) return;
+  S.plan   = makePlan();
+  S.screen = 'preview';
+  render();
+}
+
+async function doExecute() {
+  S.screen = 'executing';
+  render();
+  await sleep(80);
+
+  S.results = { ok: 0, err: 0, errors: [] };
+  const total = S.plan.length;
+
+  for (let i = 0; i < total; i++) {
+    const { file, targetFolder } = S.plan[i];
+    updateProgress(i, total, file.name);
+
+    try {
+      await moveFile(file, targetFolder);
+      S.results.ok++;
+    } catch (e) {
+      S.results.err++;
+      S.results.errors.push({ file: file.path, reason: e.message });
+    }
+
+    if (i % 8 === 0) await sleep(0);
+  }
+
+  updateProgress(total, total, '完了');
+  await sleep(350);
+  S.screen = 'result';
+  render();
+}
+
+function updateProgress(done, total, label) {
+  const pct = total > 0 ? Math.round((done / total) * 100) : 100;
+  const pb = document.getElementById('pb');
+  if (pb) pb.style.width = pct + '%';
+  const pl = document.getElementById('pb-label');
+  if (pl) pl.textContent = label;
+  const pp = document.getElementById('pb-pct');
+  if (pp) pp.textContent = pct + '%';
+}
+
+// ハンドルが古くなっている場合に備えて親ディレクトリから取り直す
+// iCloud / Google Drive などクラウドストレージで特に必要
+async function freshGetFile(fileInfo) {
+  try {
+    const h = await fileInfo.parentHandle.getFileHandle(fileInfo.name);
+    return await h.getFile();
+  } catch {
+    // フォールバック: キャッシュ済みのハンドルを使う
+    return await fileInfo.handle.getFile();
+  }
+}
+
+async function moveFile(fileInfo, targetFolderPath) {
+  // Create nested target dirs
+  const parts = targetFolderPath.split('/').filter(Boolean);
+  let targetDir = S.dirHandle;
+  for (const part of parts) {
+    targetDir = await targetDir.getDirectoryHandle(part, { create: true });
+  }
+
+  // Skip if already in the target folder (avoid self-move)
+  if (fileInfo.parentPath === targetFolderPath) return fileInfo.name;
+
+  // Resolve name conflict
+  let targetName = fileInfo.name;
+  let counter = 1;
+  while (true) {
+    try {
+      await targetDir.getFileHandle(targetName);
+      const di = fileInfo.name.lastIndexOf('.');
+      targetName = di > 0
+        ? `${fileInfo.name.slice(0, di)}_${counter}${fileInfo.name.slice(di)}`
+        : `${fileInfo.name}_${counter}`;
+      counter++;
+    } catch { break; }
+  }
+
+  // Write to target — 毎回ハンドルを再取得してstaleエラーを防ぐ
+  const srcFile = await freshGetFile(fileInfo);
+  const tgtHandle = await targetDir.getFileHandle(targetName, { create: true });
+  let writable;
+  try {
+    writable = await tgtHandle.createWritable();
+    if (srcFile.size > 50 * 1024 * 1024) {
+      // Stream large files
+      await srcFile.stream().pipeTo(writable);
+    } else {
+      await writable.write(await srcFile.arrayBuffer());
+      await writable.close();
+    }
+  } catch (e) {
+    try { if (writable) await writable.abort(); } catch {}
+    try { await targetDir.removeEntry(targetName); } catch {}
+    throw e;
+  }
+
+  // Delete source
+  await fileInfo.parentHandle.removeEntry(fileInfo.name);
+}
+
+function doReset() {
+  S = {
+    screen: 'select', loading: false,
+    dirHandle: null, dirName: '',
+    files: [], totalSize: 0,
+    method: null,
+    opts: { recursive: false, includeHidden: false, nameGroupBy: 'letter', includeJapanese: true, dateGroupBy: 'month', dateFrom: '', dateTo: '', unusedDays: 30, dupeKeep: 'newest', sizeActive: [true,true,true,true,true], typeActive: Object.fromEntries(Object.keys(FILE_TYPES).map(k=>[k,true])), typeFolderName: Object.fromEntries(Object.keys(FILE_TYPES).map(k=>[k,k])), extActive: {}, projectKeywords: [], projectUnmatched: 'skip' },
+    dupeGroups: null, dupeScanning: false, dupeError: null,
+    plan: [],
+    results: { ok: 0, err: 0, errors: [] },
+  };
+  render();
+}
+
+// =====================================================================
+// DUPLICATE DETECTION
+// =====================================================================
+async function doDetectDupes() {
+  S.dupeScanning = true;
+  S.dupeGroups   = null;
+  S.dupeError    = null;
+  render();
+  await sleep(50);
+
+  try {
+    // Phase 1: group by exact size — only same-size files can be duplicates
+    // ※ サイズ0は空ファイルなので重複対象外
+    const bySize = {};
+    for (const f of S.files) {
+      if (f.size === 0) continue;
+      (bySize[f.size] = bySize[f.size] || []).push(f);
+    }
+    const phase1 = Object.values(bySize).filter(g => g.length > 1).flat();
+
+    if (phase1.length === 0) {
+      S.dupeGroups = [];
+      return;
+    }
+
+    // Phase 2: quick hash — first 64 KB of each candidate
+    // ※ キーにサイズを含めない（phase1で既に同サイズ確認済み。再取得サイズがズレるバグを防ぐ）
+    const CHUNK = 64 * 1024;
+    const byQuick = {};
+    for (let i = 0; i < phase1.length; i++) {
+      const f = phase1[i];
+      setDupeScanStatus(`1/2 先頭確認中: ${f.name}`, i, phase1.length);
+      const blob  = await freshGetFile(f);
+      const slice = f.size > CHUNK ? blob.slice(0, CHUNK) : blob;
+      const hash  = await sha256hex(await slice.arrayBuffer());
+      (byQuick[hash] = byQuick[hash] || []).push(f);
+      if (i % 20 === 0) await sleep(0);
+    }
+
+    // Phase 3: full hash — only for quick-hash matches
+    const phase2 = Object.values(byQuick).filter(g => g.length > 1).flat();
+    const byFull  = {};
+    for (let i = 0; i < phase2.length; i++) {
+      const f = phase2[i];
+      setDupeScanStatus(`2/2 内容確認中: ${f.name}`, i, phase2.length);
+      const blob = await freshGetFile(f);
+      const hash = await sha256hex(await blob.arrayBuffer());
+      (byFull[hash] = byFull[hash] || []).push(f);
+      if (i % 10 === 0) await sleep(0);
+    }
+
+    S.dupeGroups = Object.values(byFull).filter(g => g.length > 1).map(files => ({ files }));
+  } catch (err) {
+    S.dupeGroups = [];
+    S.dupeError  = err.message || String(err);
+    console.error('[doDetectDupes]', err);
+  } finally {
+    S.dupeScanning = false;
+    render();
+  }
+}
+
+function setDupeScanStatus(label, done, total) {
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const el = id => document.getElementById(id);
+  if (el('dupe-label')) el('dupe-label').textContent = label;
+  if (el('dupe-pb'))    el('dupe-pb').style.width = pct + '%';
+  if (el('dupe-pct'))   el('dupe-pct').textContent = pct + '%';
+}
+
+async function sha256hex(buffer) {
+  const hashBuf = await crypto.subtle.digest('SHA-256', buffer);
+  return Array.from(new Uint8Array(hashBuf))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// =====================================================================
+// PLAN GENERATION
+// =====================================================================
+function makePlan() {
+  switch (S.method) {
+    case 'type': {
+      return S.files
+        .filter(f => S.opts.typeActive[f.type] !== false)
+        .map(f => ({
+          file: f,
+          targetFolder: (S.opts.typeFolderName[f.type] || f.type).trim() || f.type,
+        }));
+    }
+    case 'size':   return S.files
+      .filter(f => {
+        for (let i = 0; i < SIZE_CATS.length; i++) {
+          if (f.size < SIZE_CATS[i].max) return S.opts.sizeActive[i];
+        }
+        return S.opts.sizeActive[SIZE_CATS.length - 1];
+      })
+      .map(f => ({ file: f, targetFolder: getSizeCat(f.size) }));
+    case 'name':   return S.files.map(f => ({ file: f, targetFolder: getNameFolder(f.name.charAt(0)) }));
+    case 'date': {
+      const from = parseDateFilter(S.opts.dateFrom);
+      const to   = parseDateFilterEnd(S.opts.dateTo);
+      return S.files
+        .filter(f => (!from || f.lastModified >= from) && (!to || f.lastModified < to))
+        .map(f => ({ file: f, targetFolder: getDateFolder(f.lastModified) }));
+    }
+    case 'unused': {
+      const days   = Math.max(1, parseInt(S.opts.unusedDays) || 30);
+      const cutoff = new Date(Date.now() - days * 86400000);
+      return S.files
+        .filter(f => f.lastModified instanceof Date && !isNaN(f.lastModified) && f.lastModified < cutoff)
+        .map(f => ({ file: f, targetFolder: `未更新_${days}日以上` }));
+    }
+    case 'dupes': {
+      const plan = [];
+      for (const g of S.dupeGroups) {
+        const sorted = sortDupeGroup(g.files);
+        for (let i = 1; i < sorted.length; i++) {
+          plan.push({ file: sorted[i], targetFolder: '重複ファイル' });
+        }
+      }
+      return plan;
+    }
+    case 'ext': {
+      return S.files
+        .filter(f => S.opts.extActive[f.ext || ''] !== false)
+        .map(f => ({
+          file: f,
+          targetFolder: f.ext ? '.' + f.ext : '拡張子なし',
+        }));
+    }
+    case 'project': {
+      const rules = S.opts.projectKeywords.filter(kw => kw.keyword.trim() && kw.folder.trim());
+      const plan  = [];
+      for (const f of S.files) {
+        const nameLower = f.name.toLowerCase();
+        let matched = false;
+        for (const rule of rules) {
+          if (nameLower.includes(rule.keyword.toLowerCase())) {
+            plan.push({ file: f, targetFolder: rule.folder.trim() });
+            matched = true;
+            break;
+          }
+        }
+        if (!matched && S.opts.projectUnmatched === 'other') {
+          plan.push({ file: f, targetFolder: 'その他' });
+        }
+      }
+      return plan;
+    }
+    default: return [];
+  }
+}
+
+function sortDupeGroup(files) {
+  const arr = [...files];
+  switch (S.opts.dupeKeep) {
+    case 'newest':
+      arr.sort((a, b) => b.lastModified - a.lastModified);
+      break;
+    case 'oldest':
+      arr.sort((a, b) => a.lastModified - b.lastModified);
+      break;
+    case 'shortest':
+      arr.sort((a, b) => a.name.length - b.name.length || a.name.localeCompare(b.name));
+      break;
+    case 'shallowest':
+      arr.sort((a, b) => {
+        const da = a.parentPath ? a.parentPath.split('/').length : 0;
+        const db = b.parentPath ? b.parentPath.split('/').length : 0;
+        return da - db || a.name.length - b.name.length;
+      });
+      break;
+  }
+  return arr;
+}
+
+function getSizeCat(size) {
+  for (const c of SIZE_CATS) if (size < c.max) return c.label;
+  return SIZE_CATS[SIZE_CATS.length - 1].label;
+}
+
+function getNameFolder(char) {
+  if (!char) return '#その他';
+  const code = char.codePointAt(0);
+
+  if (S.opts.includeJapanese) {
+    // Hiragana (3041–3096)
+    if (code >= 0x3041 && code <= 0x3096) return hiraganaRow(code);
+    // Katakana (30A1–30F6) → offset to hiragana
+    if (code >= 0x30A1 && code <= 0x30F6) return hiraganaRow(code - 0x60);
+    // CJK (Kanji)
+    if (code >= 0x4E00 && code <= 0x9FFF) return '漢字';
+  }
+
+  if (char >= '0' && char <= '9') return '0-9';
+
+  const up = char.toUpperCase();
+  if (up >= 'A' && up <= 'Z') {
+    if (S.opts.nameGroupBy === 'range') {
+      // A-E, F-J, K-O, P-T, U-Z
+      if (up <= 'E') return 'A-E';
+      if (up <= 'J') return 'F-J';
+      if (up <= 'O') return 'K-O';
+      if (up <= 'T') return 'P-T';
+      return 'U-Z';
+    }
+    return up;
+  }
+
+  return '#その他';
+}
+
+function hiraganaRow(code) {
+  if (code <= 0x304A) return 'あ行';
+  if (code <= 0x3054) return 'か行';
+  if (code <= 0x305E) return 'さ行';
+  if (code <= 0x3069) return 'た行';
+  if (code <= 0x306E) return 'な行';
+  if (code <= 0x307D) return 'は行';
+  if (code <= 0x3082) return 'ま行';
+  if (code <= 0x3088) return 'や行';
+  if (code <= 0x308D) return 'ら行';
+  return 'わ行';
+}
+
+// Parse "2023", "2023-05", "2023-05-15" → Date (start of period) or null
+function parseDateFilter(str) {
+  if (!str || !str.trim()) return null;
+  const p = str.trim().split('-').map(Number);
+  if (!p[0] || isNaN(p[0])) return null;
+  const y = p[0];
+  const m = (p[1] >= 1 && p[1] <= 12) ? p[1] - 1 : 0;
+  const d = (p[2] >= 1 && p[2] <= 31) ? p[2] : 1;
+  return new Date(y, p[1] != null ? m : 0, p[2] != null ? d : 1, 0, 0, 0, 0);
+}
+
+// Parse end of period (inclusive): "2023" → Dec 31, "2023-05" → May 31, "2023-05-15" → that day end
+function parseDateFilterEnd(str) {
+  if (!str || !str.trim()) return null;
+  const p = str.trim().split('-').map(Number);
+  if (!p[0] || isNaN(p[0])) return null;
+  const y = p[0];
+  if (p.length === 1 || p[1] == null) return new Date(y + 1, 0, 1, 0, 0, 0, 0);  // next year start
+  const m = p[1] - 1;
+  if (p.length === 2 || p[2] == null) return new Date(y, m + 1, 1, 0, 0, 0, 0);  // next month start
+  return new Date(y, m, p[2] + 1, 0, 0, 0, 0);  // next day start
+}
+
+function getDateFolder(d) {
+  const y  = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const da = String(d.getDate()).padStart(2, '0');
+  switch (S.opts.dateGroupBy) {
+    case 'year':  return String(y);
+    case 'day':   return `${y}-${mo}-${da}`;
+    default:      return `${y}-${mo}`;
+  }
+}
+
+// =====================================================================
+// UTILITIES
+// =====================================================================
+function getExt(name) {
+  const i = name.lastIndexOf('.');
+  return i > 0 ? name.slice(i + 1).toLowerCase() : '';
+}
+
+function getFileIcon(name) {
+  const ext = getExt(name);
+  for (const info of Object.values(FILE_TYPES)) {
+    if (info.ext.includes(ext)) return info.icon;
+  }
+  return '📎';
+}
+
+function getType(ext) {
+  for (const [type, info] of Object.entries(FILE_TYPES)) {
+    if (info.ext.includes(ext)) return type;
+  }
+  return 'その他';
+}
+
+function fmtSize(b) {
+  if (b < 1024)           return b + ' B';
+  if (b < 1024 ** 2)      return (b / 1024).toFixed(1) + ' KB';
+  if (b < 1024 ** 3)      return (b / 1024 ** 2).toFixed(1) + ' MB';
+  return (b / 1024 ** 3).toFixed(2) + ' GB';
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function groupBy(arr, fn) {
+  const r = {};
+  for (const item of arr) {
+    const k = fn(item);
+    (r[k] = r[k] || []).push(item);
+  }
+  return r;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function id(x)    { return document.getElementById(x); }
+
+// =====================================================================
+// BOOT
+// =====================================================================
+
+// Inject icon into header
+document.getElementById('header-icon').innerHTML = APP_ICON_SVG;
+
+// Set favicon via Blob URL
+(function() {
+  const blob = new Blob([APP_ICON_SVG], { type: 'image/svg+xml' });
+  const link = document.createElement('link');
+  link.rel  = 'icon';
+  link.type = 'image/svg+xml';
+  link.href = URL.createObjectURL(blob);
+  document.head.appendChild(link);
+})();
+
+render();
+</script>
+</body>
+</html>
