@@ -501,6 +501,29 @@ const DB = {
   setVisions(d){ localStorage.setItem('diary_visions', JSON.stringify(d)); SYNC.schedule(); },
 };
 
+function hasLocalDiaryData(){
+  try{
+    const entries = DB.getEntries();
+    const annivs = JSON.parse(localStorage.getItem('diary_annivs')||'[]');
+    const fb = JSON.parse(localStorage.getItem('diary_fb_birthdays')||'[]');
+    const media = DB.getMedia();
+    const todos = DB.getTodos();
+    const goals = DB.getGoals();
+    const visions = DB.getVisions();
+    return (
+      Object.keys(entries||{}).length>0 ||
+      (Array.isArray(annivs) && annivs.length>0) ||
+      (Array.isArray(fb) && fb.length>0) ||
+      (Array.isArray(media) && media.length>0) ||
+      (Array.isArray(todos) && todos.length>0) ||
+      (Array.isArray(goals) && goals.length>0) ||
+      (Array.isArray(visions) && visions.length>0)
+    );
+  }catch(e){
+    return false;
+  }
+}
+
 function dateKey(y,m,d){ return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}` }
 function today(){ const n=new Date(); return dateKey(n.getFullYear(),n.getMonth()+1,n.getDate()) }
 function todayDate(){ return new Date() }
@@ -1638,9 +1661,18 @@ const SYNC = {
         });
       }
     } else {
-      updateSyncUI('no-key');
-      const mb=document.getElementById('mobile-sync-banner');
-      if(mb) mb.style.display='block';
+      // 認証情報がなくても、ローカルにデータがある場合は「未設定」警告を出さない
+      // （iPhone Safari で storage 読み戻しが揺らぐ際の誤表示対策）
+      const hasLocal = hasLocalDiaryData();
+      if(hasLocal){
+        updateSyncUI('synced');
+        const mb=document.getElementById('mobile-sync-banner');
+        if(mb) mb.style.display='none';
+      } else {
+        updateSyncUI('no-key');
+        const mb=document.getElementById('mobile-sync-banner');
+        if(mb) mb.style.display='block';
+      }
     }
   },
 
