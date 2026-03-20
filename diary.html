@@ -1849,9 +1849,14 @@ const SYNC = {
     if(!this.key||!this.gistId){ this.openSettings(); return; }
     updateSyncUI('syncing');
     try{
-      // 手動同期ではローカル消失事故を防ぐため、まず push のみを実行する
-      // （pull は自動同期で別途実行）
-      await this.push();
+      if(this.hasPendingChanges){
+        // ローカルに未送信変更がある時は、まず保存してから最新を再取得
+        await this.push();
+        await this.pull(true);
+      } else {
+        // 未編集端末（iPhoneなど）では最新を取りに行く
+        await this.pull(false);
+      }
       localStorage.setItem('diary_last_synced_at', String(Date.now()));
       updateSyncUI('synced');
       renderCalendar(); showAnnivBanner();
