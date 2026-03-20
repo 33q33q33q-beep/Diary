@@ -1591,8 +1591,8 @@ function importData(){
 const SYNC = {
   BASE: 'https://api.github.com/gists',
   FILE: 'diary-data.json',
-  get key(){ return localStorage.getItem('gh_token')||''; },
-  get gistId(){ return localStorage.getItem('gh_gist')||''; },
+  get key(){ return localStorage.getItem('gh_token')||sessionStorage.getItem('gh_token')||''; },
+  get gistId(){ return localStorage.getItem('gh_gist')||sessionStorage.getItem('gh_gist')||''; },
   timer: null,
   hasPendingChanges: false,
 
@@ -1602,6 +1602,9 @@ const SYNC = {
     const jbBin = localStorage.getItem('jb_bin');
     if(jbKey && !localStorage.getItem('gh_token')) localStorage.setItem('gh_token', jbKey);
     if(jbBin && !localStorage.getItem('gh_gist')) localStorage.setItem('gh_gist', jbBin);
+    // iOS/Safari対策: sessionStorage 側にも保持（localStorageが不安定なケース）
+    if(localStorage.getItem('gh_token') && !sessionStorage.getItem('gh_token')) sessionStorage.setItem('gh_token', localStorage.getItem('gh_token'));
+    if(localStorage.getItem('gh_gist') && !sessionStorage.getItem('gh_gist')) sessionStorage.setItem('gh_gist', localStorage.getItem('gh_gist'));
     localStorage.removeItem('jb_key');
     localStorage.removeItem('jb_bin');
     if(sessionStorage.getItem('just_pulled')){
@@ -1660,7 +1663,9 @@ const SYNC = {
     const gist = document.getElementById('jsonbinBinInput').value.trim();
     if(!key){ alert('トークンを入力してください'); return; }
     localStorage.setItem('gh_token', key);
+    sessionStorage.setItem('gh_token', key);
     if(gist) localStorage.setItem('gh_gist', gist);
+    if(gist) sessionStorage.setItem('gh_gist', gist);
     document.getElementById('jsonbin-modal').classList.remove('open');
     updateSyncUI('syncing');
     try{
@@ -1958,12 +1963,15 @@ function updateAppViewportHeight(){
 // URLハッシュから同期設定を自動読み込み
 (function(){
   const h=location.hash.slice(1);
-  if(!h) return;
-  const p=new URLSearchParams(h);
-  const t=p.get('token'), g=p.get('gist');
-  if(t){ localStorage.setItem('gh_token',t); }
-  if(g){ localStorage.setItem('gh_gist',g); }
-  if(t||g){ history.replaceState(null,'',location.pathname); }
+  const hp=new URLSearchParams(h||'');
+  const qp=new URLSearchParams(location.search||'');
+  const t=hp.get('token')||qp.get('token');
+  const g=hp.get('gist')||qp.get('gist');
+  if(t){ localStorage.setItem('gh_token',t); sessionStorage.setItem('gh_token',t); }
+  if(g){ localStorage.setItem('gh_gist',g); sessionStorage.setItem('gh_gist',g); }
+  if((h && (hp.get('token')||hp.get('gist'))) || (location.search && (qp.get('token')||qp.get('gist')))){
+    history.replaceState(null,'',location.pathname);
+  }
 })();
 
 SYNC.init();
