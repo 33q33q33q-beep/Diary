@@ -706,13 +706,6 @@ function addCalCell(grid,y,m,d,other,entries,annivs,todayKey,media){
     img.src=entry.photos[0];
     img.alt='';
     cell.appendChild(img);
-    // Photo count badge
-    if(entry.photos.length>1){
-      const badge=document.createElement('div');
-      badge.style.cssText='position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.5);color:#fff;font-size:9px;border-radius:8px;padding:0 4px;z-index:3';
-      badge.textContent=`+${entry.photos.length-1}`;
-      cell.appendChild(badge);
-    }
   }
 
   cell.onclick=()=>openModal(y,m,d);
@@ -730,10 +723,14 @@ function toggleShopInput(){
 }
 
 let _ctxAnnivId=null;
-document.addEventListener('click',()=>{document.getElementById('anniv-ctx').style.display='none';});
-document.getElementById('anniv-ctx-delete').onclick=()=>{
+const _annivCtxEl=document.getElementById('anniv-ctx');
+document.addEventListener('click',()=>{_annivCtxEl.style.display='none';});
+document.getElementById('anniv-ctx-delete').onclick=(ev)=>{
+  // document側のclickで先に閉じられるのを防ぐ（iOSで起きやすい）
+  ev.stopPropagation();
   if(_ctxAnnivId!==null) deleteAnniversaryById(_ctxAnnivId);
-  document.getElementById('anniv-ctx').style.display='none';
+  _ctxAnnivId=null;
+  _annivCtxEl.style.display='none';
 };
 
 function deleteAnniversaryById(id){
@@ -744,6 +741,8 @@ function deleteAnniversaryById(id){
   SYNC.schedule();
   renderCalendar();
   showAnnivBanner();
+  const ap=document.getElementById('page-anniversary');
+  if(ap && ap.classList.contains('active')) renderAnniversaries();
 }
 function showAnnivBanner(baseDate){
   const n=baseDate?new Date(baseDate):new Date();
@@ -1568,6 +1567,11 @@ const SYNC = {
   timer: null,
 
   init(){
+    // Migrate keys from older versions (JSONbin sync) to current GitHub Gist keys
+    const jbKey = localStorage.getItem('jb_key');
+    const jbBin = localStorage.getItem('jb_bin');
+    if(jbKey && !localStorage.getItem('gh_token')) localStorage.setItem('gh_token', jbKey);
+    if(jbBin && !localStorage.getItem('gh_gist')) localStorage.setItem('gh_gist', jbBin);
     localStorage.removeItem('jb_key');
     localStorage.removeItem('jb_bin');
     if(sessionStorage.getItem('just_pulled')){
@@ -1582,13 +1586,24 @@ const SYNC = {
       return;
     }
     if(this.key){
-      this.pull(true).then(()=>{
-        renderCalendar(); showAnnivBanner();
-      }).catch(e=>{
-        updateSyncUI('error');
-        const mb=document.getElementById('mobile-sync-banner');
-        if(mb){ mb.style.display='block'; mb.innerHTML='⚠️ 同期エラー: '+e.message+'<br><button onclick="SYNC.smartSync()" style="margin-top:6px;padding:3px 12px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-weight:600">再試行</button>　<button onclick="SYNC.openSettings()" style="margin-top:6px;padding:3px 12px;background:transparent;border:1px solid #aaa;border-radius:6px;cursor:pointer">設定確認</button>'; }
-      });
+      // gistId が未設定なら、まず自動でGistを作成して以後の手入力を減らす
+      if(!this.gistId){
+        this.createGist().then(()=>{
+          renderCalendar(); showAnnivBanner();
+        }).catch(e=>{
+          updateSyncUI('error');
+          const mb=document.getElementById('mobile-sync-banner');
+          if(mb){ mb.style.display='block'; mb.innerHTML='⚠️ 同期エラー: '+e.message+'<br><button onclick="SYNC.smartSync()" style="margin-top:6px;padding:3px 12px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-weight:600">再試行</button>　<button onclick="SYNC.openSettings()" style="margin-top:6px;padding:3px 12px;background:transparent;border:1px solid #aaa;border-radius:6px;cursor:pointer">設定確認</button>'; }
+        });
+      } else {
+        this.pull(true).then(()=>{
+          renderCalendar(); showAnnivBanner();
+        }).catch(e=>{
+          updateSyncUI('error');
+          const mb=document.getElementById('mobile-sync-banner');
+          if(mb){ mb.style.display='block'; mb.innerHTML='⚠️ 同期エラー: '+e.message+'<br><button onclick="SYNC.smartSync()" style="margin-top:6px;padding:3px 12px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-weight:600">再試行</button>　<button onclick="SYNC.openSettings()" style="margin-top:6px;padding:3px 12px;background:transparent;border:1px solid #aaa;border-radius:6px;cursor:pointer">設定確認</button>'; }
+        });
+      }
     } else {
       updateSyncUI('no-key');
       const mb=document.getElementById('mobile-sync-banner');
