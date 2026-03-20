@@ -1029,6 +1029,8 @@ function deleteEntry(){
 }
 function closeModal(){
   document.getElementById('modal').classList.remove('open');
+  // 保存直後に閉じた場合は待たずに同期を開始
+  SYNC.flushPending(false);
 }
 
 // ─── Timeline ────────────────────────────────────────────────────────────────
@@ -1592,6 +1594,7 @@ const SYNC = {
   get key(){ return localStorage.getItem('gh_token')||''; },
   get gistId(){ return localStorage.getItem('gh_gist')||''; },
   timer: null,
+  hasPendingChanges: false,
 
   init(){
     // Migrate keys from older versions (JSONbin sync) to current GitHub Gist keys
@@ -1668,9 +1671,17 @@ const SYNC = {
 
   schedule(){
     if(!this.key) return;
+    this.hasPendingChanges = true;
     updateSyncUI('pending');
     clearTimeout(this.timer);
     this.timer = setTimeout(()=>this.push(), 3000);
+  },
+
+  // Flush pending changes immediately (used when app/tab is closing)
+  flushPending(useKeepalive=false){
+    if(!this.key || !this.gistId || !this.hasPendingChanges) return;
+    clearTimeout(this.timer);
+    this.push({keepalive:useKeepalive, silent:true}).catch(()=>{});
   },
 
   getData(){
@@ -1704,7 +1715,8 @@ const SYNC = {
     updateSyncUI('synced');
   },
 
-  async push(){
+  async push(opts={}){
+    const {keepalive=false} = opts;
     if(!this.key||!this.gistId) return;
     updateSyncUI('syncing');
     const data = this.getData();
@@ -1712,13 +1724,15 @@ const SYNC = {
     try{
       r = await fetch(`${this.BASE}/${this.gistId}`,{
         method:'PATCH', headers:this.headers(),
-        body: JSON.stringify({files:{[this.FILE]:{content:JSON.stringify(data)}}})
+        body: JSON.stringify({files:{[this.FILE]:{content:JSON.stringify(data)}}}),
+        keepalive: !!keepalive
       });
     }catch(e){
       throw new Error(`Gist更新通信失敗: ${e?.message||e} (${this.BASE}/${this.gistId})`);
     }
     if(!r.ok) throw new Error((await r.json()).message||r.status);
     localStorage.setItem('diary_last_synced_at', String(data.updatedAt));
+    this.hasPendingChanges = false;
     updateSyncUI('synced');
   },
 
@@ -1961,9 +1975,13 @@ async function autoPull(){
 // タブ・アプリが前面に戻った時に自動取得
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible') autoPull();
+  if(document.visibilityState==='hidden') SYNC.flushPending(true);
 });
 // ウィンドウがフォーカスされた時
 window.addEventListener('focus', autoPull);
+// タブを閉じる/ページ遷移時にも未送信分を即時同期
+window.addEventListener('pagehide', ()=>SYNC.flushPending(true));
+window.addEventListener('beforeunload', ()=>SYNC.flushPending(true));
 // Facebook誕生日 自動インポート（diary_fb_birthdaysキーに保存）
 (function(){
   if(localStorage.getItem('diary_fb_birthdays')) return;
