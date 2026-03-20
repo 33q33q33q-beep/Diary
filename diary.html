@@ -509,28 +509,39 @@ function setCookie(name, value, days=365){
   const maxAge = Math.max(1, Math.floor(days*24*60*60));
   document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`;
 }
+const _syncMem = { token:'', gist:'' };
+function safeGet(storage, key){
+  try{ return storage.getItem(key)||''; }catch(e){ return ''; }
+}
+function safeSet(storage, key, value){
+  try{ storage.setItem(key, value); return true; }catch(e){ return false; }
+}
 function getSyncToken(){
-  return localStorage.getItem('gh_token')
-    || sessionStorage.getItem('gh_token')
+  return safeGet(localStorage, 'gh_token')
+    || safeGet(sessionStorage, 'gh_token')
     || getCookie('gh_token')
+    || _syncMem.token
     || '';
 }
 function getSyncGistId(){
-  return localStorage.getItem('gh_gist')
-    || sessionStorage.getItem('gh_gist')
+  return safeGet(localStorage, 'gh_gist')
+    || safeGet(sessionStorage, 'gh_gist')
     || getCookie('gh_gist')
+    || _syncMem.gist
     || '';
 }
 function persistSyncCreds(token, gistId){
   if(token){
-    localStorage.setItem('gh_token', token);
-    sessionStorage.setItem('gh_token', token);
-    setCookie('gh_token', token, 365);
+    safeSet(localStorage, 'gh_token', token);
+    safeSet(sessionStorage, 'gh_token', token);
+    try{ setCookie('gh_token', token, 365); }catch(e){}
+    _syncMem.token = token;
   }
   if(gistId){
-    localStorage.setItem('gh_gist', gistId);
-    sessionStorage.setItem('gh_gist', gistId);
-    setCookie('gh_gist', gistId, 365);
+    safeSet(localStorage, 'gh_gist', gistId);
+    safeSet(sessionStorage, 'gh_gist', gistId);
+    try{ setCookie('gh_gist', gistId, 365); }catch(e){}
+    _syncMem.gist = gistId;
   }
 }
 
@@ -1654,20 +1665,20 @@ const SYNC = {
 
   init(){
     // Migrate keys from older versions (JSONbin sync) to current GitHub Gist keys
-    const jbKey = localStorage.getItem('jb_key');
-    const jbBin = localStorage.getItem('jb_bin');
-    if(jbKey && !localStorage.getItem('gh_token')) localStorage.setItem('gh_token', jbKey);
-    if(jbBin && !localStorage.getItem('gh_gist')) localStorage.setItem('gh_gist', jbBin);
+    const jbKey = safeGet(localStorage, 'jb_key');
+    const jbBin = safeGet(localStorage, 'jb_bin');
+    if(jbKey && !safeGet(localStorage, 'gh_token')) safeSet(localStorage, 'gh_token', jbKey);
+    if(jbBin && !safeGet(localStorage, 'gh_gist')) safeSet(localStorage, 'gh_gist', jbBin);
     // iOS/Safari対策: sessionStorage 側にも保持（localStorageが不安定なケース）
-    if(localStorage.getItem('gh_token') && !sessionStorage.getItem('gh_token')) sessionStorage.setItem('gh_token', localStorage.getItem('gh_token'));
-    if(localStorage.getItem('gh_gist') && !sessionStorage.getItem('gh_gist')) sessionStorage.setItem('gh_gist', localStorage.getItem('gh_gist'));
+    if(safeGet(localStorage, 'gh_token') && !safeGet(sessionStorage, 'gh_token')) safeSet(sessionStorage, 'gh_token', safeGet(localStorage, 'gh_token'));
+    if(safeGet(localStorage, 'gh_gist') && !safeGet(sessionStorage, 'gh_gist')) safeSet(sessionStorage, 'gh_gist', safeGet(localStorage, 'gh_gist'));
     // cookie -> storage backfill（iPhone Safariでstorageが揺れるケースの保険）
     const cTok = getCookie('gh_token');
     const cGid = getCookie('gh_gist');
-    if(cTok && !localStorage.getItem('gh_token')) localStorage.setItem('gh_token', cTok);
-    if(cTok && !sessionStorage.getItem('gh_token')) sessionStorage.setItem('gh_token', cTok);
-    if(cGid && !localStorage.getItem('gh_gist')) localStorage.setItem('gh_gist', cGid);
-    if(cGid && !sessionStorage.getItem('gh_gist')) sessionStorage.setItem('gh_gist', cGid);
+    if(cTok && !safeGet(localStorage, 'gh_token')) safeSet(localStorage, 'gh_token', cTok);
+    if(cTok && !safeGet(sessionStorage, 'gh_token')) safeSet(sessionStorage, 'gh_token', cTok);
+    if(cGid && !safeGet(localStorage, 'gh_gist')) safeSet(localStorage, 'gh_gist', cGid);
+    if(cGid && !safeGet(sessionStorage, 'gh_gist')) safeSet(sessionStorage, 'gh_gist', cGid);
     localStorage.removeItem('jb_key');
     localStorage.removeItem('jb_bin');
     if(sessionStorage.getItem('just_pulled')){
