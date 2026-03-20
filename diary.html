@@ -1235,7 +1235,7 @@ function renderAnniversaries(){
           <div class="anniv-tl-name"><span class="anniv-tl-day">${dd}日</span> ${escHtml(a.name)}${isToday?' 🎂':''}</div>
           ${a.desc?`<div class="anniv-tl-desc">${escHtml(a.desc)}</div>`:''}
         </div>
-        <button class="card-del" onclick="delAnniversary(${a.id})">削除</button>
+        <button class="card-del" onclick="delAnniversary(${JSON.stringify(a.id)},${JSON.stringify(a.date)},${JSON.stringify(a.name)})">削除</button>
       </div>`;
     });
     html+=`</div></div>`;
@@ -1248,18 +1248,33 @@ function renderAnniversaries(){
     if(cur) cur.scrollIntoView({behavior:'smooth',block:'start'});
   });
 }
-function delAnniversary(id){
-  const sid=String(id);
-  if(!sid || sid==='undefined' || sid==='null') return;
+function delAnniversary(id, date, name){
   if(!confirm('この記念日を削除しますか？')) return;
-  // anniversary管理はDB.getAnniversaries()（diary_annivs + diary_fb_birthdays）を表示するため、
-  // 両方から削除しないと「削除したのに戻る」ことが起きる。
-  const base=JSON.parse(localStorage.getItem('diary_annivs')||'[]').filter(a=>String(a.id)!==sid);
+  const sid = (id === undefined || id === null) ? '' : String(id);
+  const sDate = (date === undefined || date === null) ? '' : String(date);
+  const sName = (name === undefined || name === null) ? '' : String(name);
+
+  // announcement管理はDB.getAnniversaries()（diary_annivs + diary_fb_birthdays）を表示するため、
+  // 両方から削除する（idが欠損/不一致でも date+name で確実に消す）
+  const matchKey = (a) => {
+    const aId = (a && a.id !== undefined && a.id !== null) ? String(a.id) : '';
+    const aDate = (a && a.date !== undefined && a.date !== null) ? String(a.date) : '';
+    const aName = (a && a.name !== undefined && a.name !== null) ? String(a.name) : '';
+    const byId = sid && aId === sid;
+    const byKey = sDate && sName && aDate === sDate && aName === sName;
+    return byId || byKey;
+  };
+
+  const baseAll = JSON.parse(localStorage.getItem('diary_annivs')||'[]');
+  const base = baseAll.filter(a=>!matchKey(a));
   localStorage.setItem('diary_annivs',JSON.stringify(base));
-  const fb=JSON.parse(localStorage.getItem('diary_fb_birthdays')||'[]').filter(a=>String(a.id)!==sid);
+
+  const fbAll = JSON.parse(localStorage.getItem('diary_fb_birthdays')||'[]');
+  const fb = fbAll.filter(a=>!matchKey(a));
   localStorage.setItem('diary_fb_birthdays',JSON.stringify(fb));
-  renderAnniversaries(); showAnnivBanner();
+
   SYNC.schedule();
+  renderAnniversaries(); showAnnivBanner();
 }
 
 // ─── Media ───────────────────────────────────────────────────────────────────
