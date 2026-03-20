@@ -734,9 +734,10 @@ document.getElementById('anniv-ctx-delete').onclick=(ev)=>{
 };
 
 function deleteAnniversaryById(id){
-  const annivs=JSON.parse(localStorage.getItem('diary_annivs')||'[]').filter(a=>a.id!==id);
+  const sid=String(id);
+  const annivs=JSON.parse(localStorage.getItem('diary_annivs')||'[]').filter(a=>String(a.id)!==sid);
   localStorage.setItem('diary_annivs',JSON.stringify(annivs));
-  const fb=JSON.parse(localStorage.getItem('diary_fb_birthdays')||'[]').filter(a=>a.id!==id);
+  const fb=JSON.parse(localStorage.getItem('diary_fb_birthdays')||'[]').filter(a=>String(a.id)!==sid);
   localStorage.setItem('diary_fb_birthdays',JSON.stringify(fb));
   SYNC.schedule();
   renderCalendar();
@@ -1245,7 +1246,8 @@ function renderAnniversaries(){
   });
 }
 function delAnniversary(id){
-  const annivs=DB.getAnniversaries().filter(a=>a.id!==id);
+  const sid=String(id);
+  const annivs=DB.getAnniversaries().filter(a=>String(a.id)!==sid);
   DB.setAnniversaries(annivs);
   renderAnniversaries(); showAnnivBanner();
 }
