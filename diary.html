@@ -1689,10 +1689,15 @@ const SYNC = {
 
   async createGist(){
     updateSyncUI('syncing');
-    const r = await fetch(this.BASE,{
-      method:'POST', headers:this.headers(),
-      body: JSON.stringify({description:'Diary Data',public:false,files:{[this.FILE]:{content:JSON.stringify(this.getData())}}})
-    });
+    let r;
+    try{
+      r = await fetch(this.BASE,{
+        method:'POST', headers:this.headers(),
+        body: JSON.stringify({description:'Diary Data',public:false,files:{[this.FILE]:{content:JSON.stringify(this.getData())}}})
+      });
+    }catch(e){
+      throw new Error(`Gist作成通信失敗: ${e?.message||e} (${this.BASE})`);
+    }
     if(!r.ok) throw new Error((await r.json()).message||r.status);
     const j = await r.json();
     localStorage.setItem('gh_gist', j.id);
@@ -1703,10 +1708,15 @@ const SYNC = {
     if(!this.key||!this.gistId) return;
     updateSyncUI('syncing');
     const data = this.getData();
-    const r = await fetch(`${this.BASE}/${this.gistId}`,{
-      method:'PATCH', headers:this.headers(),
-      body: JSON.stringify({files:{[this.FILE]:{content:JSON.stringify(data)}}})
-    });
+    let r;
+    try{
+      r = await fetch(`${this.BASE}/${this.gistId}`,{
+        method:'PATCH', headers:this.headers(),
+        body: JSON.stringify({files:{[this.FILE]:{content:JSON.stringify(data)}}})
+      });
+    }catch(e){
+      throw new Error(`Gist更新通信失敗: ${e?.message||e} (${this.BASE}/${this.gistId})`);
+    }
     if(!r.ok) throw new Error((await r.json()).message||r.status);
     localStorage.setItem('diary_last_synced_at', String(data.updatedAt));
     updateSyncUI('synced');
@@ -1715,14 +1725,24 @@ const SYNC = {
   async pull(silent=false){
     if(!this.key||!this.gistId) return;
     updateSyncUI('syncing');
-    const r = await fetch(`${this.BASE}/${this.gistId}`,{headers:this.headers()});
+    let r;
+    try{
+      r = await fetch(`${this.BASE}/${this.gistId}`,{headers:this.headers()});
+    }catch(e){
+      throw new Error(`Gist取得通信失敗: ${e?.message||e} (${this.BASE}/${this.gistId})`);
+    }
     if(!r.ok) throw new Error('Gist取得失敗: '+(await r.json()).message||r.status);
     const j = await r.json();
     const fileInfo = j.files[this.FILE];
     if(!fileInfo) throw new Error('Gistにデータファイルが見つかりません');
     let content;
     if(fileInfo.truncated){
-      let rawR = await fetch(fileInfo.raw_url, {headers:{'Authorization':'Bearer '+this.key}});
+      let rawR;
+      try{
+        rawR = await fetch(fileInfo.raw_url, {headers:{'Authorization':'Bearer '+this.key}});
+      }catch(e){
+        throw new Error(`raw_url取得通信失敗: ${e?.message||e} (${fileInfo.raw_url})`);
+      }
       if(!rawR.ok) rawR = await fetch(fileInfo.raw_url);
       if(!rawR.ok) throw new Error('rawデータ取得失敗: '+rawR.status);
       content = await rawR.text();
