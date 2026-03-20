@@ -1737,29 +1737,30 @@ const SYNC = {
     if(!fileInfo) throw new Error('Gistにデータファイルが見つかりません');
     let content;
     if(fileInfo.truncated){
-      // raw_url(gist.githubusercontent.com) は環境依存で失敗しやすいため、
-      // まず GitHub API の blob(git_url) を優先して取得する。
-      if(fileInfo.git_url){
-        let blobR;
+      // gistの大容量ファイルは raw_url 取得が必要だが、環境によって失敗することがある。
+      // 失敗時は silent pull ならローカル維持で継続し、明示pull時のみエラーにする。
+      let rawErr = null;
+      let rawR = null;
+      try{
+        rawR = await fetch(fileInfo.raw_url, {headers:{'Authorization':'Bearer '+this.key}});
+      }catch(e){ rawErr = e; }
+      if((!rawR || !rawR.ok) && !rawErr){
         try{
-          blobR = await fetch(fileInfo.git_url, {headers:this.headers()});
-        }catch(e){
-          throw new Error(`blob取得通信失敗: ${e?.message||e} (${fileInfo.git_url})`);
-        }
-        if(!blobR.ok) throw new Error('blob取得失敗: '+blobR.status);
-        const blob = await blobR.json();
-        if(!blob.content) throw new Error('blobデータが空です');
-        content = atob(String(blob.content).replace(/\n/g,''));
-      } else {
-        // 互換用フォールバック（通常はここに来ない）
-        let rawR;
-        try{
-          rawR = await fetch(fileInfo.raw_url, {headers:{'Authorization':'Bearer '+this.key}});
-        }catch(e){
-          throw new Error(`raw_url取得通信失敗: ${e?.message||e} (${fileInfo.raw_url})`);
-        }
-        if(!rawR.ok) throw new Error('rawデータ取得失敗: '+rawR.status);
+          rawR = await fetch(fileInfo.raw_url);
+        }catch(e){ rawErr = e; }
+      }
+      if(rawR && rawR.ok){
         content = await rawR.text();
+      } else {
+        const msg = rawErr
+          ? `raw_url取得通信失敗: ${rawErr?.message||rawErr} (${fileInfo.raw_url})`
+          : `rawデータ取得失敗: ${rawR ? rawR.status : 'network error'}`;
+        if(silent){
+          console.warn(msg);
+          updateSyncUI('synced');
+          return;
+        }
+        throw new Error(msg);
       }
     } else {
       content = fileInfo.content;
