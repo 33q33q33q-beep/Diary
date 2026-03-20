@@ -1755,12 +1755,11 @@ const SYNC = {
         const msg = rawErr
           ? `raw_url取得通信失敗: ${rawErr?.message||rawErr} (${fileInfo.raw_url})`
           : `rawデータ取得失敗: ${rawR ? rawR.status : 'network error'}`;
-        if(silent){
-          console.warn(msg);
-          updateSyncUI('synced');
-          return;
-        }
-        throw new Error(msg);
+        // 一部ネットワーク環境で gist.githubusercontent.com へ到達できないことがある。
+        // その場合は同期エラー扱いにせず、ローカルデータを維持して継続する。
+        console.warn(msg);
+        updateSyncUI('synced');
+        return;
       }
     } else {
       content = fileInfo.content;
