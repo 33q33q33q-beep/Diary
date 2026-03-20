@@ -501,6 +501,39 @@ const DB = {
   setVisions(d){ localStorage.setItem('diary_visions', JSON.stringify(d)); SYNC.schedule(); },
 };
 
+function getCookie(name){
+  const m = document.cookie.match(new RegExp('(?:^|; )'+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : '';
+}
+function setCookie(name, value, days=365){
+  const maxAge = Math.max(1, Math.floor(days*24*60*60));
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+}
+function getSyncToken(){
+  return localStorage.getItem('gh_token')
+    || sessionStorage.getItem('gh_token')
+    || getCookie('gh_token')
+    || '';
+}
+function getSyncGistId(){
+  return localStorage.getItem('gh_gist')
+    || sessionStorage.getItem('gh_gist')
+    || getCookie('gh_gist')
+    || '';
+}
+function persistSyncCreds(token, gistId){
+  if(token){
+    localStorage.setItem('gh_token', token);
+    sessionStorage.setItem('gh_token', token);
+    setCookie('gh_token', token, 365);
+  }
+  if(gistId){
+    localStorage.setItem('gh_gist', gistId);
+    sessionStorage.setItem('gh_gist', gistId);
+    setCookie('gh_gist', gistId, 365);
+  }
+}
+
 function hasLocalDiaryData(){
   try{
     const entries = DB.getEntries();
@@ -1614,8 +1647,8 @@ function importData(){
 const SYNC = {
   BASE: 'https://api.github.com/gists',
   FILE: 'diary-data.json',
-  get key(){ return localStorage.getItem('gh_token')||sessionStorage.getItem('gh_token')||''; },
-  get gistId(){ return localStorage.getItem('gh_gist')||sessionStorage.getItem('gh_gist')||''; },
+  get key(){ return getSyncToken(); },
+  get gistId(){ return getSyncGistId(); },
   timer: null,
   hasPendingChanges: false,
 
@@ -1628,6 +1661,13 @@ const SYNC = {
     // iOS/Safari対策: sessionStorage 側にも保持（localStorageが不安定なケース）
     if(localStorage.getItem('gh_token') && !sessionStorage.getItem('gh_token')) sessionStorage.setItem('gh_token', localStorage.getItem('gh_token'));
     if(localStorage.getItem('gh_gist') && !sessionStorage.getItem('gh_gist')) sessionStorage.setItem('gh_gist', localStorage.getItem('gh_gist'));
+    // cookie -> storage backfill（iPhone Safariでstorageが揺れるケースの保険）
+    const cTok = getCookie('gh_token');
+    const cGid = getCookie('gh_gist');
+    if(cTok && !localStorage.getItem('gh_token')) localStorage.setItem('gh_token', cTok);
+    if(cTok && !sessionStorage.getItem('gh_token')) sessionStorage.setItem('gh_token', cTok);
+    if(cGid && !localStorage.getItem('gh_gist')) localStorage.setItem('gh_gist', cGid);
+    if(cGid && !sessionStorage.getItem('gh_gist')) sessionStorage.setItem('gh_gist', cGid);
     localStorage.removeItem('jb_key');
     localStorage.removeItem('jb_bin');
     if(sessionStorage.getItem('just_pulled')){
@@ -1694,10 +1734,7 @@ const SYNC = {
     const key = document.getElementById('jsonbinKeyInput').value.trim();
     const gist = document.getElementById('jsonbinBinInput').value.trim();
     if(!key){ alert('トークンを入力してください'); return; }
-    localStorage.setItem('gh_token', key);
-    sessionStorage.setItem('gh_token', key);
-    if(gist) localStorage.setItem('gh_gist', gist);
-    if(gist) sessionStorage.setItem('gh_gist', gist);
+    persistSyncCreds(key, gist);
     document.getElementById('jsonbin-modal').classList.remove('open');
     updateSyncUI('syncing');
     try{
@@ -1759,7 +1796,7 @@ const SYNC = {
     }
     if(!r.ok) throw new Error((await r.json()).message||r.status);
     const j = await r.json();
-    localStorage.setItem('gh_gist', j.id);
+    persistSyncCreds(this.key, j.id);
     updateSyncUI('synced');
   },
 
@@ -2018,8 +2055,7 @@ function updateAppViewportHeight(){
   const qp=new URLSearchParams(location.search||'');
   const t=hp.get('token')||qp.get('token');
   const g=hp.get('gist')||qp.get('gist');
-  if(t){ localStorage.setItem('gh_token',t); sessionStorage.setItem('gh_token',t); }
-  if(g){ localStorage.setItem('gh_gist',g); sessionStorage.setItem('gh_gist',g); }
+  if(t||g) persistSyncCreds(t||getSyncToken(), g||getSyncGistId());
   if((h && (hp.get('token')||hp.get('gist'))) || (location.search && (qp.get('token')||qp.get('gist')))){
     history.replaceState(null,'',location.pathname);
   }
