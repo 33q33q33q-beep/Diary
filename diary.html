@@ -19,7 +19,7 @@
 }
 html,body{height:100%;overflow:hidden}
 body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(--bg);color:var(--text)}
-#app{display:flex;height:100vh;height:100svh;padding-top:env(safe-area-inset-top)}
+#app{display:flex;height:100vh;height:100svh;height:calc(var(--app-vh,1vh)*100);padding-top:env(safe-area-inset-top)}
 /* Sidebar */
 #sidebar{width:220px;height:100%;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0 0;flex-shrink:0;box-shadow:var(--shadow);overflow-y:auto}
 #sync-area{padding:12px 16px;border-top:1px solid var(--border);margin-top:auto;padding-bottom:max(12px,env(safe-area-inset-bottom))}
@@ -1769,19 +1769,9 @@ const SYNC = {
     try { d = JSON.parse(content); }
     catch(e){ throw new Error('データ解析エラー: '+e.message); }
 
-    // updatedAtチェック: Gistが古ければサイレント時はスキップ
-    // ただし「ローカルが空なのに last_synced_at だけ残っている」ケースでは
-    // iPhone側にデータが来ないため、内容があるなら取得する
+    // 端末時刻差で「新しいデータなのにスキップ」されるのを避けるため、
+    // silentでも常に取得して適用する。
     const gistUpdatedAt = d.updatedAt || 0;
-    const localSyncedAt = parseInt(localStorage.getItem('diary_last_synced_at')||'0');
-    const gistEntryCount = Object.keys((d.entries && typeof d.entries==='object') ? d.entries : {}).length;
-    const localEntryCount = Object.keys(DB.getEntries()).length;
-    const allowPullEvenIfSameTime = (localEntryCount===0 && gistEntryCount>0);
-    if(silent && !allowPullEvenIfSameTime && gistUpdatedAt > 0 && gistUpdatedAt <= localSyncedAt){
-      console.log('Gistは最新のローカルと同じか古いためスキップ');
-      updateSyncUI('synced');
-      return;
-    }
 
     const errors=[];
     const trySet=(key,val)=>{
@@ -1927,6 +1917,11 @@ function renderCurrentPage(){
   else if(id==='todo'){ renderGoals(); renderVisions(); }
 }
 
+function updateAppViewportHeight(){
+  const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.01;
+  document.documentElement.style.setProperty('--app-vh', `${vh}px`);
+}
+
 // ─── Init ────────────────────────────────────────────────────────────────────
 // URLハッシュから同期設定を自動読み込み
 (function(){
@@ -1940,9 +1935,15 @@ function renderCurrentPage(){
 })();
 
 SYNC.init();
+updateAppViewportHeight();
 initCalendar();
 initCalToggles();
 loadHolidays(new Date().getFullYear());
+window.addEventListener('resize', updateAppViewportHeight);
+window.addEventListener('orientationchange', updateAppViewportHeight);
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', updateAppViewportHeight);
+}
 
 // ─── 自動同期 ─────────────────────────────────────────────────────────────────
 let lastAutoPull=Date.now();
