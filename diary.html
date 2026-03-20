@@ -1734,10 +1734,30 @@ const SYNC = {
     const key = document.getElementById('jsonbinKeyInput').value.trim();
     const gist = document.getElementById('jsonbinBinInput').value.trim();
     if(!key){ alert('トークンを入力してください'); return; }
+    // 先に保存して「未設定」に戻る事故を防ぐ（iPhoneの一時的通信失敗対策）
     persistSyncCreds(key, gist);
-    document.getElementById('jsonbin-modal').classList.remove('open');
     updateSyncUI('syncing');
     try{
+      // 設定保存前に token/gist の妥当性を検証
+      const userR = await this.fetchWithRetry('https://api.github.com/user', {
+        headers: {'Authorization':'Bearer '+key, 'Accept':'application/vnd.github+json'}
+      });
+      if(!userR.ok){
+        let msg='トークン検証失敗';
+        try{ msg=(await userR.json()).message||msg; }catch(e){}
+        throw new Error('トークンが無効です: '+msg);
+      }
+      if(gist){
+        const gistR = await this.fetchWithRetry(`${this.BASE}/${gist}`, {
+          headers: {'Authorization':'Bearer '+key, 'Accept':'application/vnd.github+json'}
+        });
+        if(!gistR.ok){
+          let msg='Gist検証失敗';
+          try{ msg=(await gistR.json()).message||msg; }catch(e){}
+          throw new Error('Gist IDが無効です: '+msg);
+        }
+      }
+      document.getElementById('jsonbin-modal').classList.remove('open');
       if(!this.gistId){
         // Gist ID がない場合のみ新規作成
         await this.createGist();
@@ -1749,7 +1769,18 @@ const SYNC = {
       const mb=document.getElementById('mobile-sync-banner');
       if(mb) mb.style.display='none';
       renderCalendar(); showAnnivBanner();
-    } catch(e){ updateSyncUI('error'); alert('同期エラー: '+e.message); }
+    } catch(e){
+      const msg = String(e?.message||e||'');
+      // iPhone Safariで出る一時的なネットワーク失敗は設定保持したままにする
+      if(/Load failed|Failed to fetch|NetworkError/i.test(msg)){
+        updateSyncUI('pending');
+        document.getElementById('jsonbin-modal').classList.remove('open');
+        alert('設定は保存しました。通信が不安定なため、今は取得に失敗しました。\n少し待ってから「同期」ボタンを再実行してください。');
+        return;
+      }
+      updateSyncUI('error');
+      alert('同期エラー: '+msg);
+    }
   },
 
   schedule(){
@@ -1783,11 +1814,32 @@ const SYNC = {
     return {'Authorization':'Bearer '+this.key,'Content-Type':'application/json','Accept':'application/vnd.github+json'};
   },
 
+  async fetchWithRetry(url, opts={}, retry=2, timeoutMs=12000){
+    let lastErr = null;
+    for(let i=0;i<=retry;i++){
+      const controller = new AbortController();
+      const timer = setTimeout(()=>controller.abort(), timeoutMs);
+      try{
+        const res = await fetch(url, { cache:'no-store', ...opts, signal:controller.signal });
+        clearTimeout(timer);
+        return res;
+      }catch(e){
+        clearTimeout(timer);
+        lastErr = e;
+        if(i<retry){
+          await new Promise(r=>setTimeout(r, 500*(i+1)));
+          continue;
+        }
+      }
+    }
+    throw lastErr || new Error('network error');
+  },
+
   async createGist(){
     updateSyncUI('syncing');
     let r;
     try{
-      r = await fetch(this.BASE,{
+      r = await this.fetchWithRetry(this.BASE,{
         method:'POST', headers:this.headers(),
         body: JSON.stringify({description:'Diary Data',public:false,files:{[this.FILE]:{content:JSON.stringify(this.getData())}}})
       });
@@ -1807,7 +1859,7 @@ const SYNC = {
     const data = this.getData();
     let r;
     try{
-      r = await fetch(`${this.BASE}/${this.gistId}`,{
+      r = await this.fetchWithRetry(`${this.BASE}/${this.gistId}`,{
         method:'PATCH', headers:this.headers(),
         body: JSON.stringify({files:{[this.FILE]:{content:JSON.stringify(data)}}}),
         keepalive: !!keepalive
@@ -1826,7 +1878,7 @@ const SYNC = {
     updateSyncUI('syncing');
     let r;
     try{
-      r = await fetch(`${this.BASE}/${this.gistId}`,{headers:this.headers()});
+      r = await this.fetchWithRetry(`${this.BASE}/${this.gistId}`,{headers:this.headers()});
     }catch(e){
       throw new Error(`Gist取得通信失敗: ${e?.message||e} (${this.BASE}/${this.gistId})`);
     }
@@ -1841,7 +1893,7 @@ const SYNC = {
       let lastErr = null;
       if(fileInfo.git_url){
         try{
-          const blobR = await fetch(fileInfo.git_url, {headers:this.headers()});
+          const blobR = await this.fetchWithRetry(fileInfo.git_url, {headers:this.headers()});
           if(blobR.ok){
             const blob = await blobR.json();
             if(blob && blob.content){
@@ -1857,11 +1909,11 @@ const SYNC = {
       if(!content){
         let rawR = null;
         try{
-          rawR = await fetch(fileInfo.raw_url, {headers:{'Authorization':'Bearer '+this.key}});
+          rawR = await this.fetchWithRetry(fileInfo.raw_url, {headers:{'Authorization':'Bearer '+this.key}});
         }catch(e){ lastErr = e; }
         if((!rawR || !rawR.ok) && !lastErr){
           try{
-            rawR = await fetch(fileInfo.raw_url);
+            rawR = await this.fetchWithRetry(fileInfo.raw_url);
           }catch(e){ lastErr = e; }
         }
         if(rawR && rawR.ok){
@@ -1875,7 +1927,11 @@ const SYNC = {
           updateSyncUI('synced');
           return;
         }
-        throw new Error(msg);
+        throw new Error(
+          /Load failed|Failed to fetch|NetworkError/i.test(String(lastErr?.message||'')) ?
+          '同期データ取得失敗: Load failed（iPhone通信制限の可能性）' :
+          msg
+        );
       }
     } else {
       content = fileInfo.content;
