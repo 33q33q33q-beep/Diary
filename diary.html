@@ -1737,15 +1737,32 @@ const SYNC = {
     if(!fileInfo) throw new Error('Gistにデータファイルが見つかりません');
     let content;
     if(fileInfo.truncated){
-      let rawR;
+      let rawR = null;
       try{
         rawR = await fetch(fileInfo.raw_url, {headers:{'Authorization':'Bearer '+this.key}});
-      }catch(e){
-        throw new Error(`raw_url取得通信失敗: ${e?.message||e} (${fileInfo.raw_url})`);
+      }catch(e){}
+      if(!rawR || !rawR.ok){
+        try{
+          rawR = await fetch(fileInfo.raw_url);
+        }catch(e){}
       }
-      if(!rawR.ok) rawR = await fetch(fileInfo.raw_url);
-      if(!rawR.ok) throw new Error('rawデータ取得失敗: '+rawR.status);
-      content = await rawR.text();
+      if(rawR && rawR.ok){
+        content = await rawR.text();
+      } else if(fileInfo.git_url){
+        // iOS Safariでgist.githubusercontent.com(raw_url)が失敗する場合のフォールバック
+        let blobR;
+        try{
+          blobR = await fetch(fileInfo.git_url, {headers:this.headers()});
+        }catch(e){
+          throw new Error(`raw_url取得通信失敗: ${e?.message||e} (${fileInfo.raw_url})`);
+        }
+        if(!blobR.ok) throw new Error('blob取得失敗: '+blobR.status);
+        const blob = await blobR.json();
+        if(!blob.content) throw new Error('blobデータが空です');
+        content = atob(String(blob.content).replace(/\n/g,''));
+      } else {
+        throw new Error(`rawデータ取得失敗: ${rawR ? rawR.status : 'network error'}`);
+      }
     } else {
       content = fileInfo.content;
     }
