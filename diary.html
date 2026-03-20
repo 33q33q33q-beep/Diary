@@ -1751,29 +1751,46 @@ const SYNC = {
     if(!fileInfo) throw new Error('Gistにデータファイルが見つかりません');
     let content;
     if(fileInfo.truncated){
-      // gistの大容量ファイルは raw_url 取得が必要だが、環境によって失敗することがある。
-      // 失敗時は silent pull ならローカル維持で継続し、明示pull時のみエラーにする。
-      let rawErr = null;
-      let rawR = null;
-      try{
-        rawR = await fetch(fileInfo.raw_url, {headers:{'Authorization':'Bearer '+this.key}});
-      }catch(e){ rawErr = e; }
-      if((!rawR || !rawR.ok) && !rawErr){
+      // 大容量ファイルはまず git_url(blob API) から取得し、失敗時のみ raw_url を使う。
+      // raw_url が到達できない環境でも最新データを取り込めるようにする。
+      let lastErr = null;
+      if(fileInfo.git_url){
         try{
-          rawR = await fetch(fileInfo.raw_url);
-        }catch(e){ rawErr = e; }
+          const blobR = await fetch(fileInfo.git_url, {headers:this.headers()});
+          if(blobR.ok){
+            const blob = await blobR.json();
+            if(blob && blob.content){
+              content = atob(String(blob.content).replace(/\n/g,''));
+            }
+          } else {
+            lastErr = new Error('blob取得失敗: '+blobR.status);
+          }
+        }catch(e){
+          lastErr = e;
+        }
       }
-      if(rawR && rawR.ok){
-        content = await rawR.text();
-      } else {
-        const msg = rawErr
-          ? `raw_url取得通信失敗: ${rawErr?.message||rawErr} (${fileInfo.raw_url})`
-          : `rawデータ取得失敗: ${rawR ? rawR.status : 'network error'}`;
-        // 一部ネットワーク環境で gist.githubusercontent.com へ到達できないことがある。
-        // その場合は同期エラー扱いにせず、ローカルデータを維持して継続する。
-        console.warn(msg);
-        updateSyncUI('synced');
-        return;
+      if(!content){
+        let rawR = null;
+        try{
+          rawR = await fetch(fileInfo.raw_url, {headers:{'Authorization':'Bearer '+this.key}});
+        }catch(e){ lastErr = e; }
+        if((!rawR || !rawR.ok) && !lastErr){
+          try{
+            rawR = await fetch(fileInfo.raw_url);
+          }catch(e){ lastErr = e; }
+        }
+        if(rawR && rawR.ok){
+          content = await rawR.text();
+        }
+      }
+      if(!content){
+        const msg = `同期データ取得失敗: ${lastErr?.message||'network error'}`;
+        if(silent){
+          console.warn(msg);
+          updateSyncUI('synced');
+          return;
+        }
+        throw new Error(msg);
       }
     } else {
       content = fileInfo.content;
