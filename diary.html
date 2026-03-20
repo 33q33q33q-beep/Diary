@@ -735,6 +735,8 @@ document.getElementById('anniv-ctx-delete').onclick=(ev)=>{
 
 function deleteAnniversaryById(id){
   const sid=String(id);
+  if(!sid || sid==='undefined' || sid==='null') return;
+  if(!confirm('この記念日を削除しますか？')) return;
   const annivs=JSON.parse(localStorage.getItem('diary_annivs')||'[]').filter(a=>String(a.id)!==sid);
   localStorage.setItem('diary_annivs',JSON.stringify(annivs));
   const fb=JSON.parse(localStorage.getItem('diary_fb_birthdays')||'[]').filter(a=>String(a.id)!==sid);
@@ -774,7 +776,8 @@ function showAnnivBanner(baseDate){
   const weekLabel=isCurrentWeek?'今週の記念日':`${n.getMonth()+1}/${n.getDate()} の週の記念日`;
   banner.querySelector('h3').childNodes[0].textContent=weekLabel+' ';
   document.getElementById('banner-items').innerHTML=weekAnnivs.map(a=>{
-    return `<span class="anniv-chip${a.isToday?' is-today':''}" data-anniv-id="${a.id}" oncontextmenu="(function(e){e.preventDefault();e.stopPropagation();_ctxAnnivId=${a.id};const m=document.getElementById('anniv-ctx');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.style.display='block';})(event)">${a.icon||'🎉'} <b>${a.label}</b> ${escHtml(a.name)}${a.isToday?' 🎂':''}</span>`;
+    const annivId = a && a.id !== undefined ? String(a.id) : '';
+    return `<span class="anniv-chip${a.isToday?' is-today':''}" data-anniv-id="${escHtml(annivId)}" oncontextmenu="(function(e){e.preventDefault();e.stopPropagation();_ctxAnnivId=${JSON.stringify(annivId)};const m=document.getElementById('anniv-ctx');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.style.display='block';})(event)">${a.icon||'🎉'} <b>${a.label}</b> ${escHtml(a.name)}${a.isToday?' 🎂':''}</span>`;
   }).join('');
 }
 
@@ -1247,9 +1250,16 @@ function renderAnniversaries(){
 }
 function delAnniversary(id){
   const sid=String(id);
-  const annivs=DB.getAnniversaries().filter(a=>String(a.id)!==sid);
-  DB.setAnniversaries(annivs);
+  if(!sid || sid==='undefined' || sid==='null') return;
+  if(!confirm('この記念日を削除しますか？')) return;
+  // anniversary管理はDB.getAnniversaries()（diary_annivs + diary_fb_birthdays）を表示するため、
+  // 両方から削除しないと「削除したのに戻る」ことが起きる。
+  const base=JSON.parse(localStorage.getItem('diary_annivs')||'[]').filter(a=>String(a.id)!==sid);
+  localStorage.setItem('diary_annivs',JSON.stringify(base));
+  const fb=JSON.parse(localStorage.getItem('diary_fb_birthdays')||'[]').filter(a=>String(a.id)!==sid);
+  localStorage.setItem('diary_fb_birthdays',JSON.stringify(fb));
   renderAnniversaries(); showAnnivBanner();
+  SYNC.schedule();
 }
 
 // ─── Media ───────────────────────────────────────────────────────────────────
