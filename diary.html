@@ -1618,7 +1618,7 @@ const SYNC = {
       if(this.key) this.push().catch(()=>updateSyncUI('error'));
       return;
     }
-    if(this.key){
+    if(this.key && this.gistId){
       // gistId が未設定なら、まず自動でGistを作成して以後の手入力を減らす
       if(!this.gistId){
         this.createGist().then(()=>{
@@ -1669,8 +1669,17 @@ const SYNC = {
     document.getElementById('jsonbin-modal').classList.remove('open');
     updateSyncUI('syncing');
     try{
-      if(!this.gistId) await this.createGist();
-      else await this.push();
+      if(!this.gistId){
+        // Gist ID がない場合のみ新規作成
+        await this.createGist();
+      } else {
+        // 既存Gistを指定した端末では、先に pull して最新を取得する。
+        // 先に push すると空ローカルで上書きしてしまう事故が起きるため禁止。
+        await this.pull(false);
+      }
+      const mb=document.getElementById('mobile-sync-banner');
+      if(mb) mb.style.display='none';
+      renderCalendar(); showAnnivBanner();
     } catch(e){ updateSyncUI('error'); alert('同期エラー: '+e.message); }
   },
 
