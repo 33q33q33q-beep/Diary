@@ -1690,9 +1690,11 @@ const SYNC = {
   },
 
   getData(){
+    const fbBirthdays = JSON.parse(localStorage.getItem('diary_fb_birthdays')||'[]');
     return {
       entries: DB.getEntries(),
       annivs: DB.getAnniversaries().filter(a=>a.desc!=='Facebook誕生日'),
+      fbBirthdays: Array.isArray(fbBirthdays) ? fbBirthdays : [],
       media: DB.getMedia(), todos: DB.getTodos(), goals: DB.getGoals(), visions: DB.getVisions(),
       userTags: getUserTags(),
       updatedAt: Date.now()
@@ -1827,6 +1829,8 @@ const SYNC = {
       }
     }
     if(d.annivs) trySet('diary_annivs', toArr(d.annivs));
+    // Facebook誕生日も同期対象にする（削除が他端末で復活しないように）
+    if(d.fbBirthdays) trySet('diary_fb_birthdays', toArr(d.fbBirthdays));
     const gistMedia=toArr(d.media); const localMedia=DB.getMedia();
     if(gistMedia.length===0&&localMedia.length>0){ console.warn('Gistのメディアが0件のためローカルを保持'); }
     else if(d.media) trySet('diary_media', gistMedia);
@@ -1849,14 +1853,15 @@ const SYNC = {
     if(!this.key||!this.gistId){ this.openSettings(); return; }
     updateSyncUI('syncing');
     try{
+      const hadPending = this.hasPendingChanges;
       if(this.hasPendingChanges){
         // ローカルに未送信変更がある時は、まず保存してから最新を再取得
         await this.push();
-        await this.pull(true);
-      } else {
-        // 未編集端末（iPhoneなど）では最新を取りに行く
-        await this.pull(false);
       }
+      // 端末が古い場合でも確実に最新を取得する
+      await this.pull(false);
+      // 編集端末では取り込み後に再pushして、最終的にGistを最新で確定
+      if(hadPending) await this.push();
       localStorage.setItem('diary_last_synced_at', String(Date.now()));
       updateSyncUI('synced');
       renderCalendar(); showAnnivBanner();
