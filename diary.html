@@ -840,13 +840,22 @@ function toggleShopInput(){
 }
 
 let _ctxAnnivId=null;
+let _ctxAnnivDate='';
+let _ctxAnnivName='';
 const _annivCtxEl=document.getElementById('anniv-ctx');
 document.addEventListener('click',()=>{_annivCtxEl.style.display='none';});
 document.getElementById('anniv-ctx-delete').onclick=(ev)=>{
   // document側のclickで先に閉じられるのを防ぐ（iOSで起きやすい）
   ev.stopPropagation();
-  if(_ctxAnnivId!==null) deleteAnniversaryById(_ctxAnnivId);
+  const sid = _ctxAnnivId!=null && String(_ctxAnnivId)!=='' ? String(_ctxAnnivId) : '';
+  if(sid && sid!=='undefined' && sid!=='null'){
+    deleteAnniversaryById(sid);
+  }else if(_ctxAnnivDate && _ctxAnnivName){
+    delAnniversary(null, _ctxAnnivDate, _ctxAnnivName);
+  }
   _ctxAnnivId=null;
+  _ctxAnnivDate='';
+  _ctxAnnivName='';
   _annivCtxEl.style.display='none';
 };
 
@@ -893,8 +902,10 @@ function showAnnivBanner(baseDate){
   const weekLabel=isCurrentWeek?'今週の記念日':`${n.getMonth()+1}/${n.getDate()} の週の記念日`;
   banner.querySelector('h3').childNodes[0].textContent=weekLabel+' ';
   document.getElementById('banner-items').innerHTML=weekAnnivs.map(a=>{
-    const annivId = a && a.id !== undefined ? String(a.id) : '';
-    return `<span class="anniv-chip${a.isToday?' is-today':''}" data-anniv-id="${escHtml(annivId)}" oncontextmenu="(function(e){e.preventDefault();e.stopPropagation();_ctxAnnivId=${JSON.stringify(annivId)};const m=document.getElementById('anniv-ctx');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.style.display='block';})(event)">${a.icon||'🎉'} <b>${a.label}</b> ${escHtml(a.name)}${a.isToday?' 🎂':''}</span>`;
+    const annivId = (a && a.id !== undefined && a.id !== null) ? String(a.id) : '';
+    const dEsc = escHtml(a.date||'');
+    const nEsc = escHtml(a.name||'');
+    return `<span class="anniv-chip${a.isToday?' is-today':''}" data-anniv-id="${escHtml(annivId)}" data-anniv-date="${dEsc}" data-anniv-name="${nEsc}" oncontextmenu="(function(e){e.preventDefault();e.stopPropagation();_ctxAnnivId=${annivId?JSON.stringify(annivId):'null'};_ctxAnnivDate=${JSON.stringify(String(a.date||''))};_ctxAnnivName=${JSON.stringify(String(a.name||''))};var m=document.getElementById('anniv-ctx');m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.style.display='block';})(event)">${a.icon||'🎉'} <b>${a.label}</b> ${escHtml(a.name)}${a.isToday?' 🎂':''}</span>`;
   }).join('');
 }
 
@@ -1310,9 +1321,11 @@ function addAnniversary(){
   const icon=document.getElementById('annivIcon').value||'🎉';
   if(!name||!date){alert('名前と日付を入力してください');return;}
   if(!/^\d{2}-\d{2}$/.test(date)){alert('日付は MM-DD 形式で入力してください（例: 06-15）');return;}
-  const annivs=DB.getAnniversaries();
-  annivs.push({id:Date.now(),name,date,desc,icon});
-  DB.setAnniversaries(annivs);
+  // getAnniversaries() は FB 等をマージした表示用なので、追加は raw の diary_annivs のみに行う
+  const annivs=JSON.parse(localStorage.getItem('diary_annivs')||'[]');
+  const base=Array.isArray(annivs)?annivs:[];
+  base.push({id:Date.now(),name,date,desc,icon});
+  DB.setAnniversaries(base);
   document.getElementById('annivName').value='';
   document.getElementById('annivDate').value='';
   document.getElementById('annivDesc').value='';
@@ -1354,7 +1367,7 @@ function renderAnniversaries(){
           <div class="anniv-tl-name"><span class="anniv-tl-day">${dd}日</span> ${escHtml(a.name)}${isToday?' 🎂':''}</div>
           ${a.desc?`<div class="anniv-tl-desc">${escHtml(a.desc)}</div>`:''}
         </div>
-        <button class="card-del" onclick="delAnniversary(${JSON.stringify(a.id)},${JSON.stringify(a.date)},${JSON.stringify(a.name)})">削除</button>
+        <button class="card-del" onclick="delAnniversary(${a!=null&&a.id!=null?JSON.stringify(a.id):'null'},${JSON.stringify(a.date)},${JSON.stringify(a.name)})">削除</button>
       </div>`;
     });
     html+=`</div></div>`;
