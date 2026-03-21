@@ -500,8 +500,13 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:8px">
         Google Cloud Console で「OAuth クライアント ID（ウェブアプリ）」を作成し、<strong>承認済みの JavaScript 生成元</strong>にこのサイトのURL（例: <code>https://あなた.github.io</code>）を追加してください。スコープはアプリが作成したファイルのみ（drive.file）です。
       </p>
-      <p style="font-size:11px;color:var(--text-muted);margin-bottom:6px">📱 <strong>Macと別端末</strong>のため、iPhoneでもクライアントIDの入力が必要です。下の「設定リンクをコピー」をMacで押し、iPhoneのSafariで開くと自動でIDが入ります。</p>
-      <input type="text" id="gdriveClientIdInput" placeholder="クライアント ID（xxx.apps.googleusercontent.com）" style="width:100%;margin-bottom:8px">
+      <p style="font-size:11px;color:#8a5a00;margin-bottom:8px;padding:8px 10px;background:#fff8e6;border:1px solid #f0c040;border-radius:8px;line-height:1.5">
+        <strong>重要（iPhone）</strong><br>
+        クライアント ID を <strong>Safari のアドレス欄にだけ貼らないでください</strong>。ブラウザが勝手に <code>http://数字-…</code> と解釈して Google の <strong>404</strong> になります。<br>
+        手順: <strong>①</strong>下の欄に貼る または <strong>②</strong>「Drive設定リンク」をコピーした<strong>全体の https://… URL</strong>をアドレス欄で開く。
+      </p>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:6px">📱 Macで「Drive設定リンクをコピー」→ iPhoneのSafariで<strong>リンク全体</strong>を開くと ID が入ります。</p>
+      <input type="text" id="gdriveClientIdInput" placeholder="123456789-xxxx.apps.googleusercontent.com（末尾まで）" style="width:100%;margin-bottom:8px" autocomplete="off" autocorrect="off" spellcheck="false">
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
         <button type="button" class="btn" onclick="SYNC.copyGdriveSetupLink()" style="font-size:11px">📱 Drive設定リンクをコピー</button>
         <button type="button" class="btn btn-primary" onclick="DRIVE_SYNC.connectAndPrepare()">🔐 ログインしてフォルダ作成</button>
@@ -2054,9 +2059,16 @@ const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
 
+function normalizeGdriveClientId(raw){
+  return String(raw||'').trim().replace(/[\r\n]/g,'').replace(/\s+/g,'');
+}
+/** Cloud Console の「OAuth 2.0 クライアント ID」1行（例: 123-abc....apps.googleusercontent.com） */
+function isValidGdriveClientId(cid){
+  return typeof cid === 'string' && /^\d+-[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/.test(cid);
+}
 function getGdriveClientId(){
   const s = safeGet(localStorage, 'diary_gdrive_client_id');
-  return s ? String(s).trim().replace(/[\r\n]/g,'') : '';
+  return s ? normalizeGdriveClientId(s) : '';
 }
 function getGdriveToken(){ return safeGet(localStorage, 'diary_gdrive_token'); }
 function setGdriveToken(t, expiresInSec){
@@ -2067,6 +2079,9 @@ async function ensureGdriveTokenInteractive(){
   await loadScriptOnce('https://accounts.google.com/gsi/client');
   const cid = getGdriveClientId();
   if(!cid) throw new Error('Google のクライアント ID を設定してください');
+  if(!isValidGdriveClientId(cid)){
+    throw new Error('クライアント ID の形式が正しくありません。末尾まで「.apps.googleusercontent.com」がある1行を、日記の設定欄に貼ってください（Safariのアドレス欄には貼らないでください）。');
+  }
   return new Promise((resolve,reject)=>{
     try{
       const tc = google.accounts.oauth2.initTokenClient({
@@ -2201,9 +2216,14 @@ const DRIVE_SYNC = {
     this.updateStatus('切断しました');
   },
   async connectAndPrepare(){
-    const cid = (document.getElementById('gdriveClientIdInput')?.value || '').trim();
+    const cid = normalizeGdriveClientId(document.getElementById('gdriveClientIdInput')?.value || '');
     if(!cid){ alert('クライアント ID を入力してください'); return; }
+    if(!isValidGdriveClientId(cid)){
+      alert('クライアント ID の形式が違います。\n\nCloud Console → 認証情報 → OAuth 2.0 クライアント ID（種類:ウェブアプリ）の「クライアント ID」列を、末尾の .apps.googleusercontent.com まで丸ごとコピーして、この入力欄に貼ってください。\n\n※プロジェクト番号だけ・途中まででは動きません。\n※Safariのアドレス欄には貼らないでください。');
+      return;
+    }
     safeSet(localStorage, 'diary_gdrive_client_id', cid);
+    document.getElementById('gdriveClientIdInput').value = cid;
     setSyncBackend('gdrive');
     this.updateStatus('ログイン中…');
     try{
@@ -2438,14 +2458,14 @@ const SYNC = {
   },
 
   copyGdriveSetupLink(){
-    const raw=(document.getElementById('gdriveClientIdInput')?.value||'').trim().replace(/[\r\n]/g,'')||getGdriveClientId();
+    const raw=normalizeGdriveClientId(document.getElementById('gdriveClientIdInput')?.value||'')||getGdriveClientId();
     if(!raw){ alert('先に Cloud Console の「クライアント ID」を上の欄に貼り付けてください（Macで一度入力済みなら設定を開くと表示されます）'); return; }
-    if(!/\.apps\.googleusercontent\.com$/i.test(raw)){
-      alert('クライアント ID の形式が違います。末尾が .apps.googleusercontent.com である行をコピーしてください（シークレットではありません）。');
+    if(!isValidGdriveClientId(raw)){
+      alert('クライアント ID の形式が違います。例: 数字-英数字.apps.googleusercontent.com の1行全体です（プロジェクト番号だけではありません）。');
       return;
     }
     const url=location.origin+location.pathname+'#gdrive_client='+encodeURIComponent(raw);
-    navigator.clipboard.writeText(url).then(()=>alert('Drive用リンクをコピーしました！\n\niPhoneのSafariのアドレス欄に貼り付けて開いてください。\n開いたあと「ログインしてフォルダ作成」を押します。\n\n※リンクにクライアントIDが含まれます。人に送らないでください。')).catch(()=>{prompt('このURLをコピー：',url);});
+    navigator.clipboard.writeText(url).then(()=>alert('Drive用リンクをコピーしました！\n\n【iPhone】Safariのアドレス欄に、このコピーしたURLの「https://から最後まで」全部を貼って開いてください。\n（クライアントIDだけを貼ると404になります）\n\n開いたあと「ログインしてフォルダ作成」を押します。\n\n※人に送らないでください。')).catch(()=>{prompt('このURLをコピー：',url);});
   },
 
   async saveSettings(){
@@ -2921,8 +2941,8 @@ function updateAppViewportHeight(){
   const gd=hp.get('gdrive_client')||qp.get('gdrive_client')||hp.get('gdrive')||qp.get('gdrive');
   if(t||g) persistSyncCreds(t||getSyncToken(), g||getSyncGistId());
   if(gd){
-    const cid=String(decodeURIComponent(gd)).trim().replace(/[\r\n]/g,'');
-    if(cid && /\.apps\.googleusercontent\.com$/i.test(cid)){
+    const cid=normalizeGdriveClientId(decodeURIComponent(gd));
+    if(cid && isValidGdriveClientId(cid)){
       safeSet(localStorage,'diary_gdrive_client_id',cid);
       setSyncBackend('gdrive');
     }
