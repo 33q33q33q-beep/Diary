@@ -500,8 +500,10 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:8px">
         Google Cloud Console で「OAuth クライアント ID（ウェブアプリ）」を作成し、<strong>承認済みの JavaScript 生成元</strong>にこのサイトのURL（例: <code>https://あなた.github.io</code>）を追加してください。スコープはアプリが作成したファイルのみ（drive.file）です。
       </p>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:6px">📱 <strong>Macと別端末</strong>のため、iPhoneでもクライアントIDの入力が必要です。下の「設定リンクをコピー」をMacで押し、iPhoneのSafariで開くと自動でIDが入ります。</p>
       <input type="text" id="gdriveClientIdInput" placeholder="クライアント ID（xxx.apps.googleusercontent.com）" style="width:100%;margin-bottom:8px">
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <button type="button" class="btn" onclick="SYNC.copyGdriveSetupLink()" style="font-size:11px">📱 Drive設定リンクをコピー</button>
         <button type="button" class="btn btn-primary" onclick="DRIVE_SYNC.connectAndPrepare()">🔐 ログインしてフォルダ作成</button>
         <button type="button" class="btn" onclick="DRIVE_SYNC.disconnect()">切断</button>
       </div>
@@ -2052,7 +2054,10 @@ const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
 
-function getGdriveClientId(){ return safeGet(localStorage, 'diary_gdrive_client_id'); }
+function getGdriveClientId(){
+  const s = safeGet(localStorage, 'diary_gdrive_client_id');
+  return s ? String(s).trim().replace(/[\r\n]/g,'') : '';
+}
 function getGdriveToken(){ return safeGet(localStorage, 'diary_gdrive_token'); }
 function setGdriveToken(t, expiresInSec){
   if(t) safeSet(localStorage, 'diary_gdrive_token', t);
@@ -2430,6 +2435,17 @@ const SYNC = {
     if(!t){ alert('先にトークンを入力してください'); return; }
     const url=location.origin+location.pathname+'#token='+encodeURIComponent(t)+(g?'&gist='+encodeURIComponent(g):'');
     navigator.clipboard.writeText(url).then(()=>alert('設定リンクをコピーしました！\niPhoneのSafariで開くと自動設定されます。\n\n※このリンクにはトークンが含まれます。人に共有しないでください。')).catch(()=>{prompt('このリンクをコピーしてください：',url);});
+  },
+
+  copyGdriveSetupLink(){
+    const raw=(document.getElementById('gdriveClientIdInput')?.value||'').trim().replace(/[\r\n]/g,'')||getGdriveClientId();
+    if(!raw){ alert('先に Cloud Console の「クライアント ID」を上の欄に貼り付けてください（Macで一度入力済みなら設定を開くと表示されます）'); return; }
+    if(!/\.apps\.googleusercontent\.com$/i.test(raw)){
+      alert('クライアント ID の形式が違います。末尾が .apps.googleusercontent.com である行をコピーしてください（シークレットではありません）。');
+      return;
+    }
+    const url=location.origin+location.pathname+'#gdrive_client='+encodeURIComponent(raw);
+    navigator.clipboard.writeText(url).then(()=>alert('Drive用リンクをコピーしました！\n\niPhoneのSafariのアドレス欄に貼り付けて開いてください。\n開いたあと「ログインしてフォルダ作成」を押します。\n\n※リンクにクライアントIDが含まれます。人に送らないでください。')).catch(()=>{prompt('このURLをコピー：',url);});
   },
 
   async saveSettings(){
@@ -2895,15 +2911,25 @@ function updateAppViewportHeight(){
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────────
-// URLハッシュから同期設定を自動読み込み
+// URLハッシュから同期設定を自動読み込み（Gist用 token/gist・Drive用 gdrive_client）
 (function(){
   const h=location.hash.slice(1);
   const hp=new URLSearchParams(h||'');
   const qp=new URLSearchParams(location.search||'');
   const t=hp.get('token')||qp.get('token');
   const g=hp.get('gist')||qp.get('gist');
+  const gd=hp.get('gdrive_client')||qp.get('gdrive_client')||hp.get('gdrive')||qp.get('gdrive');
   if(t||g) persistSyncCreds(t||getSyncToken(), g||getSyncGistId());
-  if((h && (hp.get('token')||hp.get('gist'))) || (location.search && (qp.get('token')||qp.get('gist')))){
+  if(gd){
+    const cid=String(decodeURIComponent(gd)).trim().replace(/[\r\n]/g,'');
+    if(cid && /\.apps\.googleusercontent\.com$/i.test(cid)){
+      safeSet(localStorage,'diary_gdrive_client_id',cid);
+      setSyncBackend('gdrive');
+    }
+  }
+  const hadSecretHash=(h && (hp.get('token')||hp.get('gist')||hp.get('gdrive_client')||hp.get('gdrive')));
+  const hadSecretQ=(location.search && (qp.get('token')||qp.get('gist')||qp.get('gdrive_client')||qp.get('gdrive')));
+  if(hadSecretHash || hadSecretQ){
     history.replaceState(null,'',location.pathname);
   }
 })();
