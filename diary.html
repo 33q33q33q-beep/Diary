@@ -554,6 +554,9 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:8px">
         Google Cloud Console で「OAuth クライアント ID（ウェブアプリ）」を作成し、<strong>承認済みの JavaScript 生成元</strong>にこのサイトのURL（例: <code>https://あなた.github.io</code>）を追加してください。スコープはアプリが作成したファイルのみ（drive.file）です。
       </p>
+      <p style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:8px;padding:8px 10px;background:#f0f7f4;border-radius:8px;border:1px solid #c8ddd0">
+        📄 <strong>マニュアル</strong>：同期のたびに、使い方 <code>USER-MANUAL.pdf</code> をフォルダ <code>LifeTimeDiary</code> の直下へ置きます。Googleドライブのアプリからそのまま開けます（公開サイトに PDF がある場合のみ）。
+      </p>
       <p style="font-size:11px;color:#8a5a00;margin-bottom:8px;padding:8px 10px;background:#fff8e6;border:1px solid #f0c040;border-radius:8px;line-height:1.5">
         <strong>重要（iPhone）</strong><br>
         クライアント ID を <strong>Safari のアドレス欄にだけ貼らないでください</strong>。ブラウザが勝手に <code>http://数字-…</code> と解釈して Google の <strong>404</strong> になります。<br>
@@ -2325,6 +2328,21 @@ async function driveListDataFiles(dataFolderId){
   if(!r.ok) throw new Error(j.error?.message || '一覧取得失敗');
   return j.files || [];
 }
+/** 公開サイト上の USER-MANUAL.pdf を取得し、Drive の LifeTimeDiary 直下に置く（アプリと同じ場所に PDF がある場合のみ） */
+async function driveSyncManualPdfToRoot(rootId){
+  try{
+    const base = getDiaryPageAbsUrlNoHash();
+    const url = new URL('USER-MANUAL.pdf', base).href;
+    const r = await fetch(url, {mode: 'cors', credentials: 'omit', cache: 'no-store'});
+    if(!r.ok) return;
+    const buf = await r.arrayBuffer();
+    if(!buf || buf.byteLength < 500) return;
+    const blob = new Blob([buf], {type: 'application/pdf'});
+    const mid = await driveFindFileInParent('USER-MANUAL.pdf', rootId);
+    if(mid) await drivePatchMedia(mid, blob);
+    else await driveUploadMultipart(rootId, 'USER-MANUAL.pdf', blob);
+  }catch(_e){ /* オフライン・404・CORS は無視（同期本体は成功させる） */ }
+}
 
 const DRIVE_SYNC = {
   timer: null,
@@ -2397,6 +2415,7 @@ const DRIVE_SYNC = {
     const jid = await driveFindFileInParent('diary-data.json', rootId);
     if(jid) await drivePatchMedia(jid, jsonBlob);
     else await driveUploadMultipart(rootId, 'diary-data.json', jsonBlob);
+    await driveSyncManualPdfToRoot(rootId);
     localStorage.setItem('diary_last_synced_at', String(slim.updatedAt || Date.now()));
     this.hasPendingChanges = false;
     if(!silent) updateSyncUI('synced');

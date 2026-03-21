@@ -2,6 +2,8 @@
 
 ブラウザだけで **Google ドライブ上に `LifeTimeDiary` フォルダ**（旧名: `私の日記_WebApp`）を作り、`diary-data.json` と `data/*.gz`（写真などを gzip）を読み書きします。
 
+同期のたびに、公開ページ上の **`USER-MANUAL.pdf`**（使い方マニュアル）があれば、**`LifeTimeDiary` フォルダ直下**にもコピーされます。スマホの Google ドライブアプリから PDF を開けます。
+
 ## 1. Google Cloud Console
 
 1. [Google Cloud Console](https://console.cloud.google.com/) でプロジェクトを作成（または既存を選択）

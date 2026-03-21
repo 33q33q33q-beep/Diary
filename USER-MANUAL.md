@@ -64,6 +64,7 @@
 - フォルダ **`LifeTimeDiary`**  
   - `diary-data.json` … 日記などのデータ  
   - `data/` … 写真などの圧縮ファイル  
+  - **`USER-MANUAL.pdf`** … 使い方マニュアル（同期のたびに自動で置かれます。Drive アプリから開けます）  
 
 **iPhone でクライアント ID を渡すとき**  
 - **Drive設定リンクをコピー** した **https から最後まで丸ごと** を Safari で開く。  
