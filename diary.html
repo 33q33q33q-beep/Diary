@@ -228,8 +228,22 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 #lightbox.open{display:flex}
 #lightbox img{max-width:90vw;max-height:90vh;border-radius:8px}
 #lightbox-close{position:absolute;top:16px;right:20px;color:#fff;font-size:28px;cursor:pointer}
+/* カレンダー画面用モバイルメニュー（デスクトップ・幅広Chromeでは非表示のまま） */
+#calendar-mobile-nav{display:none}
+.calendar-mobile-nav{flex-direction:column;gap:6px;margin:8px 0 6px;padding:8px 6px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.calendar-mobile-nav-pages{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.mob-page-btn{min-width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--bg);font-size:18px;line-height:1;cursor:pointer;padding:0;transition:.15s}
+.mob-page-btn:active{transform:scale(.96)}
+.mob-page-btn.active{background:#e8f0e9;border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
+.calendar-mobile-nav-tools{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;border-top:1px solid var(--border);padding-top:6px;margin-top:2px}
+.mob-tool-btn{min-width:36px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--bg);font-size:15px;line-height:1;cursor:pointer;padding:0 6px;transition:.15s}
+.mob-tool-btn:active{filter:brightness(.95)}
 /* Responsive */
 @media(max-width:600px){
+  /* カレンダー表示中のみ: 左サイドバーを隠してメインを全幅 → カレンダーを大きく */
+  #app:has(#page-calendar.active) #sidebar{display:none!important}
+  #app:has(#page-calendar.active) #main{flex:1;width:100%;max-width:100%}
+  #app:has(#page-calendar.active) #calendar-mobile-nav{display:flex}
   #sidebar{width:60px;overflow:hidden}
   #sidebar h1{padding:10px;font-size:0}
   #sidebar h1::first-line{font-size:16px}
@@ -248,6 +262,11 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   #modal-inner{padding:16px}
   .cal-toggles{gap:4px}
   .cal-toggle{font-size:11px;padding:3px 8px}
+  /* 今週の記念日: コンパクト化。件数が多いときはスクロール */
+  #page-calendar #anniv-banner{padding:6px 8px;margin-top:8px}
+  #page-calendar #anniv-banner h3{font-size:11px;margin-bottom:4px}
+  #page-calendar .anniv-chip{font-size:10px;padding:2px 7px}
+  #page-calendar #banner-items{max-height:min(26vh,160px);overflow-y:auto;-webkit-overflow-scrolling:touch;gap:4px}
 }
 .empty{text-align:center;padding:40px;color:var(--text-muted);font-size:14px}
 .sync-status{font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;margin-bottom:8px}
@@ -316,6 +335,26 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <div class="cal-header">日</div><div class="cal-header">月</div><div class="cal-header">火</div>
       <div class="cal-header">水</div><div class="cal-header">木</div><div class="cal-header">金</div>
       <div class="cal-header">土</div>
+    </div>
+    <!-- 狭い画面（iPhone等）: カレンダーを横幅いっぱいにし、左メニュー相当を記念日バナーの上に配置 -->
+    <div id="calendar-mobile-nav" class="calendar-mobile-nav" aria-label="画面メニュー">
+      <div class="calendar-mobile-nav-pages">
+        <button type="button" class="mob-page-btn active" data-page="calendar" onclick="showPage('calendar')" title="カレンダー" aria-label="カレンダー">📅</button>
+        <button type="button" class="mob-page-btn" data-page="timeline" onclick="showPage('timeline')" title="タイムライン" aria-label="タイムライン">⏳</button>
+        <button type="button" class="mob-page-btn" data-page="search" onclick="showPage('search')" title="検索" aria-label="検索">🔍</button>
+        <button type="button" class="mob-page-btn" data-page="anniversary" onclick="showPage('anniversary')" title="記念日" aria-label="記念日">🎉</button>
+        <button type="button" class="mob-page-btn" data-page="media" onclick="showPage('media')" title="映画・本" aria-label="映画・本">🎬</button>
+        <button type="button" class="mob-page-btn" data-page="todo" onclick="showPage('todo')" title="Ambition" aria-label="Ambition">🎯</button>
+      </div>
+      <div class="calendar-mobile-nav-tools">
+        <button type="button" class="mob-tool-btn" onclick="SYNC.smartSync()" title="同期">🔄</button>
+        <button type="button" class="mob-tool-btn" onclick="SYNC.openSettings()" title="設定">⚙️</button>
+        <button type="button" class="mob-tool-btn" onclick="SYNC.gistRestore()" title="Gistから復元">☁️</button>
+        <button type="button" class="mob-tool-btn" onclick="exportData()" title="ファイル保存">📤</button>
+        <button type="button" class="mob-tool-btn" onclick="importData()" title="ファイル復元">📥</button>
+        <button type="button" class="mob-tool-btn" onclick="FOLDER_SYNC.exportZip()" title="ZIP書出し">📦</button>
+        <button type="button" class="mob-tool-btn" onclick="FOLDER_SYNC.importZipClick()" title="ZIP読込">📂</button>
+      </div>
     </div>
     <div id="anniv-banner" style="margin-top:14px"><h3 style="display:flex;align-items:center;justify-content:space-between">🎉 今週の記念日<button onclick="showPage('anniversary')" style="font-size:11px;padding:2px 8px;border:1px solid var(--primary);color:var(--primary);background:white;border-radius:6px;cursor:pointer">＋ 追加</button></h3><div class="anniv-items" id="banner-items"></div></div>
   </div>
@@ -714,6 +753,7 @@ function showPage(name){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.getElementById('nav-'+name).classList.add('active');
+  document.querySelectorAll('.mob-page-btn').forEach(b=>b.classList.toggle('active', b.getAttribute('data-page')===name));
   if(name==='calendar') renderCalendar();
   if(name==='timeline') initTimeline();
   if(name==='search') renderTagCloud();
@@ -779,7 +819,8 @@ async function loadHolidays(year){
   }catch(e){console.warn('祝日API取得失敗',e);}
 }
 
-function getCalFilter(type){return localStorage.getItem('cal_'+type)==='on';}
+/** 祝日・大切な日は未設定時デフォルト ON（明示的に off のときだけ OFF） */
+function getCalFilter(type){ return localStorage.getItem('cal_'+type) !== 'off'; }
 function toggleCalFilter(type){
   const on=getCalFilter(type);
   localStorage.setItem('cal_'+type, on?'off':'on');
