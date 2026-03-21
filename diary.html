@@ -45,11 +45,11 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 .btn:hover{background:#f0ebe0}
 .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
 .btn-primary:hover{background:var(--primary-dark)}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;align-items:start}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;align-items:start;max-width:min(100%,720px);margin-inline:auto}
 .cal-header{text-align:center;font-size:12px;font-weight:600;color:var(--text-muted);padding:6px 0}
 .cal-header:nth-child(1){color:#e07070}
 .cal-header:nth-child(7){color:#7090e0}
-.cal-day{height:110px;display:flex;flex-direction:column;align-items:center;border-radius:10px;cursor:pointer;font-size:13px;padding:6px 4px 5px;border:2px solid transparent;position:relative;overflow:hidden;transition:.15s;background:var(--surface)}
+.cal-day{aspect-ratio:1;min-height:0;min-width:0;width:100%;height:auto;display:flex;flex-direction:column;align-items:center;border-radius:10px;cursor:pointer;font-size:13px;padding:5px 3px 4px;border:2px solid transparent;position:relative;overflow:hidden;transition:.15s;background:var(--surface)}
 .cal-day:hover{filter:brightness(.95);border-color:var(--primary)}
 .cal-day.today{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
 .cal-day.today .cal-num{background:var(--primary);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
@@ -59,7 +59,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 .cal-day.today .cal-num{color:#fff!important}
 .cal-num{font-size:13px;font-weight:600;line-height:1.4;z-index:1;flex-shrink:0}
 .cal-mood{font-size:13px;line-height:1;z-index:1;margin-top:1px}
-.cal-thumb{width:100%;max-height:80px;object-fit:contain;border-radius:5px;margin-top:4px;display:block;z-index:0;background:rgba(0,0,0,.04)}
+.cal-thumb{width:100%;max-height:38%;flex:0 1 auto;min-height:0;object-fit:contain;border-radius:5px;margin-top:2px;display:block;z-index:0;background:rgba(0,0,0,.04)}
 .cal-anniv-icon{position:absolute;top:2px;right:3px;font-size:9px;z-index:2;line-height:1}
 .cal-day.has-link::before{content:'🔗';position:absolute;bottom:2px;right:3px;font-size:8px;z-index:2}
 .cal-day.holiday{border:2px solid #e05050!important}
@@ -239,10 +239,10 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   #sync-area .sync-status{display:none}
   #sync-area .nav-btn{padding:10px;font-size:16px}
   #main{padding:12px}
-  .cal-day{height:72px;padding:4px 2px}
+  .cal-grid{max-width:100%}
+  .cal-day{padding:3px 2px 2px}
   .cal-num{font-size:11px}
-  .cal-thumb{max-height:56px}
-  .cal-mood{font-size:11px}
+  .cal-mood{font-size:10px}
   .cal-holiday-name,.cal-memorial-name{font-size:9px}
   .todo-sections{grid-template-columns:1fr}
   #modal-inner{padding:16px}
@@ -2332,7 +2332,7 @@ const DRIVE_SYNC = {
   },
   async smartSync(){
     if(!getGdriveToken()){
-      SYNC.openSettings();
+      alert('Googleドライブに未ログインです。サイドバーの「設定変更」からクライアントIDの入力と「ログインしてフォルダ作成」を行ってください。');
       return;
     }
     updateSyncUI('syncing');
@@ -2809,7 +2809,10 @@ const SYNC = {
       alert('ローカルのみモードです。ZIP書出し／ZIP読込をご利用ください。');
       return;
     }
-    if(!this.key){ this.openSettings(); return; }
+    if(!this.key){
+      alert('GitHub Gist のトークンが未設定です。サイドバーの「設定変更」から入力してください。');
+      return;
+    }
     if(!this.gistId){
       updateSyncUI('syncing');
       try{
