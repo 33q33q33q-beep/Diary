@@ -8,6 +8,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="私の日記">
 <meta name="theme-color" content="#7a9e7e">
+<link rel="dns-prefetch" href="https://api.github.com">
+<link rel="preconnect" href="https://api.github.com" crossorigin>
+<link rel="dns-prefetch" href="https://gist.githubusercontent.com">
+<link rel="preconnect" href="https://gist.githubusercontent.com" crossorigin>
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237a9e7e'/><text y='.9em' font-size='80' x='10'>📔</text></svg>">
 <link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;私の日記&quot;,&quot;short_name&quot;:&quot;日記&quot;,&quot;start_url&quot;:&quot;/&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%23f5f0e8&quot;,&quot;theme_color&quot;:&quot;%237a9e7e&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237a9e7e'/><text y='.9em' font-size='80' x='10'>📔</text></svg>&quot;,&quot;sizes&quot;:&quot;any&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]}">
 <style>
@@ -280,6 +284,8 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="SYNC.gistRestore()">☁️ Gistから復元</button>
     <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="exportData()">📤 ファイル保存</button>
     <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="importData()">📥 ファイル復元</button>
+    <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="FOLDER_SYNC.exportZip()" title="写真等をdata/にgzipしてZIP化。FilesでiCloudへ保存できます">📦 ZIP書出し<br><span style="font-size:9px;opacity:.85">(iCloud用)</span></button>
+    <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="FOLDER_SYNC.importZipClick()">📂 ZIP読込</button>
   </div>
 </nav>
 <main id="main">
@@ -458,7 +464,17 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 <!-- JSONbin Settings Modal -->
 <div id="jsonbin-modal">
   <div class="inner">
-    <h3>☁️ クラウド同期設定（GitHub Gist）</h3>
+    <h3>☁️ クラウド同期設定</h3>
+    <p style="margin-bottom:10px">
+      <label for="syncBackendSelect" style="font-weight:600">同期の方式</label><br>
+      <select id="syncBackendSelect" onchange="onSyncBackendChange()" style="margin-top:4px;width:100%;max-width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);font-size:13px;background:var(--bg)">
+        <option value="gist">GitHub Gist（従来・小容量向け）</option>
+        <option value="gdrive">Googleドライブ（フォルダ＋圧縮メディア）</option>
+        <option value="local_only">ローカルのみ（ZIP手動バックアップ）</option>
+      </select>
+    </p>
+    <div id="gist-settings-block">
+    <h4 style="margin:12px 0 6px;font-size:14px">GitHub Gist</h4>
     <p>
       <strong>手順：</strong><br>
       1. <a href="https://github.com/settings/tokens/new" target="_blank">GitHub → Settings → Personal access tokens</a><br>
@@ -475,6 +491,22 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <button class="btn btn-primary" onclick="SYNC.saveSettings()">保存して同期</button>
     </div>
     <p style="font-size:11px;color:var(--text-muted);margin-top:8px">📱 iPhoneなど他の端末でも使う場合：「設定リンクをコピー」→ Safariで開くと自動設定されます</p>
+    </div>
+    <div id="gdrive-settings-block" style="display:none;border-top:1px solid var(--border);padding-top:12px;margin-top:12px">
+      <h4 style="margin:0 0 8px;font-size:14px">Googleドライブ</h4>
+      <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:8px">
+        Google Cloud Console で「OAuth クライアント ID（ウェブアプリ）」を作成し、<strong>承認済みの JavaScript 生成元</strong>にこのサイトのURL（例: <code>https://あなた.github.io</code>）を追加してください。スコープはアプリが作成したファイルのみ（drive.file）です。
+      </p>
+      <input type="text" id="gdriveClientIdInput" placeholder="クライアント ID（xxx.apps.googleusercontent.com）" style="width:100%;margin-bottom:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <button type="button" class="btn btn-primary" onclick="DRIVE_SYNC.connectAndPrepare()">🔐 ログインしてフォルダ作成</button>
+        <button type="button" class="btn" onclick="DRIVE_SYNC.disconnect()">切断</button>
+      </div>
+      <p id="gdrive-status-p" style="font-size:11px;color:var(--text-muted)"></p>
+    </div>
+    <div id="local-only-settings-block" style="display:none;border-top:1px solid var(--border);padding-top:12px;margin-top:12px;font-size:12px;color:var(--text-muted);line-height:1.5">
+      クラウド自動同期は使いません。サイドバーの <strong>「ZIP書出し」</strong> で <code>私の日記_WebApp/</code> 形式のZIPを作り、iPhoneの<strong>ファイル</strong>アプリ経由でiCloudに保存してください。<strong>「ZIP読込」</strong>で戻せます。
+    </div>
   </div>
 </div>
 
@@ -1772,6 +1804,516 @@ function importData(){
   input.click();
 }
 
+// ─── フォルダ形式同期（ZIP / Google Drive）: 本文JSON + data/*.gz ─────────────
+const FOLDER_SYNC_ROOT = '私の日記_WebApp';
+const FOLDER_DATA_DIR = 'data';
+const REF_PREFIX = 'ref:';
+
+function getSyncBackend(){
+  return safeGet(localStorage, 'diary_sync_backend') || 'gist';
+}
+function setSyncBackend(v){
+  safeSet(localStorage, 'diary_sync_backend', v);
+}
+function onSyncBackendChange(){
+  const v = document.getElementById('syncBackendSelect')?.value || 'gist';
+  const g = document.getElementById('gist-settings-block');
+  const d = document.getElementById('gdrive-settings-block');
+  const l = document.getElementById('local-only-settings-block');
+  if(g) g.style.display = v === 'gist' ? 'block' : 'none';
+  if(d) d.style.display = v === 'gdrive' ? 'block' : 'none';
+  if(l) l.style.display = v === 'local_only' ? 'block' : 'none';
+}
+function extForMime(mime){
+  const m = (mime||'').toLowerCase();
+  if(m.includes('jpeg')) return 'jpg';
+  if(m.includes('jpg')) return 'jpg';
+  if(m.includes('png')) return 'png';
+  if(m.includes('webp')) return 'webp';
+  if(m.includes('gif')) return 'gif';
+  if(m.includes('mp3')) return 'mp3';
+  if(m.includes('mpeg')) return 'mp3';
+  if(m.includes('wav')) return 'wav';
+  if(m.includes('mp4')) return 'mp4';
+  if(m.includes('webm')) return 'webm';
+  if(m.includes('ogg')) return 'ogg';
+  return 'bin';
+}
+function mimeFromFilename(name){
+  const n = name.toLowerCase();
+  if(n.endsWith('.jpg.gz')||n.endsWith('.jpeg.gz')) return 'image/jpeg';
+  if(n.endsWith('.png.gz')) return 'image/png';
+  if(n.endsWith('.webp.gz')) return 'image/webp';
+  if(n.endsWith('.gif.gz')) return 'image/gif';
+  if(n.endsWith('.mp3.gz')) return 'audio/mpeg';
+  if(n.endsWith('.wav.gz')) return 'audio/wav';
+  if(n.endsWith('.mp4.gz')) return 'video/mp4';
+  return 'application/octet-stream';
+}
+async function gzipBlob(blob){
+  if(typeof CompressionStream === 'undefined') throw new Error('お使いのブラウザは圧縮(CompressionStream)に未対応です');
+  const out = blob.stream().pipeThrough(new CompressionStream('gzip'));
+  return await new Response(out).blob();
+}
+async function gunzipBlob(blob){
+  if(typeof DecompressionStream === 'undefined') throw new Error('お使いのブラウザは展開(DecompressionStream)に未対応です');
+  const out = blob.stream().pipeThrough(new DecompressionStream('gzip'));
+  return await new Response(out).blob();
+}
+function blobToDataUrl(blob){
+  return new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = ()=>res(r.result);
+    r.onerror = ()=>rej(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+async function slimDataUrlsDeep(obj, onBlob){
+  if(obj === null || obj === undefined) return obj;
+  if(typeof obj === 'string'){
+    if(/^data:[^;]+;base64,/.test(obj)){
+      const comma = obj.indexOf(',');
+      const header = obj.slice(5, comma);
+      const mime = header.replace(/;base64$/i,'');
+      const b64 = obj.slice(comma + 1);
+      return await onBlob(mime, b64);
+    }
+    return obj;
+  }
+  if(Array.isArray(obj)){
+    const out = [];
+    for(const x of obj) out.push(await slimDataUrlsDeep(x, onBlob));
+    return out;
+  }
+  if(typeof obj === 'object'){
+    const out = {};
+    for(const k of Object.keys(obj)) out[k] = await slimDataUrlsDeep(obj[k], onBlob);
+    return out;
+  }
+  return obj;
+}
+async function buildFolderPayload(rawData){
+  const raw = JSON.parse(JSON.stringify(rawData));
+  const binaries = [];
+  let n = 0;
+  const slim = await slimDataUrlsDeep(raw, async(mime, b64)=>{
+    const ext = extForMime(mime);
+    const fname = `p${++n}.${ext}.gz`;
+    const path = `${FOLDER_DATA_DIR}/${fname}`;
+    const bytes = Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
+    const plain = new Blob([bytes], {type: mime || 'application/octet-stream'});
+    const gz = await gzipBlob(plain);
+    binaries.push({path, name: fname, blob: gz});
+    return REF_PREFIX + path;
+  });
+  slim._format = 'diary-folder-v1';
+  slim._root = FOLDER_SYNC_ROOT;
+  return {slim, binaries};
+}
+function collectRefPaths(obj, acc){
+  if(obj === null || obj === undefined) return;
+  if(typeof obj === 'string'){
+    if(obj.startsWith(REF_PREFIX)) acc.add(obj.slice(REF_PREFIX.length));
+    return;
+  }
+  if(Array.isArray(obj)){ obj.forEach(x=>collectRefPaths(x, acc)); return; }
+  if(typeof obj === 'object'){ Object.keys(obj).forEach(k=>collectRefPaths(obj[k], acc)); }
+}
+async function hydrateFolderPayload(slim, pathToGzBlob){
+  async function deep(obj){
+    if(obj === null || obj === undefined) return obj;
+    if(typeof obj === 'string'){
+      if(obj.startsWith(REF_PREFIX)){
+        const rel = obj.slice(REF_PREFIX.length);
+        const gz = pathToGzBlob[rel];
+        if(!gz) return obj;
+        const raw = await gunzipBlob(gz);
+        const mime = mimeFromFilename(rel.split('/').pop() || '');
+        const dataUrl = await blobToDataUrl(new Blob([await raw.arrayBuffer()], {type: mime}));
+        return dataUrl;
+      }
+      return obj;
+    }
+    if(Array.isArray(obj)) return await Promise.all(obj.map(deep));
+    if(typeof obj === 'object'){
+      const out = {};
+      for(const k of Object.keys(obj)) out[k] = await deep(obj[k]);
+      return out;
+    }
+    return obj;
+  }
+  const copy = JSON.parse(JSON.stringify(slim));
+  delete copy._format;
+  delete copy._root;
+  return await deep(copy);
+}
+function applyDiaryPayloadToLocal(d){
+  const errors = [];
+  const trySet = (key,val)=>{
+    try{ localStorage.setItem(key, JSON.stringify(val)); }
+    catch(e){ errors.push(key+': '+e.message); }
+  };
+  if(d.entries) trySet('diary_entries', d.entries);
+  if(d.annivs) trySet('diary_annivs', d.annivs);
+  if(d.media) trySet('diary_media', d.media);
+  if(d.todos) trySet('diary_todos', d.todos);
+  if(d.goals) trySet('diary_goals', d.goals);
+  if(d.visions) trySet('diary_visions', d.visions);
+  if(d.userTags) trySet('diary_user_tags', d.userTags);
+  if(d.fbBirthdays && Array.isArray(d.fbBirthdays)) trySet('diary_fb_birthdays', d.fbBirthdays);
+  if(errors.length) alert('一部保存できませんでした:\n'+errors.join('\n'));
+}
+function loadScriptOnce(src){
+  return new Promise((res,rej)=>{
+    if(/accounts\.google\.com\/gsi\/client/.test(src) && window.google?.accounts?.oauth2) return res();
+    const ex = Array.from(document.querySelectorAll('script[src]')).find(n=>n.src && n.src.indexOf(src.split('/').pop())>=0);
+    if(ex && ex.src.indexOf('gsi')>=0 && window.google?.accounts?.oauth2) return res();
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    s.onload = ()=>res();
+    s.onerror = ()=>rej(new Error('script load: '+src));
+    document.head.appendChild(s);
+  });
+}
+function loadJSZipLib(){
+  if(window.JSZip) return Promise.resolve();
+  return loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+}
+function downloadBlob(blob, filename){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+}
+const FOLDER_SYNC = {
+  async exportZip(){
+    try{
+      await loadJSZipLib();
+      const raw = typeof SYNC !== 'undefined' && SYNC.getData ? SYNC.getData() : null;
+      if(!raw) throw new Error('データがありません');
+      const {slim, binaries} = await buildFolderPayload(raw);
+      const zip = new JSZip();
+      const root = zip.folder(FOLDER_SYNC_ROOT);
+      root.file('diary-data.json', JSON.stringify(slim, null, 0));
+      const data = root.folder(FOLDER_DATA_DIR);
+      for(const b of binaries) data.file(b.name, b.blob);
+      root.file('README.txt', `${FOLDER_SYNC_ROOT}\n---\n日記Webアプリ用フォルダです。\n- diary-data.json : 本文（写真等は ref:data/... を参照）\n- data/*.gz : gzip圧縮されたメディア\niCloud: このZIPを「ファイル」アプリに保存してください。\n`);
+      const out = await zip.generateAsync({type:'blob', compression:'DEFLATE'});
+      downloadBlob(out, `${FOLDER_SYNC_ROOT}.zip`);
+    }catch(e){ alert('ZIP書出しエラー: '+e.message); }
+  },
+  importZipClick(){
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.zip,application/zip';
+    input.onchange = async e=>{
+      const f = e.target.files?.[0];
+      if(!f) return;
+      try{
+        await loadJSZipLib();
+        const zip = await JSZip.loadAsync(f);
+        let jf = zip.file(FOLDER_SYNC_ROOT + '/diary-data.json');
+        if(!jf){
+          const keys = Object.keys(zip.files).filter(k=>!zip.files[k].dir && /(^|\/)diary-data\.json$/i.test(k));
+          if(keys.length) jf = zip.file(keys[0]);
+        }
+        if(!jf) throw new Error('diary-data.json が見つかりません（ZIPの中身を確認してください）');
+        const text = await jf.async('string');
+        const slim = JSON.parse(text);
+        const refs = new Set();
+        collectRefPaths(slim, refs);
+        const pathToGz = {};
+        const entries = Object.keys(zip.files);
+        for(const rel of refs){
+          const fname = rel.split('/').pop();
+          const candidates = entries.filter(p=>p.endsWith(fname) && p.includes(FOLDER_DATA_DIR));
+          const pick = candidates[0] || entries.find(p=>p.endsWith(fname));
+          if(!pick) continue;
+          const z = zip.file(pick);
+          if(z) pathToGz[rel] = await z.async('blob');
+        }
+        const hydrated = await hydrateFolderPayload(slim, pathToGz);
+        applyDiaryPayloadToLocal(hydrated);
+        alert('ZIPから読み込みました。画面を更新します。');
+        location.reload();
+      }catch(err){ alert('ZIP読込エラー: '+err.message); }
+    };
+    input.click();
+  }
+};
+
+// ─── Google Drive（フォルダ同期）──────────────────────────────────────────────
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+const DRIVE_API = 'https://www.googleapis.com/drive/v3';
+const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
+
+function getGdriveClientId(){ return safeGet(localStorage, 'diary_gdrive_client_id'); }
+function getGdriveToken(){ return safeGet(localStorage, 'diary_gdrive_token'); }
+function setGdriveToken(t, expiresInSec){
+  if(t) safeSet(localStorage, 'diary_gdrive_token', t);
+  if(expiresInSec) safeSet(localStorage, 'diary_gdrive_expires', String(Date.now() + expiresInSec * 1000));
+}
+async function ensureGdriveTokenInteractive(){
+  await loadScriptOnce('https://accounts.google.com/gsi/client');
+  const cid = getGdriveClientId();
+  if(!cid) throw new Error('Google のクライアント ID を設定してください');
+  return new Promise((resolve,reject)=>{
+    try{
+      const tc = google.accounts.oauth2.initTokenClient({
+        client_id: cid,
+        scope: DRIVE_SCOPE,
+        callback: (r)=>{
+          if(r.access_token){
+            setGdriveToken(r.access_token, r.expires_in || 3600);
+            resolve(r.access_token);
+          } else reject(new Error(r.error_description || r.error || 'ログインに失敗しました'));
+        }
+      });
+      const silent = parseInt(safeGet(localStorage, 'diary_gdrive_expires')||'0',10) > Date.now();
+      tc.requestAccessToken({prompt: silent ? '' : 'consent'});
+    }catch(e){ reject(e); }
+  });
+}
+async function driveApiGetToken(){
+  const exp = parseInt(safeGet(localStorage, 'diary_gdrive_expires')||'0',10);
+  if(getGdriveToken() && Date.now() < exp - 120000) return getGdriveToken();
+  return ensureGdriveTokenInteractive();
+}
+async function driveFetchJson(url, opts={}){
+  const token = await driveApiGetToken();
+  const r = await fetch(url, {...opts, headers: {...(opts.headers||{}), Authorization: 'Bearer '+token}});
+  if(r.status === 401){
+    safeSet(localStorage, 'diary_gdrive_expires', '0');
+    const token2 = await ensureGdriveTokenInteractive();
+    const r2 = await fetch(url, {...opts, headers: {...(opts.headers||{}), Authorization: 'Bearer '+token2}});
+    return r2;
+  }
+  return r;
+}
+async function driveFindFolderId(name, parentId){
+  const esc = name.replace(/\\/g,'\\\\').replace(/'/g, "\\'");
+  const q = encodeURIComponent(`mimeType='application/vnd.google-apps.folder' and name='${esc}' and '${parentId}' in parents and trashed=false`);
+  const r = await driveFetchJson(`${DRIVE_API}/files?q=${q}&fields=files(id,name)`);
+  const j = await r.json();
+  if(!r.ok) throw new Error(j.error?.message || 'Drive検索失敗');
+  return j.files?.[0]?.id || null;
+}
+async function driveCreateFolder(name, parentId){
+  const token = await driveApiGetToken();
+  const meta = {name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId]};
+  const r = await fetch(`${DRIVE_API}/files`, {
+    method: 'POST',
+    headers: {Authorization: 'Bearer '+token, 'Content-Type': 'application/json'},
+    body: JSON.stringify(meta)
+  });
+  const j = await r.json();
+  if(!r.ok) throw new Error(j.error?.message || 'フォルダ作成失敗');
+  return j.id;
+}
+async function driveEnsureFolders(){
+  let rootId = safeGet(localStorage, 'diary_gdrive_root_folder_id');
+  if(rootId){
+    const check = await driveFetchJson(`${DRIVE_API}/files/${rootId}?fields=id`);
+    if(check.ok) {
+      let dataId = safeGet(localStorage, 'diary_gdrive_data_folder_id');
+      if(dataId){
+        const c2 = await driveFetchJson(`${DRIVE_API}/files/${dataId}?fields=id`);
+        if(c2.ok) return {rootId, dataId};
+      }
+    }
+  }
+  rootId = await driveFindFolderId(FOLDER_SYNC_ROOT, 'root') || await driveCreateFolder(FOLDER_SYNC_ROOT, 'root');
+  safeSet(localStorage, 'diary_gdrive_root_folder_id', rootId);
+  let dataId = await driveFindFolderId(FOLDER_DATA_DIR, rootId) || await driveCreateFolder(FOLDER_DATA_DIR, rootId);
+  safeSet(localStorage, 'diary_gdrive_data_folder_id', dataId);
+  return {rootId, dataId};
+}
+async function driveFindFileInParent(name, parentId){
+  const esc = name.replace(/\\/g,'\\\\').replace(/'/g, "\\'");
+  const q = encodeURIComponent(`name='${esc}' and '${parentId}' in parents and trashed=false`);
+  const r = await driveFetchJson(`${DRIVE_API}/files?q=${q}&fields=files(id,name)`);
+  const j = await r.json();
+  if(!r.ok) throw new Error(j.error?.message || 'ファイル検索失敗');
+  return j.files?.[0]?.id || null;
+}
+async function driveUploadMultipart(parentId, filename, blob){
+  const token = await driveApiGetToken();
+  const metadata = {name: filename, parents: [parentId]};
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+  form.append('file', blob);
+  const r = await fetch(`${DRIVE_UPLOAD}/files?uploadType=multipart`, {
+    method: 'POST',
+    headers: {Authorization: 'Bearer '+token},
+    body: form
+  });
+  const j = await r.json();
+  if(!r.ok) throw new Error(j.error?.message || 'アップロード失敗');
+  return j.id;
+}
+async function drivePatchMedia(fileId, blob){
+  const token = await driveApiGetToken();
+  const r = await fetch(`${DRIVE_UPLOAD}/files/${fileId}?uploadType=media`, {
+    method: 'PATCH',
+    headers: {Authorization: 'Bearer '+token},
+    body: blob
+  });
+  const j = await r.json();
+  if(!r.ok) throw new Error(j.error?.message || '更新失敗');
+  return j.id;
+}
+async function driveDownloadBlob(fileId){
+  const token = await driveApiGetToken();
+  const r = await fetch(`${DRIVE_API}/files/${fileId}?alt=media`, {headers: {Authorization: 'Bearer '+token}});
+  if(!r.ok) throw new Error('ダウンロード失敗');
+  return await r.blob();
+}
+async function driveListDataFiles(dataFolderId){
+  const q = encodeURIComponent(`'${dataFolderId}' in parents and trashed=false`);
+  const r = await driveFetchJson(`${DRIVE_API}/files?q=${q}&fields=files(id,name)&pageSize=1000`);
+  const j = await r.json();
+  if(!r.ok) throw new Error(j.error?.message || '一覧取得失敗');
+  return j.files || [];
+}
+
+const DRIVE_SYNC = {
+  timer: null,
+  hasPendingChanges: false,
+  updateStatus(msg){
+    const p = document.getElementById('gdrive-status-p');
+    if(p) p.textContent = msg || '';
+  },
+  disconnect(){
+    localStorage.removeItem('diary_gdrive_token');
+    localStorage.removeItem('diary_gdrive_expires');
+    localStorage.removeItem('diary_gdrive_root_folder_id');
+    localStorage.removeItem('diary_gdrive_data_folder_id');
+    this.updateStatus('切断しました');
+  },
+  async connectAndPrepare(){
+    const cid = (document.getElementById('gdriveClientIdInput')?.value || '').trim();
+    if(!cid){ alert('クライアント ID を入力してください'); return; }
+    safeSet(localStorage, 'diary_gdrive_client_id', cid);
+    setSyncBackend('gdrive');
+    this.updateStatus('ログイン中…');
+    try{
+      await ensureGdriveTokenInteractive();
+      await driveEnsureFolders();
+      this.updateStatus('フォルダ準備完了: '+FOLDER_SYNC_ROOT+' / '+FOLDER_DATA_DIR);
+      document.getElementById('jsonbin-modal')?.classList.remove('open');
+      try{
+        await this.pull(true);
+      }catch(_e){
+        await this.push({silent:true});
+      }
+      renderCalendar(); showAnnivBanner();
+      updateSyncUI('synced');
+    }catch(e){
+      this.updateStatus('エラー: '+e.message);
+      alert('Googleドライブ: '+e.message);
+    }
+  },
+  schedule(){
+    if(!getGdriveToken()) return;
+    this.hasPendingChanges = true;
+    updateSyncUI('pending');
+    clearTimeout(this.timer);
+    this.timer = setTimeout(()=>this.push({silent:true}).catch(()=>{}), 3000);
+  },
+  flushPending(useKeepalive){
+    if(!getGdriveToken() || !this.hasPendingChanges) return;
+    clearTimeout(this.timer);
+    this.push({silent:true, keepalive:!!useKeepalive}).catch(()=>{});
+  },
+  async push(opts={}){
+    const {silent=false} = opts;
+    if(!getGdriveToken()) return;
+    if(!silent) updateSyncUI('syncing');
+    const {rootId, dataId} = await driveEnsureFolders();
+    const raw = SYNC.getData();
+    const {slim, binaries} = await buildFolderPayload(raw);
+    for(const b of binaries){
+      const existing = await driveFindFileInParent(b.name, dataId);
+      if(existing) await drivePatchMedia(existing, b.blob);
+      else await driveUploadMultipart(dataId, b.name, b.blob);
+    }
+    const jsonStr = JSON.stringify(slim, null, 0);
+    const jsonBlob = new Blob([jsonStr], {type: 'application/json'});
+    const jid = await driveFindFileInParent('diary-data.json', rootId);
+    if(jid) await drivePatchMedia(jid, jsonBlob);
+    else await driveUploadMultipart(rootId, 'diary-data.json', jsonBlob);
+    localStorage.setItem('diary_last_synced_at', String(slim.updatedAt || Date.now()));
+    this.hasPendingChanges = false;
+    if(!silent) updateSyncUI('synced');
+  },
+  async pull(silent=false){
+    if(!getGdriveToken()) return;
+    if(!silent) updateSyncUI('syncing');
+    const {rootId, dataId} = await driveEnsureFolders();
+    const jid = await driveFindFileInParent('diary-data.json', rootId);
+    if(!jid) throw new Error('diary-data.json が見つかりません（先にこの端末から保存するか、フォルダを確認してください）');
+    const jsonBlob = await driveDownloadBlob(jid);
+    const slim = JSON.parse(await jsonBlob.text());
+    const list = await driveListDataFiles(dataId);
+    const pathToGz = {};
+    const refs = new Set();
+    collectRefPaths(slim, refs);
+    const byName = Object.fromEntries(list.map(f=>[f.name, f.id]));
+    for(const rel of refs){
+      const fname = rel.split('/').pop();
+      const fid = byName[fname];
+      if(fid) pathToGz[rel] = await driveDownloadBlob(fid);
+    }
+    const hydrated = await hydrateFolderPayload(slim, pathToGz);
+    applyDiaryPayloadToLocal(hydrated);
+    if(slim.updatedAt) localStorage.setItem('diary_last_synced_at', String(slim.updatedAt));
+    if(!silent) updateSyncUI('synced');
+    if(!silent) alert('Googleドライブから取得しました');
+  },
+  async smartSync(){
+    if(!getGdriveToken()){
+      SYNC.openSettings();
+      return;
+    }
+    updateSyncUI('syncing');
+    try{
+      const had = this.hasPendingChanges;
+      if(had) await this.push({silent:true});
+      await this.pull(true);
+      if(had) await this.push({silent:true});
+      updateSyncUI('synced');
+      renderCalendar(); showAnnivBanner();
+    }catch(e){
+      updateSyncUI('error');
+      alert('Drive同期エラー: '+e.message);
+    }
+  },
+  init(){
+    if(sessionStorage.getItem('just_pulled')){
+      sessionStorage.removeItem('just_pulled');
+      updateSyncUI('synced');
+      return;
+    }
+    if(sessionStorage.getItem('needs_push')){
+      sessionStorage.removeItem('needs_push');
+      if(getGdriveToken()) this.push({silent:true}).catch(()=>updateSyncUI('error'));
+      return;
+    }
+    if(getGdriveToken()){
+      this.pull(true).then(()=>{ renderCalendar(); showAnnivBanner(); updateSyncUI('synced'); }).catch(e=>{
+        updateSyncUI('error');
+        const mb=document.getElementById('mobile-sync-banner');
+        if(mb){ mb.style.display='block'; mb.innerHTML='⚠️ Drive同期エラー: '+String(e.message||e).replace(/</g,'&lt;')+'<br><button onclick="DRIVE_SYNC.smartSync()" style="margin-top:6px;padding:3px 12px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-weight:600">再試行</button>'; }
+      });
+    } else {
+      const hasLocal = hasLocalDiaryData();
+      updateSyncUI(hasLocal ? 'synced' : 'no-key');
+    }
+  }
+};
+
 // ─── GitHub Gist Sync ────────────────────────────────────────────────────────
 const SYNC = {
   BASE: 'https://api.github.com/gists',
@@ -1799,6 +2341,23 @@ const SYNC = {
     if(cGid && !safeGet(sessionStorage, 'gh_gist')) safeSet(sessionStorage, 'gh_gist', cGid);
     localStorage.removeItem('jb_key');
     localStorage.removeItem('jb_bin');
+    if(getSyncBackend()==='gdrive'){
+      DRIVE_SYNC.init();
+      return;
+    }
+    if(getSyncBackend()==='local_only'){
+      if(sessionStorage.getItem('just_pulled')){
+        sessionStorage.removeItem('just_pulled');
+        updateSyncUI('synced');
+        return;
+      }
+      if(sessionStorage.getItem('needs_push')) sessionStorage.removeItem('needs_push');
+      const hasLocal = hasLocalDiaryData();
+      updateSyncUI(hasLocal ? 'synced' : 'no-key');
+      const mb=document.getElementById('mobile-sync-banner');
+      if(mb) mb.style.display = hasLocal ? 'none' : 'block';
+      return;
+    }
     if(sessionStorage.getItem('just_pulled')){
       sessionStorage.removeItem('just_pulled');
       updateSyncUI('synced');
@@ -1846,12 +2405,23 @@ const SYNC = {
   },
 
   openSettings(){
+    const sel = document.getElementById('syncBackendSelect');
+    if(sel){
+      sel.value = getSyncBackend();
+      onSyncBackendChange();
+    }
+    const gci = document.getElementById('gdriveClientIdInput');
+    if(gci) gci.value = getGdriveClientId();
     document.getElementById('jsonbinKeyInput').value = this.key;
     document.getElementById('jsonbinBinInput').value = this.gistId;
     document.getElementById('jsonbin-modal').classList.add('open');
   },
 
   copySetupLink(){
+    if(getSyncBackend() !== 'gist'){
+      alert('設定リンクのコピーは GitHub Gist モードのときのみ使えます。');
+      return;
+    }
     const t=document.getElementById('jsonbinKeyInput').value.trim()||this.key;
     const g=document.getElementById('jsonbinBinInput').value.trim()||this.gistId;
     if(!t){ alert('先にトークンを入力してください'); return; }
@@ -1860,6 +2430,20 @@ const SYNC = {
   },
 
   async saveSettings(){
+    const mode = document.getElementById('syncBackendSelect')?.value || 'gist';
+    setSyncBackend(mode);
+    if(mode === 'gdrive'){
+      alert('Googleドライブ: 下の「ログインしてフォルダ作成」を押してください。');
+      return;
+    }
+    if(mode === 'local_only'){
+      document.getElementById('jsonbin-modal').classList.remove('open');
+      const hasLocal = hasLocalDiaryData();
+      updateSyncUI(hasLocal ? 'synced' : 'no-key');
+      const mb=document.getElementById('mobile-sync-banner');
+      if(mb) mb.style.display = hasLocal ? 'none' : 'block';
+      return;
+    }
     const key = document.getElementById('jsonbinKeyInput').value.trim();
     const gist = document.getElementById('jsonbinBinInput').value.trim();
     if(!key){ alert('トークンを入力してください'); return; }
@@ -1913,6 +2497,8 @@ const SYNC = {
   },
 
   schedule(){
+    if(getSyncBackend()==='gdrive') return DRIVE_SYNC.schedule();
+    if(getSyncBackend()==='local_only') return;
     if(!this.key) return;
     this.hasPendingChanges = true;
     updateSyncUI('pending');
@@ -1922,6 +2508,8 @@ const SYNC = {
 
   // Flush pending changes immediately (used when app/tab is closing)
   flushPending(useKeepalive=false){
+    if(getSyncBackend()==='gdrive') return DRIVE_SYNC.flushPending(useKeepalive);
+    if(getSyncBackend()==='local_only') return;
     if(!this.key || !this.gistId || !this.hasPendingChanges) return;
     clearTimeout(this.timer);
     this.push({keepalive:useKeepalive, silent:true}).catch(()=>{});
@@ -2000,6 +2588,7 @@ const SYNC = {
   },
 
   async push(opts={}){
+    if(getSyncBackend()==='gdrive') return DRIVE_SYNC.push(opts);
     const {keepalive=false} = opts;
     if(!this.key||!this.gistId) return;
     updateSyncUI('syncing');
@@ -2021,6 +2610,7 @@ const SYNC = {
   },
 
   async pull(silent=false){
+    if(getSyncBackend()==='gdrive') return DRIVE_SYNC.pull(silent);
     if(!this.key||!this.gistId) return;
     updateSyncUI('syncing');
     let r;
@@ -2035,37 +2625,31 @@ const SYNC = {
     if(!fileInfo) throw new Error('Gistにデータファイルが見つかりません');
     let content;
     if(fileInfo.truncated){
-      // 大容量ファイルはまず git_url(blob API) から取得し、失敗時のみ raw_url を使う。
-      // raw_url が到達できない環境でも最新データを取り込めるようにする。
+      // 大容量は API の blob / raw の複数経路を順に試す（iPhone では raw の方が通ることがある）
       let lastErr = null;
-      if(fileInfo.git_url){
+      const tryBlob = async()=>{
+        if(!fileInfo.git_url) return null;
+        const blobR = await this.fetchWithRetry(fileInfo.git_url, {headers:this.headers()});
+        if(!blobR.ok) throw new Error('blob取得失敗: '+blobR.status);
+        const blob = await blobR.json();
+        if(blob && blob.content) return atob(String(blob.content).replace(/\n/g,''));
+        return null;
+      };
+      const tryRaw = async(withAuth)=>{
+        const hdrs = withAuth ? {'Authorization':'Bearer '+this.key} : {};
+        const rawR = await this.fetchWithRetry(fileInfo.raw_url, {headers:hdrs});
+        if(!rawR.ok) throw new Error('raw取得失敗: '+rawR.status);
+        return await rawR.text();
+      };
+      const order = isAppleMobileWebKit()
+        ? [tryRaw.bind(this,true), tryRaw.bind(this,false), tryBlob]
+        : [tryBlob, tryRaw.bind(this,true), tryRaw.bind(this,false)];
+      for(const fn of order){
+        if(content) break;
         try{
-          const blobR = await this.fetchWithRetry(fileInfo.git_url, {headers:this.headers()});
-          if(blobR.ok){
-            const blob = await blobR.json();
-            if(blob && blob.content){
-              content = atob(String(blob.content).replace(/\n/g,''));
-            }
-          } else {
-            lastErr = new Error('blob取得失敗: '+blobR.status);
-          }
-        }catch(e){
-          lastErr = e;
-        }
-      }
-      if(!content){
-        let rawR = null;
-        try{
-          rawR = await this.fetchWithRetry(fileInfo.raw_url, {headers:{'Authorization':'Bearer '+this.key}});
+          const c = await fn();
+          if(c) content = c;
         }catch(e){ lastErr = e; }
-        if((!rawR || !rawR.ok) && !lastErr){
-          try{
-            rawR = await this.fetchWithRetry(fileInfo.raw_url);
-          }catch(e){ lastErr = e; }
-        }
-        if(rawR && rawR.ok){
-          content = await rawR.text();
-        }
       }
       if(!content){
         const msg = `同期データ取得失敗: ${lastErr?.message||'network error'}`;
@@ -2076,7 +2660,7 @@ const SYNC = {
         }
         throw new Error(
           /Load failed|Failed to fetch|NetworkError/i.test(String(lastErr?.message||'')) ?
-          '同期データ取得失敗: Load failed\n（Mac: Safariの拡張機能オフ・別ブラウザ(Chrome)で試す／iCloudプライベートリレーOFF。iPhone: プライベートリレーOFF・ブロッカーOFF・回線切替）' :
+          '同期データ取得失敗: Load failed\n（①アドレスが 33q33q33q-beep（33が3つ）か確認 ②プライベートリレー/ブロッカーOFF ③回線切替 ④MacならChrome試行。データが大きいと失敗しやすいので写真を減らすと改善することがあります）' :
           msg
         );
       }
@@ -2131,6 +2715,11 @@ const SYNC = {
   },
 
   async smartSync(){
+    if(getSyncBackend()==='gdrive') return DRIVE_SYNC.smartSync();
+    if(getSyncBackend()==='local_only'){
+      alert('ローカルのみモードです。ZIP書出し／ZIP読込をご利用ください。');
+      return;
+    }
     if(!this.key){ this.openSettings(); return; }
     if(!this.gistId){
       updateSyncUI('syncing');
@@ -2169,6 +2758,20 @@ const SYNC = {
   },
 
   async pullAndReload(){
+    if(getSyncBackend()==='gdrive'){
+      if(!getGdriveToken()){ this.openSettings(); return; }
+      try{
+        updateSyncUI('syncing');
+        await DRIVE_SYNC.pull(false);
+        sessionStorage.setItem('just_pulled','1');
+        location.reload();
+      }catch(e){
+        updateSyncUI('error');
+        alert('ダウンロードエラー: '+e.message);
+      }
+      return;
+    }
+    if(getSyncBackend()==='local_only'){ alert('ZIP読込をご利用ください'); return; }
     if(!this.key){ this.openSettings(); return; }
     if(!this.gistId){
       try{
@@ -2193,6 +2796,10 @@ const SYNC = {
 
   // Gist履歴から最もデータが多いバージョンを探して復元
   async gistRestore(){
+    if(getSyncBackend()==='gdrive' || getSyncBackend()==='local_only'){
+      alert('この機能は GitHub Gist モードのときのみ使えます。');
+      return;
+    }
     if(!this.key||!this.gistId){ this.openSettings(); return; }
     if(!confirm('Gistの履歴から最もデータが多いバージョンを探して復元します。\n現在のローカルデータは上書きされる場合があります。続けますか？')) return;
     updateSyncUI('syncing');
@@ -2297,7 +2904,18 @@ function updateAppViewportHeight(){
   }
 })();
 
+function warnIfTypoGithubHost(){
+  if(location.hostname !== '33q33q-beep.github.io') return;
+  if(document.getElementById('wrong-host-banner')) return;
+  const div = document.createElement('div');
+  div.id = 'wrong-host-banner';
+  div.style.cssText = 'background:#f8d7da;color:#721c24;padding:10px 12px;text-align:center;font-size:13px;line-height:1.45;z-index:99999;position:relative';
+  div.innerHTML = '⚠️ ホスト名の打ち間違いの可能性があります。正しくは <b>33q33q33q-beep.github.io</b>（33が3つ）です。<br><a href="https://33q33q33q-beep.github.io/Diary/diary.html" style="color:#491217;text-decoration:underline;font-weight:600">正しいURLで開き直す</a>';
+  document.body.insertBefore(div, document.body.firstChild);
+}
+
 (async function diaryBoot(){
+  warnIfTypoGithubHost();
   try{ await restoreSyncCredsFromIdb(); }catch(e){}
   SYNC.init();
   updateAppViewportHeight();
@@ -2316,7 +2934,10 @@ function updateAppViewportHeight(){
 // ─── 自動同期 ─────────────────────────────────────────────────────────────────
 let lastAutoPull=Date.now();
 async function autoPull(){
-  if(!SYNC.key||!SYNC.gistId) return;
+  if(getSyncBackend()==='local_only') return;
+  if(getSyncBackend()==='gdrive'){
+    if(!getGdriveToken()) return;
+  }else if(!SYNC.key||!SYNC.gistId) return;
   const now=Date.now();
   if(now-lastAutoPull < 30000) return;
   lastAutoPull=now;
@@ -2329,7 +2950,11 @@ async function autoPull(){
 // タブ・アプリが前面に戻った時に自動取得（IDBから設定復元→同期）
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'){
-    restoreSyncCredsFromIdb().then(()=>{ if(SYNC.key) updateSyncUI(SYNC.gistId?'synced':'pending'); autoPull(); }).catch(()=>autoPull());
+    restoreSyncCredsFromIdb().then(()=>{
+      if(getSyncBackend()==='gdrive' && getGdriveToken()) updateSyncUI('synced');
+      else if(SYNC.key) updateSyncUI(SYNC.gistId?'synced':'pending');
+      autoPull();
+    }).catch(()=>autoPull());
   }
   if(document.visibilityState==='hidden') SYNC.flushPending(true);
 });
@@ -2340,7 +2965,7 @@ window.addEventListener('pagehide', ()=>SYNC.flushPending(true));
 window.addEventListener('beforeunload', ()=>SYNC.flushPending(true));
 // Facebook誕生日 自動インポート（IndexedDB復元・SYNC.init の後に実行すること）
 function runFacebookBirthdaySeedIfNeeded(){
-  const hasSync = !!(getSyncToken() || getSyncGistId());
+  const hasSync = !!(getSyncToken() || getSyncGistId() || (getSyncBackend()==='gdrive' && getGdriveToken()));
   if(hasSync) return;
   if(localStorage.getItem('diary_fb_birthdays')) return;
   if(localStorage.getItem('diary_disable_fb_seed')==='1') return;
@@ -2358,6 +2983,7 @@ function runFacebookBirthdaySeedIfNeeded(){
 
 // Gist旧バージョン(26番)からメディア・Goals復元
 function restoreFromGistV26(){
+  if(getSyncBackend() !== 'gist'){ alert('この復元は GitHub Gist モードのときのみ使えます'); return; }
   const token=SYNC.key, gistId=SYNC.gistId;
   if(!token||!gistId){alert('Gist設定がありません');return;}
   const btn=document.querySelector('#restore-banner button');
@@ -2385,7 +3011,7 @@ function restoreFromGistV26(){
 
 // メディア・Goalsが空の場合に復元バナーを表示（diaryBoot から呼ぶ）
 function checkRestoreBanner(){
-  if(!SYNC.key||!SYNC.gistId) return;
+  if(getSyncBackend() !== 'gist' || !SYNC.key||!SYNC.gistId) return;
   const noMedia=DB.getMedia().length===0;
   const noGoals=DB.getGoals().length===0;
   if(noMedia&&noGoals){
