@@ -507,7 +507,8 @@ function getCookie(name){
 }
 function setCookie(name, value, days=365){
   const maxAge = Math.max(1, Math.floor(days*24*60*60));
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+  const secure = (typeof location !== 'undefined' && location.protocol === 'https:') ? '; Secure' : '';
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
 }
 const _syncMem = { token:'', gist:'' };
 function safeGet(storage, key){
@@ -1692,8 +1693,8 @@ const SYNC = {
       if(this.key) this.push().catch(()=>updateSyncUI('error'));
       return;
     }
-    if(this.key && this.gistId){
-      // gistId が未設定なら、まず自動でGistを作成して以後の手入力を減らす
+    // トークンがあれば同期開始（Gist ID 未設定時は createGist が必要。以前は key&&gistId の誤条件で到達不能バグあり）
+    if(this.key){
       if(!this.gistId){
         this.createGist().then(()=>{
           renderCalendar(); showAnnivBanner();
@@ -1995,7 +1996,18 @@ const SYNC = {
   },
 
   async smartSync(){
-    if(!this.key||!this.gistId){ this.openSettings(); return; }
+    if(!this.key){ this.openSettings(); return; }
+    if(!this.gistId){
+      updateSyncUI('syncing');
+      try{
+        await this.createGist();
+        renderCalendar(); showAnnivBanner();
+      }catch(e){
+        updateSyncUI('error');
+        alert('同期エラー: '+e.message);
+      }
+      return;
+    }
     updateSyncUI('syncing');
     try{
       const hadPending = this.hasPendingChanges;
@@ -2023,7 +2035,16 @@ const SYNC = {
 
   async pullAndReload(){
     if(!this.key){ this.openSettings(); return; }
-    if(!this.gistId){ this.openSettings(); return; }
+    if(!this.gistId){
+      try{
+        updateSyncUI('syncing');
+        await this.createGist();
+      }catch(e){
+        updateSyncUI('error');
+        alert('Gist作成エラー: '+e.message);
+        return;
+      }
+    }
     try{
       updateSyncUI('syncing');
       await this.pull(false);
