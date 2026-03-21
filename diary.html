@@ -279,13 +279,13 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   <button class="nav-btn" onclick="showPage('todo')" id="nav-todo"><span class="icon">🎯</span><span>Ambition・Aspiration</span></button>
   <div id="sync-area">
     <div class="sync-status"><div class="sync-dot" id="sync-dot"></div><span id="sync-label">未設定</span></div>
-    <button class="nav-btn" style="font-size:12px;padding:8px 10px;margin-top:4px;font-weight:600" onclick="SYNC.smartSync()">🔄 同期</button>
-    <button class="nav-btn" style="font-size:11px;padding:5px 10px;color:var(--text-muted)" onclick="SYNC.openSettings()">⚙️ 設定変更</button>
-    <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="SYNC.gistRestore()">☁️ Gistから復元</button>
-    <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="exportData()">📤 ファイル保存</button>
-    <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="importData()">📥 ファイル復元</button>
-    <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="FOLDER_SYNC.exportZip()" title="写真等をdata/にgzipしてZIP化。FilesでiCloudへ保存できます">📦 ZIP書出し<br><span style="font-size:9px;opacity:.85">(iCloud用)</span></button>
-    <button class="nav-btn" style="font-size:11px;padding:5px 10px" onclick="FOLDER_SYNC.importZipClick()">📂 ZIP読込</button>
+    <button type="button" class="nav-btn" id="btn-sync" style="font-size:12px;padding:8px 10px;margin-top:4px;font-weight:600;color:var(--text)" onclick="SYNC.smartSync()">🔄 同期</button>
+    <button type="button" class="nav-btn" style="font-size:11px;padding:5px 10px;color:var(--text);font-weight:600" onclick="SYNC.openSettings()">⚙️ 設定変更<br><span style="font-size:9px;font-weight:400;opacity:.85">（Gist/Drive選ぶ）</span></button>
+    <button type="button" class="nav-btn" style="font-size:11px;padding:5px 10px;color:var(--text)" onclick="SYNC.gistRestore()">☁️ Gistから復元</button>
+    <button type="button" class="nav-btn" style="font-size:11px;padding:5px 10px;color:var(--text)" onclick="exportData()">📤 ファイル保存</button>
+    <button type="button" class="nav-btn" style="font-size:11px;padding:5px 10px;color:var(--text)" onclick="importData()">📥 ファイル復元</button>
+    <button type="button" class="nav-btn" style="font-size:11px;padding:5px 10px;color:var(--text)" onclick="FOLDER_SYNC.exportZip()" title="写真等をdata/にgzipしてZIP化。FilesでiCloudへ保存できます">📦 ZIP書出し<br><span style="font-size:9px;opacity:.85">(iCloud用)</span></button>
+    <button type="button" class="nav-btn" style="font-size:11px;padding:5px 10px;color:var(--text)" onclick="FOLDER_SYNC.importZipClick()">📂 ZIP読込</button>
   </div>
 </nav>
 <main id="main">
@@ -465,6 +465,9 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 <div id="jsonbin-modal">
   <div class="inner">
     <h3>☁️ クラウド同期設定</h3>
+    <p style="font-size:12px;color:var(--primary-dark);margin-bottom:10px;padding:8px 10px;background:#e8f0e9;border-radius:8px;line-height:1.5">
+      <strong>同期の方式</strong>はこの下のプルダウンです（サイドバーには出ません）。<br>Gist／Googleドライブ／ローカルのみから選べます。
+    </p>
     <p style="margin-bottom:10px">
       <label for="syncBackendSelect" style="font-weight:600">同期の方式</label><br>
       <select id="syncBackendSelect" onchange="onSyncBackendChange()" style="margin-top:4px;width:100%;max-width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);font-size:13px;background:var(--bg)">
@@ -2848,16 +2851,17 @@ function updateSyncUI(state){
   const label=document.getElementById('sync-label');
   const btn=document.getElementById('btn-sync');
   const map={
-    'no-key':   ['','未設定','⚙️ 同期設定'],
-    'syncing':  ['orange','同期中…','⚙️ 同期設定'],
-    'pending':  ['orange','変更あり…','⚙️ 同期設定'],
-    'synced':   ['green','同期済み ✓','⚙️ 同期設定'],
-    'error':    ['red','同期エラー','⚙️ 同期設定'],
+    'no-key':   ['','未設定'],
+    'syncing':  ['orange','同期中…'],
+    'pending':  ['orange','変更あり…'],
+    'synced':   ['green','同期済み ✓'],
+    'error':    ['red','同期エラー'],
   };
-  const [dotClass,text,btnText]=map[state]||map['no-key'];
-  dot.className='sync-dot'+(dotClass?' '+dotClass:'');
-  label.textContent=text;
-  if(btn) btn.textContent=btnText;
+  const [dotClass,text]=map[state]||map['no-key'];
+  if(dot) dot.className='sync-dot'+(dotClass?' '+dotClass:'');
+  if(label) label.textContent=text;
+  // 同期ボタンは常に「同期」— 状態は上のラベルで表示（旧: btn に ⚙️ と出て紛らわしかった）
+  if(btn) btn.textContent='🔄 同期';
 
   const mb=document.getElementById('mobile-sync-banner');
   if(mb){
