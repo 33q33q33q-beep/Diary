@@ -1,6 +1,6 @@
 # Google ドライブ同期のセットアップ（日記 Web アプリ）
 
-ブラウザだけで **Google ドライブ上に `私の日記_WebApp` フォルダ**を作り、`diary-data.json` と `data/*.gz`（写真などを gzip）を読み書きします。
+ブラウザだけで **Google ドライブ上に `LifeTimeDiary` フォルダ**（旧名: `私の日記_WebApp`）を作り、`diary-data.json` と `data/*.gz`（写真などを gzip）を読み書きします。
 
 ## 1. Google Cloud Console
 

@@ -521,7 +521,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <p id="gdrive-status-p" style="font-size:11px;color:var(--text-muted)"></p>
     </div>
     <div id="local-only-settings-block" style="display:none;border-top:1px solid var(--border);padding-top:12px;margin-top:12px;font-size:12px;color:var(--text-muted);line-height:1.5">
-      クラウド自動同期は使いません。サイドバーの <strong>「ZIP書出し」</strong> で <code>私の日記_WebApp/</code> 形式のZIPを作り、iPhoneの<strong>ファイル</strong>アプリ経由でiCloudに保存してください。<strong>「ZIP読込」</strong>で戻せます。
+      クラウド自動同期は使いません。サイドバーの <strong>「ZIP書出し」</strong> で <code>LifeTimeDiary/</code> 形式のZIPを作り、iPhoneの<strong>ファイル</strong>アプリ経由でiCloudに保存してください。<strong>「ZIP読込」</strong>で戻せます。
     </div>
     <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px">
       <button type="button" class="btn" onclick="SYNC.closeSettings()">閉じる（同期はそのまま）</button>
@@ -1831,7 +1831,9 @@ function importData(){
 }
 
 // ─── フォルダ形式同期（ZIP / Google Drive）: 本文JSON + data/*.gz ─────────────
-const FOLDER_SYNC_ROOT = '私の日記_WebApp';
+const FOLDER_SYNC_ROOT = 'LifeTimeDiary';
+/** 旧バージョンのドライブ／ZIP フォルダ名（移行・読込互換用） */
+const FOLDER_SYNC_ROOT_LEGACY = '私の日記_WebApp';
 const FOLDER_DATA_DIR = 'data';
 const REF_PREFIX = 'ref:';
 
@@ -2040,7 +2042,7 @@ const FOLDER_SYNC = {
       try{
         await loadJSZipLib();
         const zip = await JSZip.loadAsync(f);
-        let jf = zip.file(FOLDER_SYNC_ROOT + '/diary-data.json');
+        let jf = zip.file(FOLDER_SYNC_ROOT + '/diary-data.json') || zip.file(FOLDER_SYNC_ROOT_LEGACY + '/diary-data.json');
         if(!jf){
           const keys = Object.keys(zip.files).filter(k=>!zip.files[k].dir && /(^|\/)diary-data\.json$/i.test(k));
           if(keys.length) jf = zip.file(keys[0]);
@@ -2165,6 +2167,16 @@ async function driveCreateFolder(name, parentId){
   if(!r.ok) throw new Error(j.error?.message || 'フォルダ作成失敗');
   return j.id;
 }
+async function drivePatchFileName(fileId, newName){
+  const token = await driveApiGetToken();
+  const r = await fetch(`${DRIVE_API}/files/${fileId}`, {
+    method: 'PATCH',
+    headers: {Authorization: 'Bearer '+token, 'Content-Type': 'application/json'},
+    body: JSON.stringify({name: newName})
+  });
+  const j = await r.json();
+  if(!r.ok) throw new Error(j.error?.message || 'Drive フォルダ名の変更に失敗しました');
+}
 async function driveEnsureFolders(){
   let rootId = safeGet(localStorage, 'diary_gdrive_root_folder_id');
   if(rootId){
@@ -2177,7 +2189,16 @@ async function driveEnsureFolders(){
       }
     }
   }
-  rootId = await driveFindFolderId(FOLDER_SYNC_ROOT, 'root') || await driveCreateFolder(FOLDER_SYNC_ROOT, 'root');
+  rootId = await driveFindFolderId(FOLDER_SYNC_ROOT, 'root');
+  if(!rootId){
+    const leg = await driveFindFolderId(FOLDER_SYNC_ROOT_LEGACY, 'root');
+    if(leg){
+      await drivePatchFileName(leg, FOLDER_SYNC_ROOT);
+      rootId = leg;
+    } else {
+      rootId = await driveCreateFolder(FOLDER_SYNC_ROOT, 'root');
+    }
+  }
   safeSet(localStorage, 'diary_gdrive_root_folder_id', rootId);
   let dataId = await driveFindFolderId(FOLDER_DATA_DIR, rootId) || await driveCreateFolder(FOLDER_DATA_DIR, rootId);
   safeSet(localStorage, 'diary_gdrive_data_folder_id', dataId);
