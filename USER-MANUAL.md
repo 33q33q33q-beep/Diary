@@ -1,5 +1,8 @@
 # 私の日記（Webアプリ）— 渡し用マニュアル
 
+**PDF版:** 同じフォルダの **[USER-MANUAL.pdf](./USER-MANUAL.pdf)** を印刷・配布に使えます。  
+（中身を直したあと再生成する場合は `python3 scripts/build_user_manual_pdf.py` …要: `pip install reportlab`）
+
 ブラウザだけで動く日記アプリです。データは **端末のブラウザ内** に保存され、オプションで **GitHub Gist** または **Google ドライブ** と同期できます。
 
 ---
@@ -115,6 +118,7 @@
 
 | ファイル | 内容 |
 |----------|------|
+| [USER-MANUAL.pdf](./USER-MANUAL.pdf) | 本マニュアルの PDF（印刷・配布用） |
 | [GDRIVE-SETUP.md](./GDRIVE-SETUP.md) | Google ドライブ同期の詳細 |
 | [README-ベースパス.md](./README-ベースパス.md) | GitHub Pages のパスに関する注意 |
 
