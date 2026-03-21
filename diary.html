@@ -2060,7 +2060,15 @@ const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
 
 function normalizeGdriveClientId(raw){
-  return String(raw||'').trim().replace(/[\r\n]/g,'').replace(/\s+/g,'');
+  let s = String(raw||'').trim().replace(/[\r\n]/g,'').replace(/\s+/g,'');
+  // 設定用URLを入力欄に貼った場合 (#gdrive_client=...)
+  const fromParam = s.match(/[#&?]gdrive_client=([^&#'"\s]+)/);
+  if(fromParam){
+    try{ s = decodeURIComponent(fromParam[1]); }catch(e){ s = fromParam[1]; }
+  }
+  // Safari がクライアントIDの先頭に http:// や https:// を付けた誤貼り付け
+  s = s.replace(/^https?:\/\//i,'');
+  return s.trim();
 }
 /** Cloud Console の「OAuth 2.0 クライアント ID」1行（例: 123-abc....apps.googleusercontent.com） */
 function isValidGdriveClientId(cid){
@@ -2068,7 +2076,13 @@ function isValidGdriveClientId(cid){
 }
 function getGdriveClientId(){
   const s = safeGet(localStorage, 'diary_gdrive_client_id');
-  return s ? normalizeGdriveClientId(s) : '';
+  if(!s) return '';
+  const cid = normalizeGdriveClientId(s);
+  // 壊れた保存値（http://付き等）を正しい形に直して保存し直す
+  if(isValidGdriveClientId(cid) && cid !== String(s).trim().replace(/[\r\n]/g,'')){
+    safeSet(localStorage,'diary_gdrive_client_id',cid);
+  }
+  return cid;
 }
 function getGdriveToken(){ return safeGet(localStorage, 'diary_gdrive_token'); }
 function setGdriveToken(t, expiresInSec){
