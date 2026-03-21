@@ -519,6 +519,7 @@ function safeSet(storage, key, value){
 }
 function getSyncToken(){
   return safeGet(localStorage, 'gh_token')
+    || safeGet(localStorage, 'diary_gh_token_bak')
     || safeGet(sessionStorage, 'gh_token')
     || getCookie('gh_token')
     || _syncMem.token
@@ -526,6 +527,7 @@ function getSyncToken(){
 }
 function getSyncGistId(){
   return safeGet(localStorage, 'gh_gist')
+    || safeGet(localStorage, 'diary_gh_gist_bak')
     || safeGet(sessionStorage, 'gh_gist')
     || getCookie('gh_gist')
     || _syncMem.gist
@@ -534,16 +536,63 @@ function getSyncGistId(){
 function persistSyncCreds(token, gistId){
   if(token){
     safeSet(localStorage, 'gh_token', token);
+    safeSet(localStorage, 'diary_gh_token_bak', token);
     safeSet(sessionStorage, 'gh_token', token);
     try{ setCookie('gh_token', token, 365); }catch(e){}
     _syncMem.token = token;
   }
   if(gistId){
     safeSet(localStorage, 'gh_gist', gistId);
+    safeSet(localStorage, 'diary_gh_gist_bak', gistId);
     safeSet(sessionStorage, 'gh_gist', gistId);
     try{ setCookie('gh_gist', gistId, 365); }catch(e){}
     _syncMem.gist = gistId;
   }
+}
+
+function isAppleMobileWebKit(){
+  try{
+    const u = navigator.userAgent || '';
+    if(/iPhone|iPad|iPod/i.test(u)) return true;
+    if(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
+  }catch(e){}
+  return false;
+}
+
+/** GitHub API 用: iOS Safari で fetch が Load failed になる場合の XHR フォールバック */
+function githubHttpRequest(url, opts={}){
+  const method = String(opts.method || 'GET').toUpperCase();
+  const headers = opts.headers && typeof opts.headers === 'object' ? opts.headers : {};
+  const body = opts.body != null ? opts.body : null;
+  return new Promise((resolve, reject)=>{
+    const x = new XMLHttpRequest();
+    x.open(method, url, true);
+    x.timeout = opts.timeoutMs != null ? opts.timeoutMs : 90000;
+    Object.keys(headers).forEach(k=>{
+      try{ x.setRequestHeader(k, headers[k]); }catch(e){}
+    });
+    x.onload = ()=>{
+      const res = {
+        ok: x.status >= 200 && x.status < 300,
+        status: x.status,
+        json: async()=> JSON.parse(x.responseText || '{}'),
+        text: async()=> x.responseText
+      };
+      resolve(res);
+    };
+    x.onerror = ()=> reject(new Error('XHR network error'));
+    x.ontimeout = ()=> reject(new Error('XHR timeout'));
+    try{ x.send(body); }catch(e){ reject(e); }
+  });
+}
+
+let _syncBannerDefaultHtml = null;
+function getSyncBannerDefaultHtml(){
+  if(_syncBannerDefaultHtml === null){
+    const mb = document.getElementById('mobile-sync-banner');
+    _syncBannerDefaultHtml = mb ? mb.innerHTML : '';
+  }
+  return _syncBannerDefaultHtml;
 }
 
 function hasLocalDiaryData(){
@@ -1827,21 +1876,51 @@ const SYNC = {
   },
 
   async fetchWithRetry(url, opts={}, retry=2, timeoutMs=12000){
+    const ios = isAppleMobileWebKit();
+    const maxAttempts = ios ? Math.max(retry + 1, 4) : retry;
     let lastErr = null;
-    for(let i=0;i<=retry;i++){
-      const controller = new AbortController();
-      const timer = setTimeout(()=>controller.abort(), timeoutMs);
+
+    const tryPlainFetch = async()=>{
+      const {signal: _ignoreSig, ...rest} = opts || {};
+      return fetch(url, { ...rest, mode:'cors', credentials:'omit' });
+    };
+
+    for(let i=0;i<=maxAttempts;i++){
       try{
-        const res = await fetch(url, { cache:'no-store', ...opts, signal:controller.signal });
-        clearTimeout(timer);
-        return res;
+        if(ios){
+          const res = await tryPlainFetch();
+          return res;
+        }
+        const controller = new AbortController();
+        const timer = setTimeout(()=>controller.abort(), timeoutMs);
+        try{
+          const {signal: _s2, ...rest2} = opts || {};
+          const res = await fetch(url, { ...rest2, mode:'cors', credentials:'omit', cache:'no-store', signal:controller.signal });
+          clearTimeout(timer);
+          return res;
+        }finally{
+          clearTimeout(timer);
+        }
       }catch(e){
-        clearTimeout(timer);
         lastErr = e;
-        if(i<retry){
-          await new Promise(r=>setTimeout(r, 500*(i+1)));
+        if(i<maxAttempts){
+          await new Promise(r=>setTimeout(r, 600*(i+1)));
           continue;
         }
+      }
+    }
+
+    if(ios && lastErr){
+      try{
+        const hdrs = {...(opts.headers||{})};
+        return await githubHttpRequest(url, {
+          method: opts.method || 'GET',
+          headers: hdrs,
+          body: opts.body != null ? opts.body : null,
+          timeoutMs: 90000
+        });
+      }catch(xe){
+        lastErr = xe;
       }
     }
     throw lastErr || new Error('network error');
@@ -1941,7 +2020,7 @@ const SYNC = {
         }
         throw new Error(
           /Load failed|Failed to fetch|NetworkError/i.test(String(lastErr?.message||'')) ?
-          '同期データ取得失敗: Load failed（iPhone通信制限の可能性）' :
+          '同期データ取得失敗: Load failed\n（iPhone: iCloudプライベートリレーをオフ、コンテンツブロッカー無効、Wi‑Fi⇄5G切替、Chromeで試す）' :
           msg
         );
       }
@@ -2116,6 +2195,19 @@ function updateSyncUI(state){
   dot.className='sync-dot'+(dotClass?' '+dotClass:'');
   label.textContent=text;
   if(btn) btn.textContent=btnText;
+
+  const mb=document.getElementById('mobile-sync-banner');
+  if(mb){
+    if(state==='no-key'){
+      mb.innerHTML=getSyncBannerDefaultHtml();
+      mb.style.display='block';
+    }else{
+      mb.style.display='none';
+      if(state==='synced'||state==='pending'||state==='syncing'){
+        mb.innerHTML=getSyncBannerDefaultHtml();
+      }
+    }
+  }
 }
 
 function renderCurrentPage(){
