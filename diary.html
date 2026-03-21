@@ -3,17 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>私の日記</title>
+<title>LifeTime Diary（私の日記）</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="私の日記">
-<meta name="theme-color" content="#7a9e7e">
+<meta name="apple-mobile-web-app-title" content="LifeTime Diary">
+<meta name="theme-color" content="#f25c22">
 <link rel="dns-prefetch" href="https://api.github.com">
 <link rel="preconnect" href="https://api.github.com" crossorigin>
 <link rel="dns-prefetch" href="https://gist.githubusercontent.com">
 <link rel="preconnect" href="https://gist.githubusercontent.com" crossorigin>
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237a9e7e'/><text y='.9em' font-size='80' x='10'>📔</text></svg>">
-<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;私の日記&quot;,&quot;short_name&quot;:&quot;日記&quot;,&quot;start_url&quot;:&quot;./diary.html&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%23f5f0e8&quot;,&quot;theme_color&quot;:&quot;%237a9e7e&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237a9e7e'/><text y='.9em' font-size='80' x='10'>📔</text></svg>&quot;,&quot;sizes&quot;:&quot;any&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]}">
+<link rel="icon" type="image/png" sizes="1024x1024" href="app-icon-1024.png">
+<link rel="apple-touch-icon" href="app-icon-1024.png">
+<link rel="manifest" href="site.webmanifest">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -28,7 +29,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 #sidebar{width:220px;height:100%;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0 0;flex-shrink:0;box-shadow:var(--shadow);overflow-y:auto}
 #sync-area{padding:12px 16px;border-top:1px solid var(--border);margin-top:auto;padding-bottom:max(12px,env(safe-area-inset-bottom))}
 #sidebar h1{font-size:18px;font-weight:700;color:var(--primary-dark);padding:0 20px 20px;border-bottom:1px solid var(--border)}
-#sidebar h1 span{display:block;font-size:12px;color:var(--text-muted);font-weight:400;margin-top:2px}
+#sidebar h1 .brand-title{display:block;font-size:15px;font-weight:700;color:#e05028;letter-spacing:.02em;line-height:1.2}
+#sidebar h1 .brand-sub{display:block;font-size:12px;color:var(--text-muted);font-weight:400;margin-top:4px}
 .nav-btn{display:flex;align-items:center;gap:10px;padding:12px 20px;cursor:pointer;font-size:14px;color:var(--text-light);border:none;background:none;width:100%;text-align:left;transition:.2s}
 .nav-btn:hover{background:#f0ebe0;color:var(--text)}
 .nav-btn.active{background:#e8f0e9;color:var(--primary-dark);font-weight:600;border-right:3px solid var(--primary)}
@@ -249,8 +251,9 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   #app:has(#page-calendar.active) #main{flex:1;width:100%;max-width:100%}
   #app:has(#page-calendar.active) #calendar-mobile-nav{display:flex}
   #sidebar{width:60px;overflow:hidden}
-  #sidebar h1{padding:10px;font-size:0}
-  #sidebar h1::first-line{font-size:16px}
+  #sidebar h1{padding:8px 4px;text-align:center}
+  #sidebar h1 .brand-title{font-size:10px;color:#e05028}
+  #sidebar h1 .brand-sub{font-size:9px;margin-top:2px}
   .nav-btn span:not(.icon){display:none}
   .nav-btn{padding:14px;justify-content:center}
   #sync-area{padding:4px 0}
@@ -296,7 +299,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 <body>
 <div id="app">
 <nav id="sidebar">
-  <h1>📔 <span>私の日記</span></h1>
+  <h1><span class="brand-title">LifeTime Diary</span><span class="brand-sub">私の日記</span></h1>
   <button class="nav-btn active" onclick="showPage('calendar')" id="nav-calendar"><span class="icon">📅</span><span>カレンダー</span></button>
   <button class="nav-btn" onclick="showPage('timeline')" id="nav-timeline"><span class="icon">⏳</span><span>タイムライン</span></button>
   <button class="nav-btn" onclick="showPage('search')" id="nav-search"><span class="icon">🔍</span><span>検索</span></button>

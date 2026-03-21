@@ -1,0 +1,23 @@
+{
+  "name": "LifeTime Diary",
+  "short_name": "LifeTime",
+  "description": "ブラウザで使う日記アプリ",
+  "start_url": "./diary.html",
+  "display": "standalone",
+  "background_color": "#fff5f0",
+  "theme_color": "#f25c22",
+  "icons": [
+    {
+      "src": "app-icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "app-icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
