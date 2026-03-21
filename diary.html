@@ -77,6 +77,10 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 .cal-media-icons{font-size:10px;line-height:1;margin-top:2px;z-index:1}
 .cal-tags-dot{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;margin-top:2px;z-index:1}
 .cal-tags-dot span{width:5px;height:5px;border-radius:50%;background:var(--primary-dark);opacity:.5}
+/* PCのChrome等（マウス操作）: カレンダー表記を1.5倍。タッチ端末は除外してiPhoneのレイアウトを維持 */
+@media(min-width:601px) and (pointer:fine){
+  #page-calendar .calendar-desktop-scale{zoom:1.5}
+}
 /* Timeline */
 .timeline{position:relative;padding-left:24px}
 .timeline::before{content:'';position:absolute;left:10px;top:0;bottom:0;width:2px;background:var(--border)}
@@ -321,6 +325,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <div id="mobile-sync-banner" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;text-align:center">
       ⚙️ 同期が未設定です。<button onclick="SYNC.openSettings()" style="margin-left:8px;padding:3px 12px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-weight:600">設定する</button>
     </div>
+    <div class="calendar-desktop-scale">
     <div class="cal-nav">
       <button class="btn" onclick="calMove(-1)">◀</button>
       <h2 id="cal-title"></h2>
@@ -335,6 +340,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <div class="cal-header">日</div><div class="cal-header">月</div><div class="cal-header">火</div>
       <div class="cal-header">水</div><div class="cal-header">木</div><div class="cal-header">金</div>
       <div class="cal-header">土</div>
+    </div>
     </div>
     <!-- 狭い画面（iPhone等）: カレンダーを横幅いっぱいにし、左メニュー相当を記念日バナーの上に配置 -->
     <div id="calendar-mobile-nav" class="calendar-mobile-nav" aria-label="画面メニュー">
@@ -551,7 +557,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
         手順: <strong>①</strong>下の欄に貼る または <strong>②</strong>「Drive設定リンク」をコピーした<strong>全体の https://… URL</strong>をアドレス欄で開く。
       </p>
       <p style="font-size:11px;color:var(--text-muted);margin-bottom:6px">📱 Macで「Drive設定リンクをコピー」→ iPhoneのSafariで<strong>リンク全体</strong>を開くと ID が入ります。</p>
-      <input type="text" id="gdriveClientIdInput" placeholder="123456789-xxxx.apps.googleusercontent.com（末尾まで）" style="width:100%;margin-bottom:8px" autocomplete="off" autocorrect="off" spellcheck="false">
+      <input type="text" id="gdriveClientIdInput" placeholder="123456789-xxxx.apps.googleusercontent.com（末尾まで）" style="width:100%;margin-bottom:8px" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" onblur="onGdriveClientIdFieldBlur(this)">
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
         <button type="button" class="btn" onclick="SYNC.copyGdriveSetupLink()" style="font-size:11px">📱 Drive設定リンクをコピー</button>
         <button type="button" class="btn btn-primary" onclick="DRIVE_SYNC.connectAndPrepare()">🔐 ログインしてフォルダ作成</button>
@@ -2118,12 +2124,24 @@ const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
 
+/** iPhoneのメモ・Safari貼り付けで混ざる不可視文字・全角記号を除去 */
+function stripGdriveClientIdNoise(s){
+  let t = String(s||'');
+  t = t.replace(/\uFEFF/g,'').replace(/[\u200B-\u200D\u2060]/g,'').replace(/\u00A0/g,'');
+  t = t.replace(/[\u2010-\u2015\u2212\uFF0D]/g,'-');
+  t = t.replace(/\uff0e/g,'.');
+  t = t.replace(/[．]/g,'.');
+  t = t.replace(/[０-９]/g, c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
+  return t;
+}
 function normalizeGdriveClientId(raw){
-  let s = String(raw||'').trim().replace(/[\r\n]/g,'').replace(/\s+/g,'');
+  let s = stripGdriveClientIdNoise(raw);
+  s = s.trim().replace(/[\r\n\t\v\f]+/g,'').replace(/ /g,'');
   // 設定用URLを入力欄に貼った場合 (#gdrive_client=...)
   const fromParam = s.match(/[#&?]gdrive_client=([^&#'"\s]+)/);
   if(fromParam){
     try{ s = decodeURIComponent(fromParam[1]); }catch(e){ s = fromParam[1]; }
+    s = stripGdriveClientIdNoise(s).trim().replace(/[\r\n\t]+/g,'').replace(/ /g,'');
   }
   // Safari がクライアントIDの先頭に http:// や https:// を付けた誤貼り付け
   s = s.replace(/^https?:\/\//i,'');
@@ -2137,11 +2155,14 @@ function getGdriveClientId(){
   const s = safeGet(localStorage, 'diary_gdrive_client_id');
   if(!s) return '';
   const cid = normalizeGdriveClientId(s);
-  // 壊れた保存値（http://付き等）を正しい形に直して保存し直す
-  if(isValidGdriveClientId(cid) && cid !== String(s).trim().replace(/[\r\n]/g,'')){
-    safeSet(localStorage,'diary_gdrive_client_id',cid);
-  }
+  if(isValidGdriveClientId(cid) && cid !== s) safeSet(localStorage,'diary_gdrive_client_id',cid);
   return cid;
+}
+function onGdriveClientIdFieldBlur(el){
+  if(!el) return;
+  const v = normalizeGdriveClientId(el.value);
+  el.value = v;
+  if(isValidGdriveClientId(v)) safeSet(localStorage,'diary_gdrive_client_id',v);
 }
 function getGdriveToken(){ return safeGet(localStorage, 'diary_gdrive_token'); }
 function setGdriveToken(t, expiresInSec){
@@ -2153,8 +2174,9 @@ async function ensureGdriveTokenInteractive(){
   const cid = getGdriveClientId();
   if(!cid) throw new Error('Google のクライアント ID を設定してください');
   if(!isValidGdriveClientId(cid)){
-    throw new Error('クライアント ID の形式が正しくありません。末尾まで「.apps.googleusercontent.com」がある1行を、日記の設定欄に貼ってください（Safariのアドレス欄には貼らないでください）。');
+    throw new Error('クライアント ID の形式が正しくありません。Cloud Console の「ウェブアプリケーション」用 ID を、末尾の .apps.googleusercontent.com まで丸ごとコピーして貼り直してください（前後に空白や改行が入っていないか確認）。');
   }
+  const originHint = (typeof location !== 'undefined' && location.origin) ? location.origin : 'このサイトのURL';
   return new Promise((resolve,reject)=>{
     try{
       const tc = google.accounts.oauth2.initTokenClient({
@@ -2164,7 +2186,15 @@ async function ensureGdriveTokenInteractive(){
           if(r.access_token){
             setGdriveToken(r.access_token, r.expires_in || 3600);
             resolve(r.access_token);
-          } else reject(new Error(r.error_description || r.error || 'ログインに失敗しました'));
+          } else {
+            const err = r.error || '';
+            const desc = String(r.error_description || '').replace(/\+/g,' ');
+            if(err === 'invalid_client' || /invalid.?client/i.test(desc)){
+              reject(new Error('Google がクライアント ID を拒否しました（invalid_client）。\n\n① Cloud Console → 認証情報 → 種類は「ウェブアプリケーション」（iOS用ではない）\n② 承認済みの JavaScript 生成元に次を追加:\n   '+originHint+'\n③ ホスト名の打ち間違いがないか（例: 33q が3つ）\n④ Mac で動く同じ ID を iPhone にも貼る'));
+            } else {
+              reject(new Error(desc || err || 'ログインに失敗しました'));
+            }
+          }
         }
       });
       const silent = parseInt(safeGet(localStorage, 'diary_gdrive_expires')||'0',10) > Date.now();
@@ -2311,7 +2341,7 @@ const DRIVE_SYNC = {
     const cid = normalizeGdriveClientId(document.getElementById('gdriveClientIdInput')?.value || '');
     if(!cid){ alert('クライアント ID を入力してください'); return; }
     if(!isValidGdriveClientId(cid)){
-      alert('クライアント ID の形式が違います。\n\nCloud Console → 認証情報 → OAuth 2.0 クライアント ID（種類:ウェブアプリ）の「クライアント ID」列を、末尾の .apps.googleusercontent.com まで丸ごとコピーして、この入力欄に貼ってください。\n\n※プロジェクト番号だけ・途中まででは動きません。\n※Safariのアドレス欄には貼らないでください。');
+      alert('クライアント ID の形式が違います。\n\nCloud Console → 認証情報 → OAuth 2.0 クライアント ID（種類:ウェブアプリ）の「クライアント ID」列を、末尾の .apps.googleusercontent.com まで丸ごとコピーして、この入力欄に貼ってください。\n\n※メモアプリ経由だと不可視の改行や全角記号が混ざることがあります。貼り直したあと一度欄の外をタップして確定してください。\n※プロジェクト番号だけ・途中まででは動きません。\n※Safariのアドレス欄には貼らないでください。');
       return;
     }
     safeSet(localStorage, 'diary_gdrive_client_id', cid);
