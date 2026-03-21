@@ -559,6 +559,17 @@ function isAppleMobileWebKit(){
   return false;
 }
 
+/** Mac Safari 等: AbortController 短時間で Load failed になりやすいので fetch を緩める */
+function isSafariFamily(){
+  if(isAppleMobileWebKit()) return true;
+  try{
+    const u = navigator.userAgent || '';
+    if(!/safari/i.test(u)) return false;
+    if(/chrome|crios|fxios|edg|opr|android|chromium/i.test(u)) return false;
+    return true;
+  }catch(e){ return false; }
+}
+
 let _syncBannerDefaultHtml = null;
 function getSyncBannerDefaultHtml(){
   if(_syncBannerDefaultHtml === null){
@@ -1881,9 +1892,10 @@ const SYNC = {
     return {'Authorization':'Bearer '+this.key,'Content-Type':'application/json','Accept':'application/vnd.github+json'};
   },
 
-  async fetchWithRetry(url, opts={}, retry=2, timeoutMs=12000){
-    const ios = isAppleMobileWebKit();
-    const maxAttempts = ios ? Math.max(retry + 1, 4) : retry;
+  async fetchWithRetry(url, opts={}, retry=2, timeoutMs){
+    const relaxed = isSafariFamily();
+    const abortMs = timeoutMs != null ? timeoutMs : (relaxed ? 0 : 60000);
+    const maxAttempts = relaxed ? Math.max(retry + 3, 6) : Math.max(retry + 1, 4);
     let lastErr = null;
 
     const tryPlainFetch = async()=>{
@@ -1893,12 +1905,12 @@ const SYNC = {
 
     for(let i=0;i<=maxAttempts;i++){
       try{
-        if(ios){
+        if(relaxed || !abortMs){
           const res = await tryPlainFetch();
           return res;
         }
         const controller = new AbortController();
-        const timer = setTimeout(()=>controller.abort(), timeoutMs);
+        const timer = setTimeout(()=>controller.abort(), abortMs);
         try{
           const {signal: _s2, ...rest2} = opts || {};
           const res = await fetch(url, { ...rest2, mode:'cors', credentials:'omit', cache:'no-store', signal:controller.signal });
@@ -1910,13 +1922,12 @@ const SYNC = {
       }catch(e){
         lastErr = e;
         if(i<maxAttempts){
-          await new Promise(r=>setTimeout(r, 600*(i+1)));
+          await new Promise(r=>setTimeout(r, 700 + 400*i));
           continue;
         }
       }
     }
 
-    // iOS では XHR フォールバックは CORS/ITP で onerror になりやすく、かえって「XHR network error」だけが出るため使わない
     throw lastErr || new Error('network error');
   },
 
@@ -2014,7 +2025,7 @@ const SYNC = {
         }
         throw new Error(
           /Load failed|Failed to fetch|NetworkError/i.test(String(lastErr?.message||'')) ?
-          '同期データ取得失敗: Load failed\n（iPhone: iCloudプライベートリレーをオフ、コンテンツブロッカー無効、Wi‑Fi⇄5G切替、Chromeで試す）' :
+          '同期データ取得失敗: Load failed\n（Mac: Safariの拡張機能オフ・別ブラウザ(Chrome)で試す／iCloudプライベートリレーOFF。iPhone: プライベートリレーOFF・ブロッカーOFF・回線切替）' :
           msg
         );
       }
