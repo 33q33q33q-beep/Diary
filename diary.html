@@ -2792,10 +2792,23 @@ const DRIVE_SYNC = {
       return;
     }
     if(getGdriveToken()){
+      // トークン期限チェック（iPhone Safari は自動リフレッシュ不可のため事前確認）
+      const exp = parseInt(safeGet(localStorage,'diary_gdrive_expires')||'0',10);
+      const tokenExpired = exp && Date.now() >= exp - 120000;
+      const mb = document.getElementById('mobile-sync-banner');
+      if(tokenExpired && isSafariFamily()){
+        // iPhone Safari でトークン切れ → 自動同期せず再ログインを促す
+        updateSyncUI('error');
+        if(mb){ mb.style.display='block'; mb.innerHTML='🔑 Google Drive のログインが切れました。<br><button onclick="DRIVE_SYNC.smartSync()" style="margin-top:6px;padding:4px 14px;background:#4a80d0;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px">再ログインして同期</button>'; }
+        return;
+      }
       this.pull(true).then(()=>{ renderCalendar(); showAnnivBanner(); updateSyncUI('synced'); }).catch(e=>{
         updateSyncUI('error');
-        const mb=document.getElementById('mobile-sync-banner');
-        if(mb){ mb.style.display='block'; mb.innerHTML='⚠️ Drive同期エラー: '+String(e.message||e).replace(/</g,'&lt;')+'<br><button onclick="DRIVE_SYNC.smartSync()" style="margin-top:6px;padding:3px 12px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-weight:600">再試行</button>'; }
+        const isLoadFail = /load failed|failed to fetch|networkerror/i.test(String(e.message||e));
+        const errMsg = isLoadFail
+          ? '通信エラー（Load failed）。iCloudプライベートリレーをOFFにするか、再ログインをお試しください。'
+          : String(e.message||e).replace(/</g,'&lt;');
+        if(mb){ mb.style.display='block'; mb.innerHTML='⚠️ Drive同期エラー: '+errMsg+'<br><button onclick="DRIVE_SYNC.smartSync()" style="margin-top:6px;padding:3px 12px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-weight:600">再ログインして同期</button>'; }
       });
     } else {
       const hasLocal = hasLocalDiaryData();
