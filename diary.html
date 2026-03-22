@@ -2824,6 +2824,7 @@ function getDiaryPageAbsUrlNoHash(){
 const SYNC = {
   BASE: 'https://api.github.com/gists',
   FILE: 'diary-data.json',
+  SCHED_FILE: 'diary-schedule.json',
   get key(){ return getSyncToken(); },
   get gistId(){ return getSyncGistId(); },
   timer: null,
@@ -3123,11 +3124,22 @@ const SYNC = {
       sendData = gistStripPhotos(sendData);
       showToast('📷 写真圧縮後もGist容量超過のため除外されました。\nDrive切替で写真も同期できます。', 6000);
     }
+    // scheduleは別ファイルとして送る（メインデータから除外して肥大化を防ぐ）
+    const schedPayload = {
+      schedule: data.schedule || [],
+      schedule_summary: data.schedule_summary || {},
+      updatedAt: data.updatedAt
+    };
+    delete sendData.schedule;
+    delete sendData.schedule_summary;
     let r;
     try{
       r = await this.fetchWithRetry(`${this.BASE}/${this.gistId}`,{
         method:'PATCH', headers:this.headers(),
-        body: JSON.stringify({files:{[this.FILE]:{content:JSON.stringify(sendData)}}}),
+        body: JSON.stringify({files:{
+          [this.FILE]:{content:JSON.stringify(sendData)},
+          [this.SCHED_FILE]:{content:JSON.stringify(schedPayload)}
+        }}),
         keepalive: !!keepalive
       });
     }catch(e){
@@ -3267,10 +3279,27 @@ const SYNC = {
     else if(d.goals) trySet('diary_goals', gistGoals);
     if(d.visions)  trySet('diary_visions',   toArr(d.visions));
     if(d.userTags) trySet('diary_user_tags', toArr(d.userTags));
-    const gistSchedule=toArr(d.schedule); const localSchedule=SCHEDULE_DB.getAll();
-    if(gistSchedule.length===0&&localSchedule.length>0){ console.warn('Gistのスケジュールが0件のためローカルを保持'); }
-    else if(d.schedule) trySet('diary_schedule', gistSchedule);
-    if(d.schedule_summary&&typeof d.schedule_summary==='object') trySet('diary_schedule_summary', d.schedule_summary);
+    // scheduleは別ファイル(diary-schedule.json)から取得
+    const schedFileInfo = j.files[this.SCHED_FILE];
+    if(schedFileInfo){
+      try{
+        const schedContent = schedFileInfo.truncated
+          ? await (await this.fetchWithRetry(schedFileInfo.raw_url, {headers:this.headers()})).text()
+          : schedFileInfo.content;
+        const sd = JSON.parse(schedContent);
+        const gistSchedule = toArr(sd.schedule);
+        const localSchedule = SCHEDULE_DB.getAll();
+        if(gistSchedule.length===0 && localSchedule.length>0){ console.warn('Gistのスケジュールが0件のためローカルを保持'); }
+        else if(sd.schedule) trySet('diary_schedule', gistSchedule);
+        if(sd.schedule_summary && typeof sd.schedule_summary==='object') trySet('diary_schedule_summary', sd.schedule_summary);
+      }catch(e){ console.warn('diary-schedule.json取得失敗:', e.message); }
+    } else {
+      // 旧形式フォールバック: メインデータにscheduleが含まれている場合
+      const gistSchedule=toArr(d.schedule); const localSchedule=SCHEDULE_DB.getAll();
+      if(gistSchedule.length===0&&localSchedule.length>0){ console.warn('Gistのスケジュールが0件のためローカルを保持'); }
+      else if(d.schedule) trySet('diary_schedule', gistSchedule);
+      if(d.schedule_summary&&typeof d.schedule_summary==='object') trySet('diary_schedule_summary', d.schedule_summary);
+    }
 
     if(gistUpdatedAt) localStorage.setItem('diary_last_synced_at', String(gistUpdatedAt));
     if(errors.length) alert('一部のデータを保存できませんでした:\n'+errors.join('\n'));
