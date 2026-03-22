@@ -223,6 +223,19 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .photo-wrap{position:relative}
 .photo-del{position:absolute;top:-6px;right:-6px;background:#e00;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+/* ── 予定（未来日記）セクション ── */
+#plan-section{margin-bottom:14px;border-radius:10px;border:2px solid #b8cef0;background:#f0f5ff;padding:10px 12px;transition:.2s}
+#plan-section.is-future{border-color:#4a80d0;background:#e8f0ff;box-shadow:0 2px 8px rgba(74,128,208,.15)}
+.plan-section-header{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:13px;font-weight:700;color:#3a60b0}
+#planText{width:100%;min-height:80px;padding:10px;border:1px solid #c8d8f0;border-radius:8px;font-size:14px;font-family:inherit;line-height:1.8;resize:vertical;background:#fff;color:var(--text)}
+#planText:focus{outline:none;border-color:#4a80d0}
+#plan-section.is-future #planText{min-height:120px}
+.modal-section-divider{display:flex;align-items:center;gap:10px;margin:14px 0 10px;color:var(--text-muted);font-size:12px;font-weight:600}
+.modal-section-divider::before,.modal-section-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+/* カレンダー：予定あり未来日 */
+.cal-day.has-plan{background:#e8f0ff!important}
+.cal-plan-dot{width:6px;height:6px;border-radius:50%;background:#4a80d0;margin-top:2px;flex-shrink:0}
+.cal-plan-text{font-size:9px;color:#3a60b0;line-height:1.2;text-align:center;overflow:hidden;max-width:100%;padding:0 2px;white-space:nowrap;text-overflow:ellipsis;z-index:1}
 /* Anniversary banner */
 #anniv-banner{display:none;background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:10px 14px;margin-top:14px}
 #anniv-banner h3{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
@@ -477,6 +490,15 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <div id="modal-date"></div>
     <div id="modal-birthday" style="display:none;background:#fff8f0;border:1px solid #f0c080;border-radius:8px;padding:7px 12px;margin-bottom:8px;font-size:13px;color:#a05000"></div>
     <div id="modal-weather"></div>
+    <!-- 予定（未来日記）セクション -->
+    <div id="plan-section">
+      <div class="plan-section-header">
+        <span id="plan-section-label">📅 この日の予定</span>
+      </div>
+      <textarea id="planText" placeholder="予定を入力… (例: 10:00 MTG / 14:00 ランチ)"></textarea>
+    </div>
+    <!-- 日記セクション区切り -->
+    <div class="modal-section-divider"><span id="diary-divider-label">📔 日記</span></div>
     <div class="mood-select" id="mood-select"></div>
     <div class="tags-row" id="tags-row"></div>
     <textarea id="diaryText" placeholder="今日の出来事を書いてみましょう…"></textarea>
@@ -972,6 +994,21 @@ function addCalCell(grid,y,m,d,other,entries,annivs,todayKey,media){
     cell.appendChild(img);
   }
 
+  // 未来日：予定インジケーター
+  if(key>todayKey&&entry&&entry.plan){
+    cell.classList.add('has-plan');
+    const dot=document.createElement('div');
+    dot.className='cal-plan-dot';
+    cell.appendChild(dot);
+    const firstLine=entry.plan.split('\n')[0].trim().substring(0,12);
+    if(firstLine){
+      const pt=document.createElement('div');
+      pt.className='cal-plan-text';
+      pt.textContent=firstLine;
+      cell.appendChild(pt);
+    }
+  }
+
   cell.onclick=()=>openModal(y,m,d);
   grid.appendChild(cell);
 }
@@ -1057,7 +1094,7 @@ function showAnnivBanner(baseDate){
 }
 
 // ─── Modal / Editor ──────────────────────────────────────────────────────────
-let currentKey='', currentPhotos=[], currentTags=[], currentMood='', currentModalTodos=[], currentWeather=null, currentLink='';
+let currentKey='', currentPhotos=[], currentTags=[], currentMood='', currentModalTodos=[], currentWeather=null, currentLink='', currentPlan='';
 
 // ─── Weather ──────────────────────────────────────────────────────────────────
 function wmoToInfo(code){
@@ -1141,6 +1178,25 @@ function openModal(y,m,d){
   currentModalTodos=JSON.parse(JSON.stringify(entry.todos||[]));
   currentWeather=entry.weather||null;
   currentLink=entry.link||'';
+  // 予定（未来日記）
+  currentPlan=entry.plan||'';
+  document.getElementById('planText').value=currentPlan;
+  document.getElementById('planText').oninput=e=>{currentPlan=e.target.value;};
+  const isFutureDay=key>today();
+  const planSection=document.getElementById('plan-section');
+  const planLabel=document.getElementById('plan-section-label');
+  const diaryLabel=document.getElementById('diary-divider-label');
+  if(isFutureDay){
+    planSection.classList.add('is-future');
+    planLabel.textContent='📅 予定（未来日記）';
+    diaryLabel.textContent='📔 日記（当日になったら書こう）';
+    document.getElementById('diaryText').placeholder='まだ空白でOK。当日に日記を書きましょう。';
+  } else {
+    planSection.classList.remove('is-future');
+    planLabel.textContent='📅 この日の予定メモ';
+    diaryLabel.textContent='📔 日記';
+    document.getElementById('diaryText').placeholder='今日の出来事を書いてみましょう…';
+  }
   const linkInp=document.getElementById('linkInput');
   const linkPrev=document.getElementById('linkPreview');
   const shopBtn=document.getElementById('shopBtn');
@@ -1333,10 +1389,10 @@ function addPhotos(input){
 function saveEntry(){
   const entries=DB.getEntries();
   const content=document.getElementById('diaryText').value.trim();
-  if(!content&&currentPhotos.length===0&&!currentMood&&currentTags.length===0&&currentModalTodos.length===0){
+  if(!content&&!currentPlan&&currentPhotos.length===0&&!currentMood&&currentTags.length===0&&currentModalTodos.length===0){
     delete entries[currentKey];
   } else {
-    entries[currentKey]={content,mood:currentMood,tags:currentTags,photos:currentPhotos,todos:currentModalTodos,weather:currentWeather,link:currentLink||undefined,updatedAt:Date.now()};
+    entries[currentKey]={content,mood:currentMood,tags:currentTags,photos:currentPhotos,todos:currentModalTodos,weather:currentWeather,link:currentLink||undefined,plan:currentPlan||undefined,updatedAt:Date.now()};
   }
   try{
     DB.setEntries(entries);
