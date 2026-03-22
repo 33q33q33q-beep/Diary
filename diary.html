@@ -610,7 +610,15 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <code>- 火 3/24 10:30–12:00　請求書処理</code><br>
       <code>- 水 3/25 09:30　横浜ロケハン</code>
     </div>
-    <textarea id="sched-import-text" style="width:100%;min-height:160px;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;line-height:1.7;resize:vertical;background:var(--bg);color:var(--text)" placeholder="ここにテキストまたはJSONを貼り付け…"></textarea>
+    <!-- ファイル選択ボタン -->
+    <div style="margin-bottom:10px">
+      <label for="sched-import-file" style="display:inline-flex;align-items:center;gap:8px;background:var(--primary-dark);color:#fff;padding:9px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:.15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+        📂 JSONファイルを選択
+        <input type="file" id="sched-import-file" accept=".json,application/json" style="display:none" onchange="loadSchedImportFile(this)">
+      </label>
+      <span id="sched-import-filename" style="margin-left:10px;font-size:12px;color:var(--text-muted)"></span>
+    </div>
+    <textarea id="sched-import-text" style="width:100%;min-height:160px;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;line-height:1.7;resize:vertical;background:var(--bg);color:var(--text)" placeholder="ここにテキストまたはJSONを貼り付け… （または上のボタンでファイルを選択）"></textarea>
     <!-- 年指定 -->
     <div style="display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13px">
       <label style="color:var(--text-light)">対象年：</label>
@@ -3686,10 +3694,24 @@ function openSchedImport(){
   document.getElementById('sched-import-preview').innerHTML='';
   document.getElementById('sched-import-exec-btn').disabled=true;
   document.getElementById('sched-import-year').value=new Date().getFullYear();
+  document.getElementById('sched-import-file').value='';
+  document.getElementById('sched-import-filename').textContent='';
   _schedImportParsed=[];
   _schedImportSummary=null;
   document.getElementById('sched-import-modal').style.display='flex';
   document.getElementById('sched-import-text').focus();
+}
+function loadSchedImportFile(input){
+  const file=input.files[0];
+  if(!file) return;
+  document.getElementById('sched-import-filename').textContent=file.name;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    document.getElementById('sched-import-text').value=e.target.result;
+    // 自動プレビュー
+    previewSchedImport();
+  };
+  reader.readAsText(file,'UTF-8');
 }
 function closeSchedImport(){
   document.getElementById('sched-import-modal').style.display='none';
