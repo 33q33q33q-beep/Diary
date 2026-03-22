@@ -253,6 +253,17 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .schedule-item-row{display:flex;align-items:center;gap:8px}
 .schedule-time{font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap;min-width:100px}
 .schedule-title{flex:1;font-size:14px;color:var(--text);line-height:1.4}
+.sched-category{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.sched-cat-経理{background:#fff0e0;color:#b05000}.sched-cat-制作{background:#e8f0e9;color:#3a7040}
+.sched-cat-経営{background:#e0e8ff;color:#2a40a0}.sched-cat-営業{background:#f0e8ff;color:#6030a0}
+.sched-cat-定例{background:#f0f0f0;color:#666}.sched-cat-打ち合わせ{background:#e0f4f4;color:#2a7070}
+.sched-cat-決定事項{background:#ffe0e0;color:#a00020;font-weight:700}.sched-cat-不参加{background:#f0f0f0;color:#999;text-decoration:line-through}
+/* 週サマリーバナー */
+.sched-summary{border-radius:10px;overflow:hidden;margin-bottom:14px}
+.sched-summary-row{padding:10px 14px;font-size:13px;line-height:1.7}
+.sched-summary-decisions{background:#fff0f0;border:1px solid #f0c0c0}
+.sched-summary-priorities{background:#f0f4ff;border:1px solid #c0d0f0;border-top:none}
+.sched-summary-label{font-weight:700;margin-bottom:4px;font-size:12px}
 .schedule-memo-area{margin-top:8px;display:none}
 .schedule-memo-area.open{display:block}
 .schedule-memo-area textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;line-height:1.7;resize:vertical;min-height:72px;background:var(--bg);color:var(--text)}
@@ -593,11 +604,11 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     </p>
     <!-- フォーマット説明 -->
     <div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:var(--text-muted);line-height:1.8">
-      <strong style="color:var(--text)">📝 テキスト形式（Chatworkのまま貼ればOK）</strong><br>
+      <strong style="color:#2a50a0">🤖 Cowork（推奨）</strong> — JSONをそのまま貼るだけ。decisions・prioritiesも自動表示。<br>
+      <code style="font-size:10px">{"meta":{...},"events":[{"date":"2026-03-24","time_start":"10:30","title":"...","category":"経理"}],"decisions":[...],"priorities":[...]}</code><br><br>
+      <strong style="color:var(--text)">📝 テキスト形式</strong><br>
       <code>- 火 3/24 10:30–12:00　請求書処理</code><br>
-      <code>- 水 3/25 09:30　横浜ロケハン</code><br><br>
-      <strong style="color:var(--text)">📋 JSON形式</strong><br>
-      <code>[{"date":"2026-03-24","startTime":"10:30","endTime":"12:00","title":"請求書処理"}]</code>
+      <code>- 水 3/25 09:30　横浜ロケハン</code>
     </div>
     <textarea id="sched-import-text" style="width:100%;min-height:160px;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:monospace;line-height:1.7;resize:vertical;background:var(--bg);color:var(--text)" placeholder="ここにテキストまたはJSONを貼り付け…"></textarea>
     <!-- 年指定 -->
@@ -3494,6 +3505,12 @@ document.addEventListener('visibilitychange',()=>{
 // ─── SCHEDULE DB ─────────────────────────────────────────────────────────────
 const SCHEDULE_STORE_KEY='diary_schedule';
 const SCHEDULE_SEED_KEY='diary_schedule_seeded_v1';
+const SCHEDULE_SUMMARY_KEY='diary_schedule_summary';
+const SCHEDULE_SUMMARY_DB={
+  getAll(){ const d=JSON.parse(localStorage.getItem(SCHEDULE_SUMMARY_KEY)||'{}'); return (d&&typeof d==='object')?d:{}; },
+  set(week,data){ const all=this.getAll(); all[week]=data; localStorage.setItem(SCHEDULE_SUMMARY_KEY,JSON.stringify(all)); },
+  get(week){ return this.getAll()[week]||null; }
+};
 const SCHEDULE_DB={
   getAll(){ const d=JSON.parse(localStorage.getItem(SCHEDULE_STORE_KEY)||'[]'); return Array.isArray(d)?d:[]; },
   save(items){ localStorage.setItem(SCHEDULE_STORE_KEY,JSON.stringify(items)); SYNC.schedule(); },
@@ -3545,6 +3562,23 @@ function renderSchedule(){
   const DOW=['日','月','火','水','木','金','土'];
   const content=document.getElementById('schedule-content');
   content.innerHTML='';
+  // 週サマリー（decisions / priorities）表示
+  const weekKey=`${mon.getFullYear()}-W${String(Math.ceil(((mon-new Date(mon.getFullYear(),0,1))/86400000+1)/7)).padStart(2,'0')}`;
+  const summary=SCHEDULE_SUMMARY_DB.get(weekKey);
+  if(summary&&((summary.decisions&&summary.decisions.length)||(summary.priorities&&summary.priorities.length))){
+    const sb=document.createElement('div'); sb.className='sched-summary';
+    if(summary.priorities&&summary.priorities.length){
+      const pr=document.createElement('div'); pr.className='sched-summary-row sched-summary-priorities';
+      pr.innerHTML=`<div class="sched-summary-label">🎯 今週の優先事項</div>`+summary.priorities.map(p=>`<div>・${escHtml(p)}</div>`).join('');
+      sb.appendChild(pr);
+    }
+    if(summary.decisions&&summary.decisions.length){
+      const dc=document.createElement('div'); dc.className='sched-summary-row sched-summary-decisions';
+      dc.innerHTML=`<div class="sched-summary-label">✅ 今週の決定事項</div>`+summary.decisions.map(d=>`<div>・${escHtml(d)}</div>`).join('');
+      sb.appendChild(dc);
+    }
+    content.appendChild(sb);
+  }
   for(let i=0;i<7;i++){
     const day=new Date(mon); day.setDate(day.getDate()+i);
     const key=dateKey(day.getFullYear(),day.getMonth()+1,day.getDate());
@@ -3581,10 +3615,13 @@ function buildSchedItem(item){
   div.className='schedule-item'+(item.done?' done-item':'');
   div.id='si-'+item.id;
   const tl=item.startTime?(item.startTime+(item.endTime?'–'+item.endTime:'')):'';
+  const catHtml=item.category?`<span class="sched-category sched-cat-${escHtml(item.category)}">${escHtml(item.category)}</span>`:'';
+  const calHtml=item.calendar?`<span style="font-size:10px;color:var(--text-muted);white-space:nowrap">📅${escHtml(item.calendar)}</span>`:'';
   div.innerHTML=`<div class="schedule-item-row">
     <input type="checkbox" ${item.done?'checked':''} onchange="toggleSchedDone('${item.id}',this.checked)" style="cursor:pointer;width:16px;height:16px;flex-shrink:0">
     <span class="schedule-time">${tl}</span>
     <span class="schedule-title">${escHtml(item.title)}</span>
+    ${catHtml}${calHtml}
     <button class="btn-sched-icon" onclick="toggleSchedMemo('${item.id}')" title="メモ（未来日記）">${item.memo?'📝':'✎'}</button>
     <button class="btn-sched-icon" onclick="deleteSchedItem('${item.id}')" title="削除" style="color:#c00">✕</button>
   </div>
@@ -3641,6 +3678,7 @@ function addSchedItem(dk){
 
 // ─── スケジュール インポート ───────────────────────────────────────────────────
 let _schedImportParsed = [];
+let _schedImportSummary = null;
 
 function openSchedImport(){
   document.getElementById('sched-import-text').value='';
@@ -3649,6 +3687,7 @@ function openSchedImport(){
   document.getElementById('sched-import-exec-btn').disabled=true;
   document.getElementById('sched-import-year').value=new Date().getFullYear();
   _schedImportParsed=[];
+  _schedImportSummary=null;
   document.getElementById('sched-import-modal').style.display='flex';
   document.getElementById('sched-import-text').focus();
 }
@@ -3685,27 +3724,65 @@ function parseSchedLine(line, year){
 }
 
 // JSONパース（柔軟対応）
+// Cowork JSONの週キーを計算
+function coworkWeekKey(dateStr){
+  try{
+    const d=new Date(dateStr);
+    const jan1=new Date(d.getFullYear(),0,1);
+    const w=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);
+    return `${d.getFullYear()}-W${String(w).padStart(2,'0')}`;
+  }catch(e){ return ''; }
+}
+
+// 戻り値: { items: [], summary: {week,decisions,priorities} | null }
 function parseSchedJson(text){
-  let arr;
-  try{ arr=JSON.parse(text); }catch(e){ return null; }
-  if(!Array.isArray(arr)) arr=[arr];
+  let root;
+  try{ root=JSON.parse(text); }catch(e){ return null; }
+
+  // ── Cowork形式: { meta, events[], decisions[], priorities[] } ──
+  if(root&&!Array.isArray(root)&&Array.isArray(root.events)){
+    const items=root.events.map(x=>({
+      id:scheduleId(),
+      date:x.date||'',
+      startTime:x.time_start||x.startTime||x.start_time||'',
+      endTime:x.time_end||x.endTime||x.end_time||'',
+      title:String(x.title||x.name||''),
+      category:x.category||'',
+      calendar:x.calendar||'',
+      memo:x.memo||'',
+      done:false
+    })).filter(x=>x.date&&x.title);
+
+    const weekKey=root.meta?.week || (items.length?coworkWeekKey(items[0].date):'');
+    const summary=(root.decisions?.length||root.priorities?.length)?{
+      week: weekKey,
+      decisions: root.decisions||[],
+      priorities: root.priorities||[]
+    }:null;
+    return items.length?{items, summary}:null;
+  }
+
+  // ── 汎用配列形式: [{date, title, ...}] ──
+  let arr=Array.isArray(root)?root:[root];
   const items=[];
   for(const x of arr){
     if(!x||typeof x!=='object') continue;
-    const date=x.date||x.day||'';
+    const date=x.date||'';
     const title=x.title||x.name||x.subject||x.event||'';
     if(!date||!title) continue;
     items.push({
       id:scheduleId(),
-      date:date.length===10?date:date,
-      startTime:x.startTime||x.start_time||x.start||'',
-      endTime:x.endTime||x.end_time||x.end||'',
+      date:date,
+      startTime:x.time_start||x.startTime||x.start_time||x.start||'',
+      endTime:x.time_end||x.endTime||x.end_time||x.end||'',
       title:String(title),
+      category:x.category||'',
+      calendar:x.calendar||'',
       memo:x.memo||x.note||x.description||'',
       done:false
     });
   }
-  return items.length?items:null;
+  return items.length?{items, summary:null}:null;
 }
 
 function previewSchedImport(){
@@ -3713,10 +3790,11 @@ function previewSchedImport(){
   const year=parseInt(document.getElementById('sched-import-year').value)||new Date().getFullYear();
   if(!raw){ alert('テキストを貼り付けてください'); return; }
   _schedImportParsed=[];
+  _schedImportSummary=null;
   // JSON試行
   if(raw.startsWith('[') || raw.startsWith('{')){
     const j=parseSchedJson(raw);
-    if(j) _schedImportParsed=j;
+    if(j){ _schedImportParsed=j.items; _schedImportSummary=j.summary; }
   }
   // テキストパース
   if(!_schedImportParsed.length){
@@ -3737,8 +3815,16 @@ function previewSchedImport(){
   const existing=SCHEDULE_DB.getAll();
   const dupKey=x=>`${x.date}_${x.startTime}_${x.title}`;
   const existingKeys=new Set(existing.map(dupKey));
-  let html='<table style="width:100%;border-collapse:collapse;font-size:12px">';
-  html+='<tr style="background:var(--bg);font-weight:600"><td style="padding:6px 8px">日付</td><td style="padding:6px 8px">時刻</td><td style="padding:6px 8px">タイトル</td><td style="padding:6px 8px">状態</td></tr>';
+  // サマリーのプレビュー
+  let html='';
+  if(_schedImportSummary){
+    if(_schedImportSummary.priorities?.length)
+      html+=`<div style="padding:8px 12px;background:#f0f4ff;font-size:12px;border-bottom:1px solid var(--border)"><b>🎯 優先事項:</b> ${_schedImportSummary.priorities.map(p=>escHtml(p)).join('　／　')}</div>`;
+    if(_schedImportSummary.decisions?.length)
+      html+=`<div style="padding:8px 12px;background:#fff0f0;font-size:12px;border-bottom:1px solid var(--border)"><b>✅ 決定事項:</b> ${_schedImportSummary.decisions.map(d=>escHtml(d)).join('<br>　')}</div>`;
+  }
+  html+='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html+='<tr style="background:var(--bg);font-weight:600"><td style="padding:6px 8px">日付</td><td style="padding:6px 8px">時刻</td><td style="padding:6px 8px">タイトル</td><td style="padding:6px 8px">カテゴリ</td><td style="padding:6px 8px">状態</td></tr>';
   _schedImportParsed.forEach((item,i)=>{
     const dup=skipDup&&existingKeys.has(dupKey(item));
     const bg=dup?'#f8f0f0':(i%2===0?'var(--surface)':'var(--bg)');
@@ -3747,6 +3833,7 @@ function previewSchedImport(){
       <td style="padding:5px 8px;border-top:1px solid var(--border)">${item.date}</td>
       <td style="padding:5px 8px;border-top:1px solid var(--border);white-space:nowrap">${item.startTime}${item.endTime?'–'+item.endTime:''}</td>
       <td style="padding:5px 8px;border-top:1px solid var(--border)">${escHtml(item.title)}</td>
+      <td style="padding:5px 8px;border-top:1px solid var(--border)">${item.category?`<span class="sched-category sched-cat-${escHtml(item.category)}">${escHtml(item.category)}</span>`:''}</td>
       <td style="padding:5px 8px;border-top:1px solid var(--border)">${status}</td>
     </tr>`;
   });
@@ -3763,6 +3850,10 @@ function execSchedImport(){
   const dupKey=x=>`${x.date}_${x.startTime}_${x.title}`;
   const existingKeys=new Set(existing.map(dupKey));
   let added=0;
+  // サマリー（decisions/priorities）を保存
+  if(_schedImportSummary&&_schedImportSummary.week){
+    SCHEDULE_SUMMARY_DB.set(_schedImportSummary.week, _schedImportSummary);
+  }
   _schedImportParsed.forEach(item=>{
     if(skipDup&&existingKeys.has(dupKey(item))) return;
     SCHEDULE_DB.add(item); added++;
