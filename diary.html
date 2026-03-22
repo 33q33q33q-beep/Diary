@@ -26,7 +26,9 @@ html,body{height:100%;overflow:hidden}
 body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(--bg);color:var(--text)}
 #app{display:flex;height:100vh;height:100svh;height:calc(var(--app-vh,1vh)*100);padding-top:env(safe-area-inset-top)}
 /* Sidebar */
-#sidebar{width:220px;height:100%;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0 0;flex-shrink:0;box-shadow:var(--shadow);overflow-y:auto}
+#sidebar{width:var(--sidebar-w,220px);min-width:160px;max-width:360px;height:100%;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0 0;flex-shrink:0;box-shadow:var(--shadow);overflow-y:auto;position:relative}
+#sidebar-resizer{position:absolute;top:0;right:0;width:5px;height:100%;cursor:col-resize;z-index:10;background:transparent;transition:background .15s}
+#sidebar-resizer:hover,#sidebar-resizer.dragging{background:var(--primary);opacity:.5}
 #sync-area{padding:12px 16px;border-top:1px solid var(--border);margin-top:auto;padding-bottom:max(12px,env(safe-area-inset-bottom))}
 #sidebar h1{font-size:18px;font-weight:700;color:var(--primary-dark);padding:0 20px 20px;border-bottom:1px solid var(--border)}
 #sidebar h1 .brand-title{display:block;font-size:15px;font-weight:700;color:#e05028;letter-spacing:.02em;line-height:1.2}
@@ -339,6 +341,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 <body>
 <div id="app">
 <nav id="sidebar">
+  <div id="sidebar-resizer" title="ドラッグで幅を調整"></div>
   <h1><span class="brand-title">LifeTime Diary</span><span class="brand-sub">私の日記</span></h1>
   <button class="nav-btn active" onclick="showPage('calendar')" id="nav-calendar"><span class="icon">📅</span><span>カレンダー</span></button>
   <button class="nav-btn" onclick="showPage('timeline')" id="nav-timeline"><span class="icon">⏳</span><span>タイムライン</span></button>
@@ -3767,6 +3770,50 @@ function execSchedImport(){
   renderSchedule();
   showToast(`✅ ${added}件の予定をインポートしました！`);
 }
+
+// ─── サイドバー リサイズ ────────────────────────────────────────────────────
+(function(){
+  const SIDEBAR_W_KEY = 'diary_sidebar_w';
+  const sidebar = document.getElementById('sidebar');
+  const resizer = document.getElementById('sidebar-resizer');
+  if(!sidebar || !resizer) return;
+
+  // 保存済み幅を復元
+  const saved = parseInt(localStorage.getItem(SIDEBAR_W_KEY)||'0');
+  if(saved >= 160 && saved <= 360){
+    sidebar.style.setProperty('--sidebar-w', saved+'px');
+    document.documentElement.style.setProperty('--sidebar-w', saved+'px');
+  }
+
+  let startX = 0, startW = 0, dragging = false;
+
+  resizer.addEventListener('mousedown', e=>{
+    e.preventDefault();
+    dragging = true;
+    startX = e.clientX;
+    startW = sidebar.offsetWidth;
+    resizer.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', e=>{
+    if(!dragging) return;
+    const newW = Math.min(360, Math.max(160, startW + (e.clientX - startX)));
+    sidebar.style.setProperty('--sidebar-w', newW+'px');
+    sidebar.style.width = newW+'px';
+  });
+
+  document.addEventListener('mouseup', ()=>{
+    if(!dragging) return;
+    dragging = false;
+    resizer.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    const w = sidebar.offsetWidth;
+    localStorage.setItem(SIDEBAR_W_KEY, String(w));
+  });
+})();
 
 // ウィンドウがフォーカスされた時
 window.addEventListener('focus', autoPull);
