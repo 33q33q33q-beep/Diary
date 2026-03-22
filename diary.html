@@ -356,7 +356,8 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <button type="button" class="nav-btn" style="font-size:13px;padding:9px 12px;color:var(--text);font-weight:600" onclick="SYNC.openSettings()">⚙️ 設定変更<br><span style="font-size:11px;font-weight:400;opacity:.85">（Gist/Drive選ぶ）</span></button>
     <button type="button" class="nav-btn" style="font-size:13px;padding:9px 12px;color:var(--text)" onclick="SYNC.gistRestore()">☁️ Gistから復元</button>
     <button type="button" class="nav-btn" style="font-size:13px;padding:9px 12px;color:var(--text)" onclick="exportData()">📤 ファイル保存</button>
-    <button type="button" class="nav-btn" style="font-size:13px;padding:9px 12px;color:var(--text)" onclick="importData()">📥 ファイル復元</button>
+    <button type="button" class="nav-btn" style="font-size:13px;padding:9px 12px;color:var(--text)" onclick="importData()">♻️ ファイル復元<br><span style="font-size:10px;font-weight:400;opacity:.75">（全データ上書き）</span></button>
+    <button type="button" class="nav-btn" style="font-size:13px;padding:9px 12px;color:#2a50a0;font-weight:600;background:#e8f0ff;border-left:3px solid #4a80d0" onclick="openSchedImport()">📥 スケジュール<br>インポート<span style="font-size:10px;font-weight:400;display:block;opacity:.8">（Chatwork JSON/テキスト）</span></button>
     <button type="button" class="nav-btn" style="font-size:13px;padding:9px 12px;color:var(--text)" onclick="FOLDER_SYNC.exportZip()" title="写真等をdata/にgzipしてZIP化。FilesでiCloudへ保存できます">📦 ZIP書出し<br><span style="font-size:11px;opacity:.85">(iCloud用)</span></button>
     <button type="button" class="nav-btn" style="font-size:13px;padding:9px 12px;color:var(--text)" onclick="FOLDER_SYNC.importZipClick()">📂 ZIP読込</button>
   </div>
