@@ -563,8 +563,9 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <div id="modal-weather"></div>
     <!-- 予定（未来日記）セクション -->
     <div id="plan-section">
-      <div class="plan-section-header">
+      <div class="plan-section-header" style="display:flex;justify-content:space-between;align-items:center">
         <span id="plan-section-label">📅 この日の予定</span>
+        <button onclick="refreshModalSchedItems()" style="background:none;border:none;cursor:pointer;font-size:15px;color:#4a80d0;padding:2px 4px" title="予定を再読み込み">↻</button>
       </div>
       <!-- インポートしたスケジュール自動表示 -->
       <div id="plan-sched-items" style="display:none;margin-bottom:8px"></div>
@@ -1302,17 +1303,7 @@ function openModal(y,m,d){
   document.getElementById('planText').value=currentPlan;
   document.getElementById('planText').oninput=e=>{currentPlan=e.target.value;};
   // インポートしたスケジュールをその日の分だけ表示
-  (function(){
-    const schedItems=SCHEDULE_DB.getAll().filter(x=>x.date===key).sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||''));
-    const box=document.getElementById('plan-sched-items');
-    if(!schedItems.length){ box.style.display='none'; box.innerHTML=''; return; }
-    box.innerHTML=schedItems.map(it=>{
-      const tl=it.startTime?(it.startTime+(it.endTime?'–'+it.endTime:'')):'';
-      const cat=it.category?`<span class="plan-sched-cat">${escHtml(it.category)}</span>`:'';
-      return `<div class="plan-sched-row"><span class="plan-sched-time">${escHtml(tl)}</span><span class="plan-sched-title">${escHtml(it.title)}</span>${cat}</div>`;
-    }).join('');
-    box.style.display='block';
-  })();
+  refreshModalSchedItems();
   const isFutureDay=key>today();
   const planSection=document.getElementById('plan-section');
   const planLabel=document.getElementById('plan-section-label');
@@ -1540,6 +1531,20 @@ function deleteEntry(){
   delete entries[currentKey];
   DB.setEntries(entries);
   closeModal(); renderCalendar();
+}
+function refreshModalSchedItems(){
+  const box=document.getElementById('plan-sched-items');
+  if(!box) return;
+  const key=currentKey;
+  if(!key){ box.style.display='none'; return; }
+  const schedItems=SCHEDULE_DB.getAll().filter(x=>x.date===key).sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||''));
+  if(!schedItems.length){ box.style.display='none'; box.innerHTML=''; return; }
+  box.innerHTML=schedItems.map(it=>{
+    const tl=it.startTime?(it.startTime+(it.endTime?'–'+it.endTime:'')):'';
+    const cat=it.category?`<span class="plan-sched-cat">${escHtml(it.category)}</span>`:'';
+    return `<div class="plan-sched-row"><span class="plan-sched-time">${escHtml(tl)}</span><span class="plan-sched-title">${escHtml(it.title)}</span>${cat}</div>`;
+  }).join('');
+  box.style.display='block';
 }
 function closeModal(){
   document.getElementById('modal').classList.remove('open');
@@ -2760,6 +2765,10 @@ const DRIVE_SYNC = {
     applyDiaryPayloadToLocal(hydrated);
     if(slim.updatedAt) localStorage.setItem('diary_last_synced_at', String(slim.updatedAt));
     if(!silent) updateSyncUI('synced');
+    renderCalendar(); showAnnivBanner();
+    if(document.getElementById('page-schedule')?.classList.contains('active')) renderSchedule();
+    // モーダルが開いていればスケジュール欄を再描画
+    if(document.getElementById('modal')?.classList.contains('open')) refreshModalSchedItems();
     if(!silent) alert('Googleドライブから取得しました');
   },
   async smartSync(){
