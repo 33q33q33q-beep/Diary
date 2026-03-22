@@ -2357,6 +2357,7 @@ function applyDiaryPayloadToLocal(d){
   if(d.goals) trySet('diary_goals', d.goals);
   if(d.visions) trySet('diary_visions', d.visions);
   if(d.schedule && Array.isArray(d.schedule)) trySet('diary_schedule', d.schedule);
+  if(d.schedule_summary && typeof d.schedule_summary==='object') trySet('diary_schedule_summary', d.schedule_summary);
   if(d.userTags) trySet('diary_user_tags', d.userTags);
   if(d.fbBirthdays && Array.isArray(d.fbBirthdays)) trySet('diary_fb_birthdays', d.fbBirthdays);
   if(errors.length) alert('一部保存できませんでした:\n'+errors.join('\n'));
@@ -3044,6 +3045,7 @@ const SYNC = {
       media: DB.getMedia(), todos: DB.getTodos(), goals: DB.getGoals(), visions: DB.getVisions(),
       userTags: getUserTags(),
       schedule: SCHEDULE_DB.getAll(),
+      schedule_summary: SCHEDULE_SUMMARY_DB.getAll(),
       updatedAt: Date.now()
     };
   },
@@ -3265,6 +3267,10 @@ const SYNC = {
     else if(d.goals) trySet('diary_goals', gistGoals);
     if(d.visions)  trySet('diary_visions',   toArr(d.visions));
     if(d.userTags) trySet('diary_user_tags', toArr(d.userTags));
+    const gistSchedule=toArr(d.schedule); const localSchedule=SCHEDULE_DB.getAll();
+    if(gistSchedule.length===0&&localSchedule.length>0){ console.warn('Gistのスケジュールが0件のためローカルを保持'); }
+    else if(d.schedule) trySet('diary_schedule', gistSchedule);
+    if(d.schedule_summary&&typeof d.schedule_summary==='object') trySet('diary_schedule_summary', d.schedule_summary);
 
     if(gistUpdatedAt) localStorage.setItem('diary_last_synced_at', String(gistUpdatedAt));
     if(errors.length) alert('一部のデータを保存できませんでした:\n'+errors.join('\n'));
