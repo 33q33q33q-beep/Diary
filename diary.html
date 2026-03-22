@@ -1849,8 +1849,39 @@ document.getElementById('jsonbin-modal')?.addEventListener('click',function(e){
   if(e.target===this) this.classList.remove('open');
 });
 
+// ─── Toast 通知 ──────────────────────────────────────────────────────────────
+function showToast(msg, durationMs=3500){
+  let t=document.getElementById('diary-toast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='diary-toast';
+    t.style.cssText='position:fixed;bottom:max(24px,env(safe-area-inset-bottom,24px));left:50%;transform:translateX(-50%);background:rgba(40,40,40,.92);color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;z-index:9999;pointer-events:none;transition:opacity .3s;white-space:pre-line;text-align:center;max-width:90vw;line-height:1.5';
+    document.body.appendChild(t);
+  }
+  clearTimeout(t._tid);
+  t.textContent=msg;
+  t.style.opacity='1';
+  t._tid=setTimeout(()=>{t.style.opacity='0';},durationMs);
+}
+
+// ─── Gist 写真ストリッピング（容量制限対策）────────────────────────────────
+const GIST_PHOTO_PLACEHOLDER='__gist_photo_local_only__';
+const GIST_MAX_BYTES=800*1024; // 800 KB
+function gistStripPhotos(data){
+  const copy=JSON.parse(JSON.stringify(data));
+  if(copy.entries&&typeof copy.entries==='object'){
+    for(const k of Object.keys(copy.entries)){
+      const e=copy.entries[k];
+      if(e&&Array.isArray(e.photos)&&e.photos.length){
+        copy.entries[k].photos=e.photos.map(p=>(typeof p==='string'&&p.startsWith('data:'))?GIST_PHOTO_PLACEHOLDER:p);
+      }
+    }
+  }
+  return copy;
+}
+
 // ─── Export / Import ─────────────────────────────────────────────────────────
-function exportData(){
+async function exportData(){
   const d={
     entries:localStorage.getItem('diary_entries'),
     annivs:localStorage.getItem('diary_annivs'),
@@ -1858,9 +1889,31 @@ function exportData(){
     todos:localStorage.getItem('diary_todos'),
     goals:localStorage.getItem('diary_goals')
   };
+  const jsonStr=JSON.stringify(d);
+  const blob=new Blob([jsonStr],{type:'application/json'});
+  const today=new Date().toISOString().slice(0,10);
+  const filename=`diary-backup-${today}.json`;
+  // File System Access API 対応ブラウザ（Chrome/Edge）では保存先を選択できる
+  if(window.showSaveFilePicker){
+    try{
+      const handle=await window.showSaveFilePicker({
+        suggestedName:filename,
+        types:[{description:'JSON ファイル',accept:{'application/json':['.json']}}]
+      });
+      const writable=await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      showToast('✅ ファイルを保存しました');
+      return;
+    }catch(e){
+      if(e.name==='AbortError') return; // キャンセル
+      // 失敗したら従来のダウンロードにフォールバック
+    }
+  }
+  // フォールバック: ブラウザのダウンロードフォルダへ保存
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([JSON.stringify(d)],{type:'application/json'}));
-  a.download='diary-backup.json';
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
   a.click();
 }
 function importData(){
@@ -2796,11 +2849,19 @@ const SYNC = {
     if(!this.key||!this.gistId) return;
     updateSyncUI('syncing');
     const data = this.getData();
+    // 写真(base64)を含むと Gist の容量制限を超えることがあるため、
+    // 800KB を超える場合は写真をプレースホルダに置き換えてから送信する。
+    let sendData = data;
+    const rawJson = JSON.stringify(data);
+    if(rawJson.length > GIST_MAX_BYTES){
+      sendData = gistStripPhotos(data);
+      showToast('📷 写真はGist容量超過のため同期されません。\nGoogle Driveに切り替えると写真も同期できます。', 6000);
+    }
     let r;
     try{
       r = await this.fetchWithRetry(`${this.BASE}/${this.gistId}`,{
         method:'PATCH', headers:this.headers(),
-        body: JSON.stringify({files:{[this.FILE]:{content:JSON.stringify(data)}}}),
+        body: JSON.stringify({files:{[this.FILE]:{content:JSON.stringify(sendData)}}}),
         keepalive: !!keepalive
       });
     }catch(e){
@@ -2858,7 +2919,10 @@ const SYNC = {
         const msg = `同期データ取得失敗: ${lastErr?.message||'network error'}`;
         if(silent){
           console.warn(msg);
-          updateSyncUI('synced');
+          // サイレント取得失敗 → "同期済み" と誤表示せずエラーとして表示する
+          updateSyncUI('error');
+          const mb=document.getElementById('mobile-sync-banner');
+          if(mb){ mb.style.display='block'; mb.innerHTML='⚠️ 同期データの取得に失敗しました（写真が多いと起きやすい）。<br><button onclick="SYNC.smartSync()" style="margin-top:6px;padding:3px 12px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-weight:600">再試行</button>'; }
           return;
         }
         throw new Error(
@@ -2893,7 +2957,18 @@ const SYNC = {
       if(gistCount===0&&localCount>0){
         console.warn('Gistの日記が0件のためローカルデータを保持します');
       } else {
-        trySet('diary_entries', toObj(d.entries));
+        // Gist側で写真がプレースホルダになっている場合は、ローカルの写真を優先して保持する。
+        // （Gist容量超過ストリッピングによってローカル写真が消えないための保護）
+        const localEntries = DB.getEntries();
+        const gistEntries = toObj(d.entries);
+        for(const k of Object.keys(gistEntries)){
+          const ge=gistEntries[k];
+          const le=localEntries[k];
+          if(ge&&Array.isArray(ge.photos)&&le&&Array.isArray(le.photos)){
+            ge.photos=ge.photos.map((p,i)=>p===GIST_PHOTO_PLACEHOLDER?(le.photos[i]||p):p);
+          }
+        }
+        trySet('diary_entries', gistEntries);
       }
     }
     if(d.annivs) trySet('diary_annivs', toArr(d.annivs));
