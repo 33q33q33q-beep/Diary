@@ -1866,7 +1866,7 @@ function showToast(msg, durationMs=3500){
 
 // ─── Gist 写真ストリッピング（容量制限対策）────────────────────────────────
 const GIST_PHOTO_PLACEHOLDER='__gist_photo_local_only__';
-const GIST_MAX_BYTES=800*1024; // 800 KB
+const GIST_MAX_BYTES=400*1024; // 400 KB（iPhoneのlocalStorage 5MB制限に余裕を持たせる）
 function gistStripPhotos(data){
   const copy=JSON.parse(JSON.stringify(data));
   if(copy.entries&&typeof copy.entries==='object'){
@@ -2944,9 +2944,25 @@ const SYNC = {
     const gistUpdatedAt = d.updatedAt || 0;
 
     const errors=[];
+    // localStorage への保存。diary_entries が容量超過した場合は写真を除いて再試行する。
     const trySet=(key,val)=>{
       try{ localStorage.setItem(key, JSON.stringify(val)); }
-      catch(e){ errors.push(key+': '+e.message); }
+      catch(e){
+        if(key==='diary_entries' && (e.name==='QuotaExceededError'||/quota/i.test(e.message||''))){
+          // 写真(base64)を除いたうえで保存し直す
+          try{
+            const stripped={};
+            for(const ek of Object.keys(val)){
+              const entry=val[ek];
+              if(entry&&Array.isArray(entry.photos)&&entry.photos.length){
+                stripped[ek]={...entry,photos:entry.photos.map(p=>(typeof p==='string'&&p.startsWith('data:'))?GIST_PHOTO_PLACEHOLDER:p)};
+              } else { stripped[ek]=entry; }
+            }
+            localStorage.setItem(key, JSON.stringify(stripped));
+            showToast('⚠️ iPhoneのストレージ不足のため写真は保存できません。\nテキストは同期済み。写真同期はDrive切替をお勧めします。', 9000);
+          }catch(e2){ errors.push(key+': '+e.message+' (写真除去後も失敗)'); }
+        } else { errors.push(key+': '+e.message); }
+      }
     };
     const toArr=v=>Array.isArray(v)?v:[];
     const toObj=v=>(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
