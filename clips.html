@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Clips">
+<meta name="theme-color" content="#667eea">
+<meta name="mobile-web-app-capable" content="yes">
+<title>📎 Clips</title>
+<style>
+:root {
+  --primary: #667eea;
+  --primary-dark: #5a67d8;
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --bg: #f0f2f7;
+  --surface: #ffffff;
+  --surface2: #f8f9ff;
+  --border: #e2e8f0;
+  --text: #1a202c;
+  --text-secondary: #4a5568;
+  --text-muted: #a0aec0;
+  --card-shadow: 0 2px 12px rgba(102,126,234,0.10), 0 1px 3px rgba(0,0,0,0.07);
+  --card-shadow-hover: 0 8px 30px rgba(102,126,234,0.18), 0 2px 8px rgba(0,0,0,0.10);
+  --header-bg: #667eea;
+  --fab-bg: var(--primary-gradient);
+  --overlay: rgba(10,14,30,0.55);
+  --sheet-bg: #ffffff;
+  --input-bg: #f7f8fc;
+  --chip-bg: #eef0fb;
+  --chip-active: var(--primary-gradient);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2d3250;
+    --text: #f0f2ff;
+    --text-secondary: #a0aec0;
+    --text-muted: #606888;
+    --card-shadow: 0 2px 12px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3);
+    --card-shadow-hover: 0 8px 30px rgba(0,0,0,0.5), 0 2px 8px rgba(102,126,234,0.2);
+    --header-bg: #1a1d2e;
+    --sheet-bg: #1a1d27;
+    --input-bg: #0f1117;
+    --chip-bg: #22263a;
+    --overlay: rgba(0,0,0,0.75);
+  }
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  min-height: 100dvh;
+  overscroll-behavior: none;
+}
+
+/* ── Header ── */
+#header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--header-bg);
+  padding-top: calc(12px + var(--safe-top));
+  padding-bottom: 12px;
+  padding-left: 16px;
+  padding-right: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+.header-row1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.header-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.3px;
+  flex: none;
+  cursor: pointer;
+  user-select: none;
+}
+.header-search {
+  flex: 1;
+  position: relative;
+}
+.header-search input {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  border-radius: 20px;
+  border: none;
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+  transition: background 0.2s;
+}
+.header-search input::placeholder { color: rgba(255,255,255,0.6); }
+.header-search input:focus { background: rgba(255,255,255,0.28); }
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, opacity 0.15s;
+  flex-shrink: 0;
+}
+.btn-icon:active { transform: scale(0.9); opacity: 0.8; }
+#btn-add {
+  background: rgba(255,255,255,0.22);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+}
+#btn-settings {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 18px;
+}
+
+/* ── Category Chips ── */
+#category-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px 16px 12px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  background: var(--header-bg);
+}
+#category-bar::-webkit-scrollbar { display: none; }
+.cat-chip {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  background: rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.85);
+  white-space: nowrap;
+}
+.cat-chip:active { transform: scale(0.94); }
+.cat-chip.active {
+  background: #fff;
+  color: var(--primary-dark);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  font-weight: 600;
+}
+
+/* ── Grid ── */
+#grid-container {
+  padding: 16px;
+  padding-bottom: calc(80px + var(--safe-bottom));
+}
+#clips-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+@media (min-width: 600px) {
+  #clips-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 900px) {
+  #clips-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (min-width: 1200px) {
+  #clips-grid { grid-template-columns: repeat(5, 1fr); }
+}
+
+/* ── Card ── */
+.clip-card {
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.clip-card:active { transform: scale(0.97); }
+@media (hover:hover) {
+  .clip-card:hover { transform: translateY(-3px); box-shadow: var(--card-shadow-hover); }
+}
+.card-thumb-wrap {
+  position: relative;
+  padding-top: 56.25%; /* 16:9 */
+  background: var(--surface2);
+  overflow: hidden;
+}
+.card-thumb-wrap img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.card-thumb-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  background: var(--surface2);
+}
+.card-type-badge {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.card-body {
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-muted);
+  min-height: 16px;
+}
+.card-favicon {
+  width: 13px;
+  height: 13px;
+  border-radius: 2px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.card-domain {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100px;
+}
+.card-cat-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+.card-memo {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.card-btn {
+  flex: 1;
+  padding: 6px;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  font-weight: 500;
+}
+.card-btn:active { opacity: 0.7; }
+.card-btn-open {
+  background: var(--primary-gradient);
+  color: #fff;
+}
+.card-btn-edit {
+  background: var(--chip-bg);
+  color: var(--text-secondary);
+}
+.card-btn-del {
+  background: #fff0f0;
+  color: #e53e3e;
+  flex: none;
+  padding: 6px 10px;
+}
+@media (prefers-color-scheme: dark) {
+  .card-btn-del { background: #2d1515; }
+}
+
+/* ── Empty State ── */
+#empty-state {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  gap: 12px;
+  color: var(--text-muted);
+}
+#empty-state .empty-icon { font-size: 56px; }
+#empty-state p { font-size: 15px; }
+#empty-state small { font-size: 13px; color: var(--text-muted); }
+
+/* ── Sync FAB ── */
+#btn-sync {
+  position: fixed;
+  bottom: calc(20px + var(--safe-bottom));
+  right: 20px;
+  z-index: 90;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface);
+  color: var(--primary);
+  font-size: 22px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#btn-sync:active { transform: scale(0.92); }
+#btn-sync.syncing { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Bottom Sheet Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--overlay);
+  display: flex;
+  align-items: flex-end;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.bottom-sheet {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--sheet-bg);
+  border-radius: 24px 24px 0 0;
+  padding: 0 0 calc(24px + var(--safe-bottom));
+  max-height: 95dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  -webkit-overflow-scrolling: touch;
+}
+.bottom-sheet::-webkit-scrollbar { display: none; }
+.modal-overlay.open .bottom-sheet {
+  transform: translateY(0);
+}
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 12px auto 16px;
+}
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sheet-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+.btn-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: var(--chip-bg);
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sheet-body {
+  padding: 20px;
+}
+
+/* ── Form Elements ── */
+.form-group {
+  margin-bottom: 16px;
+}
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.form-input:focus { border-color: var(--primary); }
+.form-input::placeholder { color: var(--text-muted); }
+textarea.form-input { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+/* URL row with fetch button */
+.url-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.url-row .form-input { flex: 1; }
+#btn-fetch {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: none;
+  background: var(--primary-gradient);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+  height: 47px;
+}
+#btn-fetch:disabled { opacity: 0.6; }
+
+/* Fetch preview */
+#fetch-preview {
+  display: none;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 8px;
+  gap: 10px;
+  align-items: flex-start;
+}
+#fetch-preview.show { display: flex; }
+#fetch-preview-thumb {
+  width: 80px;
+  height: 45px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+  background: var(--border);
+}
+#fetch-preview-info { flex: 1; min-width: 0; }
+#fetch-preview-title { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
+#fetch-preview-domain { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+/* Category grid */
+.cat-select-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cat-select-chip {
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cat-select-chip.selected {
+  border-color: var(--primary);
+  background: #eef0fb;
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+@media (prefers-color-scheme: dark) {
+  .cat-select-chip.selected { background: #1e2040; color: #a5b4fc; border-color: #667eea; }
+}
+
+/* Save button */
+.btn-save {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 14px;
+  background: var(--primary-gradient);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  letter-spacing: 0.2px;
+  transition: opacity 0.2s, transform 0.1s;
+}
+.btn-save:active { transform: scale(0.98); opacity: 0.9; }
+.btn-save:disabled { opacity: 0.6; }
+
+/* Settings sections */
+.settings-section {
+  margin-bottom: 24px;
+}
+.settings-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row-label {
+  flex: 1;
+  font-size: 15px;
+  color: var(--text);
+}
+.settings-row-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.btn-action {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.btn-action:active { opacity: 0.7; }
+.btn-primary { background: var(--primary-gradient); color: #fff; }
+.btn-secondary { background: var(--chip-bg); color: var(--text-secondary); }
+.btn-danger { background: #fff0f0; color: #e53e3e; }
+@media (prefers-color-scheme: dark) {
+  .btn-danger { background: #2d1515; }
+}
+
+/* Category manage */
+.cat-manage-list { display: flex; flex-direction: column; gap: 6px; }
+.cat-manage-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border-radius: 10px;
+}
+.cat-manage-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.cat-manage-name { flex: 1; font-size: 14px; color: var(--text); font-weight: 500; }
+.cat-manage-count { font-size: 12px; color: var(--text-muted); }
+.cat-manage-del {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: #fff0f0;
+  color: #e53e3e;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+@media (prefers-color-scheme: dark) {
+  .cat-manage-del { background: #2d1515; }
+}
+.cat-manage-del:disabled { opacity: 0.3; cursor: default; }
+.add-cat-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.add-cat-row .form-input { flex: 1; }
+.add-cat-row .btn-action { white-space: nowrap; }
+
+/* Toast */
+#toast {
+  position: fixed;
+  bottom: calc(80px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #1a202c;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 999;
+  transition: opacity 0.3s, transform 0.3s;
+  white-space: nowrap;
+  max-width: 90vw;
+  text-align: center;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+@media (prefers-color-scheme: dark) {
+  #toast { background: #e2e8f0; color: #1a202c; }
+}
+
+/* Fetch spinner */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+/* Drive status dot */
+.sync-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 4px;
+  background: var(--text-muted);
+}
+.sync-dot.ok { background: #48bb78; }
+.sync-dot.err { background: #fc8181; }
+.sync-dot.busy { background: #f6ad55; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* Scrollbar */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div id="header">
+  <div class="header-row1">
+    <span class="header-title" onclick="resetFilter()">📎 Clips</span>
+    <div class="header-search">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="8.5" cy="8.5" r="5.5"/><path d="M15 15l-3-3"/>
+      </svg>
+      <input type="search" id="search-input" placeholder="タイトル・メモを検索..." autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <button class="btn-icon" id="btn-settings" onclick="openSettings()" title="設定">⚙️</button>
+    <button class="btn-icon" id="btn-add" onclick="openAdd()" title="追加">＋</button>
+  </div>
+  <div id="category-bar"></div>
+</div>
+
+<!-- Grid -->
+<div id="grid-container">
+  <div id="clips-grid"></div>
+  <div id="empty-state">
+    <div class="empty-icon">📎</div>
+    <p>クリップがまだありません</p>
+    <small>＋ボタンでURLを保存しましょう</small>
+  </div>
+</div>
+
+<!-- Sync FAB -->
+<button id="btn-sync" onclick="syncDrive()" title="Driveと同期">☁️</button>
+
+<!-- ===== ADD/EDIT MODAL ===== -->
+<div class="modal-overlay" id="modal-add" onclick="overlayClick(event,'modal-add')">
+  <div class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title" id="add-modal-title">クリップを追加</span>
+      <button class="btn-close" onclick="closeModal('modal-add')">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="form-group">
+        <label class="form-label">URL</label>
+        <div class="url-row">
+          <input type="url" id="input-url" class="form-input" placeholder="https://..." inputmode="url" autocomplete="off" autocorrect="off" autocapitalize="none">
+          <button id="btn-fetch" onclick="fetchMeta()">取得</button>
+        </div>
+        <div id="fetch-preview">
+          <img id="fetch-preview-thumb" src="" alt="">
+          <div id="fetch-preview-info">
+            <div id="fetch-preview-title"></div>
+            <div id="fetch-preview-domain"></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">タイトル</label>
+        <input type="text" id="input-title" class="form-input" placeholder="タイトルを入力">
+      </div>
+      <div class="form-group">
+        <label class="form-label">メモ</label>
+        <textarea id="input-memo" class="form-input" placeholder="メモを入力（省略可）" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">カテゴリ</label>
+        <div class="cat-select-grid" id="cat-select-grid"></div>
+      </div>
+      <button class="btn-save" id="btn-save" onclick="saveClip()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CATEGORY MODAL ===== -->
+<div class="modal-overlay" id="modal-cats" onclick="overlayClick(event,'modal-cats')">
+  <div class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title">カテゴリ管理</span>
+      <button class="btn-close" onclick="closeModal('modal-cats')">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="cat-manage-list" id="cat-manage-list"></div>
+      <div class="add-cat-row">
+        <input type="text" id="input-new-cat" class="form-input" placeholder="新しいカテゴリ名" maxlength="20">
+        <button class="btn-action btn-primary" onclick="addCategory()">追加</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SETTINGS MODAL ===== -->
+<div class="modal-overlay" id="modal-settings" onclick="overlayClick(event,'modal-settings')">
+  <div class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title">設定</span>
+      <button class="btn-close" onclick="closeModal('modal-settings')">✕</button>
+    </div>
+    <div class="sheet-body">
+      <!-- Drive -->
+      <div class="settings-section">
+        <div class="settings-section-title">Google Drive 同期</div>
+        <div class="settings-row">
+          <div style="flex:1">
+            <div class="settings-row-label">
+              <span class="sync-dot" id="sync-dot"></span>
+              <span id="sync-status-text">未設定</span>
+            </div>
+            <div class="settings-row-sub">clips-data.json を MyClips フォルダに保存</div>
+          </div>
+          <button class="btn-action btn-primary" id="btn-drive-auth" onclick="driveAuth()">連携</button>
+        </div>
+        <div class="settings-row">
+          <label class="settings-row-label">
+            Client ID
+            <div class="settings-row-sub">Google Cloud Console のクライアントID</div>
+          </label>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <input type="text" id="input-client-id" class="form-input" placeholder="123456789-xxxx.apps.googleusercontent.com" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+          <div style="margin-top:6px;display:flex;gap:8px">
+            <button class="btn-action btn-secondary" style="flex:1" onclick="saveClientId()">Client ID を保存</button>
+            <button class="btn-action btn-danger" onclick="driveLogout()">ログアウト</button>
+          </div>
+        </div>
+      </div>
+      <!-- Data -->
+      <div class="settings-section">
+        <div class="settings-section-title">データ管理</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">エクスポート</div>
+            <div class="settings-row-sub">JSON ファイルとして書き出し</div>
+          </div>
+          <button class="btn-action btn-secondary" onclick="exportData()">書き出し</button>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">インポート</div>
+            <div class="settings-row-sub">JSON ファイルから読み込み（マージ）</div>
+          </div>
+          <button class="btn-action btn-secondary" onclick="document.getElementById('input-import').click()">読み込み</button>
+          <input type="file" id="input-import" accept=".json,application/json" style="display:none" onchange="importData(event)">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">カテゴリ管理</div>
+            <div class="settings-row-sub">カテゴリの追加・削除</div>
+          </div>
+          <button class="btn-action btn-secondary" onclick="openCats()">管理</button>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label" style="color:#e53e3e">全データ削除</div>
+            <div class="settings-row-sub">この操作は取り消せません</div>
+          </div>
+          <button class="btn-action btn-danger" onclick="clearAll()">削除</button>
+        </div>
+      </div>
+      <!-- Info -->
+      <div style="text-align:center;font-size:12px;color:var(--text-muted);padding-top:4px">
+        <span id="clips-count-label"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ─────────────────────────────────────────────
+// Constants & State
+// ─────────────────────────────────────────────
+const LS_CLIPS    = 'clips_data';
+const LS_CATS     = 'clips_categories';
+const LS_TOKEN    = 'clips_gdrive_token';
+const LS_EXPIRES  = 'clips_gdrive_expires';
+const LS_CLIENT   = 'clips_gdrive_client_id';
+const LS_FOLDER   = 'clips_gdrive_folder_id';
+
+const DEFAULT_CATS = ['仕事','趣味','笑い','音楽','自転車','料理'];
+
+const CAT_COLORS = {
+  '仕事':   '#3b82f6',
+  '趣味':   '#8b5cf6',
+  '笑い':   '#f59e0b',
+  '音楽':   '#ec4899',
+  '自転車': '#10b981',
+  '料理':   '#f97316',
+};
+const FALLBACK_COLOR = '#667eea';
+
+function catColor(cat) { return CAT_COLORS[cat] || FALLBACK_COLOR; }
+
+// ─────────────────────────────────────────────
+// Storage helpers
+// ─────────────────────────────────────────────
+function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch {} }
+function lsDel(k) { try { localStorage.removeItem(k); } catch {} }
+
+function loadClips() {
+  try { return JSON.parse(lsGet(LS_CLIPS) || '[]'); } catch { return []; }
+}
+function saveClips(arr) { lsSet(LS_CLIPS, JSON.stringify(arr)); }
+
+function loadCats() {
+  try {
+    const v = JSON.parse(lsGet(LS_CATS) || 'null');
+    return Array.isArray(v) ? v : [...DEFAULT_CATS];
+  } catch { return [...DEFAULT_CATS]; }
+}
+function saveCats(arr) { lsSet(LS_CATS, JSON.stringify(arr)); }
+
+// ─────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────
+let clips       = loadClips();
+let categories  = loadCats();
+let filterCat   = 'すべて';
+let searchQuery = '';
+let editingId   = null;
+let fetchedMeta = {};
+let pushTimer   = null;
+let gsiLoaded   = false;
+
+// ─────────────────────────────────────────────
+// Render
+// ─────────────────────────────────────────────
+function filteredClips() {
+  let arr = [...clips];
+  if (filterCat !== 'すべて') arr = arr.filter(c => c.category === filterCat);
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    arr = arr.filter(c =>
+      (c.title||'').toLowerCase().includes(q) ||
+      (c.memo||'').toLowerCase().includes(q) ||
+      (c.url||'').toLowerCase().includes(q)
+    );
+  }
+  return arr.sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+}
+
+function render() {
+  renderCategoryBar();
+  renderGrid();
+  updateSettingsInfo();
+}
+
+function renderCategoryBar() {
+  const bar = document.getElementById('category-bar');
+  const all = ['すべて', ...categories];
+  bar.innerHTML = all.map(c =>
+    `<button class="cat-chip${c === filterCat ? ' active':''}" onclick="setFilter(${JSON.stringify(c)})">${c}</button>`
+  ).join('');
+}
+
+function renderGrid() {
+  const grid = document.getElementById('clips-grid');
+  const empty = document.getElementById('empty-state');
+  const arr = filteredClips();
+  if (arr.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = 'flex';
+    return;
+  }
+  empty.style.display = 'none';
+  grid.innerHTML = arr.map(cardHTML).join('');
+}
+
+function cardHTML(c) {
+  const thumb = c.thumbnail
+    ? `<img src="${esc(c.thumbnail)}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+  const placeholder = `<div class="card-thumb-placeholder" style="${c.thumbnail ? 'display:none' : ''}">${c.type === 'youtube' ? '▶' : '🔗'}</div>`;
+  const badge = c.type === 'youtube'
+    ? `<div class="card-type-badge">YouTube</div>` : '';
+
+  const favicon = c.favicon
+    ? `<img class="card-favicon" src="${esc(c.favicon)}" alt="" onerror="this.style.display='none'">`
+    : `<span style="font-size:13px">🌐</span>`;
+  const domain = c.domain ? `<span class="card-domain">${esc(c.domain)}</span>` : '';
+
+  const catChip = c.category
+    ? `<div class="card-cat-chip" style="background:${catColor(c.category)}">${esc(c.category)}</div>` : '';
+  const memo = c.memo ? `<div class="card-memo">${esc(c.memo)}</div>` : '';
+
+  return `<div class="clip-card" id="card-${c.id}">
+  <div class="card-thumb-wrap">
+    ${thumb}${placeholder}${badge}
+  </div>
+  <div class="card-body">
+    <div class="card-title">${esc(c.title || c.url || '無題')}</div>
+    <div class="card-meta">${favicon}${domain}</div>
+    ${catChip}
+    ${memo}
+    <div class="card-actions">
+      <button class="card-btn card-btn-open" onclick="openURL(event,${JSON.stringify(c.id)})">開く</button>
+      <button class="card-btn card-btn-edit" onclick="openEdit(event,${JSON.stringify(c.id)})">編集</button>
+      <button class="card-btn card-btn-del" onclick="deleteClip(event,${JSON.stringify(c.id)})">🗑</button>
+    </div>
+  </div>
+</div>`;
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ─────────────────────────────────────────────
+// Filter
+// ─────────────────────────────────────────────
+function setFilter(cat) {
+  filterCat = cat;
+  renderCategoryBar();
+  renderGrid();
+}
+function resetFilter() {
+  filterCat = 'すべて';
+  searchQuery = '';
+  document.getElementById('search-input').value = '';
+  render();
+}
+
+document.getElementById('search-input').addEventListener('input', function() {
+  searchQuery = this.value.trim();
+  renderGrid();
+});
+
+// ─────────────────────────────────────────────
+// URL Detection
+// ─────────────────────────────────────────────
+function isYouTube(url) {
+  return /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/.test(url);
+}
+function ytVideoId(url) {
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function getDomain(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+}
+function getFavicon(url) {
+  try {
+    const u = new URL(url);
+    return `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=32`;
+  } catch { return ''; }
+}
+
+// ─────────────────────────────────────────────
+// Meta Fetch
+// ─────────────────────────────────────────────
+async function fetchMeta() {
+  const url = document.getElementById('input-url').value.trim();
+  if (!url) { toast('URLを入力してください'); return; }
+
+  const btn = document.getElementById('btn-fetch');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  fetchedMeta = {};
+
+  try {
+    if (isYouTube(url)) {
+      await fetchYouTubeMeta(url);
+    } else {
+      await fetchWebMeta(url);
+    }
+  } catch(e) {
+    // fill basic info
+    fetchedMeta = {
+      type: isYouTube(url) ? 'youtube' : 'web',
+      domain: getDomain(url),
+      favicon: getFavicon(url),
+    };
+  }
+
+  // Apply fetched data to form
+  if (fetchedMeta.title && !document.getElementById('input-title').value) {
+    document.getElementById('input-title').value = fetchedMeta.title;
+  }
+  showFetchPreview();
+
+  btn.disabled = false;
+  btn.textContent = '再取得';
+}
+
+async function fetchYouTubeMeta(url) {
+  const vid = ytVideoId(url);
+  if (!vid) throw new Error('No video ID');
+
+  const thumb = `https://img.youtube.com/vi/${vid}/mqdefault.jpg`;
+
+  // Try oEmbed
+  let title = '';
+  try {
+    const oembed = await fetchJSON(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+    title = oembed.title || '';
+  } catch {}
+
+  fetchedMeta = {
+    type: 'youtube',
+    thumbnail: thumb,
+    title,
+    domain: 'youtube.com',
+    favicon: 'https://www.google.com/s2/favicons?domain=youtube.com&sz=32',
+  };
+}
+
+async function fetchWebMeta(url) {
+  const domain = getDomain(url);
+  const favicon = getFavicon(url);
+  // Can't easily fetch page title cross-origin in browser; try title via AllOrigins
+  let title = '';
+  try {
+    const ao = await fetchJSON(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+    if (ao && ao.contents) {
+      const m = ao.contents.match(/<title[^>]*>([^<]+)<\/title>/i);
+      if (m) title = m[1].trim().substring(0, 120);
+    }
+  } catch {}
+
+  fetchedMeta = { type: 'web', title, domain, favicon };
+}
+
+async function fetchJSON(url) {
+  const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+function showFetchPreview() {
+  const prev = document.getElementById('fetch-preview');
+  const thumb = document.getElementById('fetch-preview-thumb');
+  const title = document.getElementById('fetch-preview-title');
+  const domain = document.getElementById('fetch-preview-domain');
+
+  if (fetchedMeta.thumbnail) {
+    thumb.src = fetchedMeta.thumbnail;
+    thumb.style.display = 'block';
+  } else {
+    thumb.style.display = 'none';
+  }
+  title.textContent = fetchedMeta.title || '（タイトル取得できず）';
+  domain.textContent = fetchedMeta.domain || '';
+  prev.classList.add('show');
+}
+
+// ─────────────────────────────────────────────
+// Add / Edit Modal
+// ─────────────────────────────────────────────
+function openAdd() {
+  editingId = null;
+  fetchedMeta = {};
+  document.getElementById('add-modal-title').textContent = 'クリップを追加';
+  document.getElementById('input-url').value = '';
+  document.getElementById('input-title').value = '';
+  document.getElementById('input-memo').value = '';
+  document.getElementById('fetch-preview').classList.remove('show');
+  document.getElementById('btn-fetch').textContent = '取得';
+  renderCatSelectGrid(null);
+  openModal('modal-add');
+  setTimeout(() => document.getElementById('input-url').focus(), 400);
+}
+
+function openEdit(e, id) {
+  e && e.stopPropagation();
+  const c = clips.find(x => x.id === id);
+  if (!c) return;
+  editingId = id;
+  fetchedMeta = {
+    type: c.type,
+    thumbnail: c.thumbnail,
+    domain: c.domain,
+    favicon: c.favicon,
+    title: c.title,
+  };
+  document.getElementById('add-modal-title').textContent = '編集';
+  document.getElementById('input-url').value = c.url || '';
+  document.getElementById('input-title').value = c.title || '';
+  document.getElementById('input-memo').value = c.memo || '';
+  document.getElementById('btn-fetch').textContent = '再取得';
+  if (c.thumbnail || c.domain) showFetchPreview();
+  else document.getElementById('fetch-preview').classList.remove('show');
+  renderCatSelectGrid(c.category);
+  openModal('modal-add');
+}
+
+let selectedCat = '';
+function renderCatSelectGrid(selected) {
+  selectedCat = selected || (categories[0] || '');
+  const grid = document.getElementById('cat-select-grid');
+  grid.innerHTML = categories.map(c =>
+    `<button class="cat-select-chip${c === selectedCat ? ' selected':''}" onclick="selectCat(${JSON.stringify(c)})">${esc(c)}</button>`
+  ).join('');
+}
+function selectCat(cat) {
+  selectedCat = cat;
+  renderCatSelectGrid(cat);
+}
+
+function saveClip() {
+  const url = document.getElementById('input-url').value.trim();
+  const title = document.getElementById('input-title').value.trim();
+  const memo = document.getElementById('input-memo').value.trim();
+
+  if (!url) { toast('URLを入力してください'); return; }
+
+  const now = Date.now();
+  const type = fetchedMeta.type || (isYouTube(url) ? 'youtube' : 'web');
+
+  if (editingId) {
+    const idx = clips.findIndex(c => c.id === editingId);
+    if (idx < 0) return;
+    clips[idx] = {
+      ...clips[idx],
+      url,
+      title: title || getDomain(url),
+      memo,
+      category: selectedCat,
+      thumbnail: fetchedMeta.thumbnail || clips[idx].thumbnail || '',
+      favicon: fetchedMeta.favicon || clips[idx].favicon || getFavicon(url),
+      domain: fetchedMeta.domain || clips[idx].domain || getDomain(url),
+      type,
+      updatedAt: now,
+    };
+    toast('更新しました');
+  } else {
+    const vid = type === 'youtube' ? ytVideoId(url) : null;
+    const id = `clip_${now}_${Math.random().toString(36).slice(2,7)}`;
+    clips.unshift({
+      id,
+      url,
+      title: title || fetchedMeta.title || getDomain(url),
+      memo,
+      category: selectedCat,
+      thumbnail: fetchedMeta.thumbnail || (vid ? `https://img.youtube.com/vi/${vid}/mqdefault.jpg` : ''),
+      favicon: fetchedMeta.favicon || getFavicon(url),
+      domain: fetchedMeta.domain || getDomain(url),
+      type,
+      createdAt: now,
+      updatedAt: now,
+    });
+    toast('保存しました');
+  }
+
+  saveClips(clips);
+  closeModal('modal-add');
+  render();
+  schedulePush();
+}
+
+// ─────────────────────────────────────────────
+// Actions
+// ─────────────────────────────────────────────
+function openURL(e, id) {
+  e && e.stopPropagation();
+  const c = clips.find(x => x.id === id);
+  if (c) window.open(c.url, '_blank', 'noopener');
+}
+
+function deleteClip(e, id) {
+  e && e.stopPropagation();
+  if (!confirm('このクリップを削除しますか？')) return;
+  clips = clips.filter(c => c.id !== id);
+  saveClips(clips);
+  render();
+  toast('削除しました');
+  schedulePush();
+}
+
+// ─────────────────────────────────────────────
+// Categories
+// ─────────────────────────────────────────────
+function openCats() {
+  closeModal('modal-settings');
+  setTimeout(() => {
+    renderCatManageList();
+    openModal('modal-cats');
+  }, 300);
+}
+
+function renderCatManageList() {
+  const list = document.getElementById('cat-manage-list');
+  list.innerHTML = categories.map(c => {
+    const count = clips.filter(x => x.category === c).length;
+    const isDef = DEFAULT_CATS.includes(c);
+    return `<div class="cat-manage-item">
+      <div class="cat-manage-dot" style="background:${catColor(c)}"></div>
+      <div class="cat-manage-name">${esc(c)}</div>
+      <div class="cat-manage-count">${count}件</div>
+      <button class="cat-manage-del" onclick="deleteCategory(${JSON.stringify(c)})" ${isDef ? 'title="デフォルトは削除不可"':''} ${isDef ? 'disabled':''}>✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addCategory() {
+  const inp = document.getElementById('input-new-cat');
+  const name = inp.value.trim();
+  if (!name) { toast('カテゴリ名を入力してください'); return; }
+  if (categories.includes(name)) { toast('同名のカテゴリが存在します'); return; }
+  categories.push(name);
+  saveCats(categories);
+  inp.value = '';
+  renderCatManageList();
+  renderCategoryBar();
+  toast(`「${name}」を追加しました`);
+}
+
+function deleteCategory(cat) {
+  if (DEFAULT_CATS.includes(cat)) { toast('デフォルトカテゴリは削除できません'); return; }
+  const count = clips.filter(c => c.category === cat).length;
+  if (count > 0 && !confirm(`「${cat}」を削除します。\n${count}件のクリップのカテゴリが空になります。続けますか？`)) return;
+  categories = categories.filter(c => c !== cat);
+  saveCats(categories);
+  if (filterCat === cat) filterCat = 'すべて';
+  renderCatManageList();
+  renderCategoryBar();
+  toast(`「${cat}」を削除しました`);
+}
+
+// ─────────────────────────────────────────────
+// Export / Import
+// ─────────────────────────────────────────────
+function exportData() {
+  const data = { clips, categories, exportedAt: Date.now() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `clips-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('エクスポートしました');
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      const imported = Array.isArray(data.clips) ? data.clips : Array.isArray(data) ? data : [];
+      if (imported.length === 0) { toast('有効なデータがありません'); return; }
+      // Merge: keep newer by updatedAt
+      const map = new Map(clips.map(c => [c.id, c]));
+      let added = 0, updated = 0;
+      for (const c of imported) {
+        if (!c.id || !c.url) continue;
+        if (!map.has(c.id)) { map.set(c.id, c); added++; }
+        else if ((c.updatedAt||0) > (map.get(c.id).updatedAt||0)) { map.set(c.id, c); updated++; }
+      }
+      clips = Array.from(map.values());
+      saveClips(clips);
+      if (Array.isArray(data.categories)) {
+        for (const cat of data.categories) {
+          if (!categories.includes(cat)) categories.push(cat);
+        }
+        saveCats(categories);
+      }
+      render();
+      toast(`${added}件追加、${updated}件更新`);
+    } catch {
+      toast('ファイルの読み込みに失敗しました');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function clearAll() {
+  if (!confirm('すべてのクリップを削除しますか？\nこの操作は取り消せません。')) return;
+  clips = [];
+  saveClips(clips);
+  render();
+  toast('全データを削除しました');
+}
+
+function updateSettingsInfo() {
+  const el = document.getElementById('clips-count-label');
+  if (el) el.textContent = `${clips.length}件のクリップ`;
+}
+
+// ─────────────────────────────────────────────
+// Settings
+// ─────────────────────────────────────────────
+function openSettings() {
+  const cid = lsGet(LS_CLIENT) || '';
+  document.getElementById('input-client-id').value = cid;
+  updateDriveStatus();
+  updateSettingsInfo();
+  openModal('modal-settings');
+}
+
+function saveClientId() {
+  const v = document.getElementById('input-client-id').value.trim();
+  if (!v) { toast('Client IDを入力してください'); return; }
+  lsSet(LS_CLIENT, v);
+  toast('Client IDを保存しました');
+}
+
+// ─────────────────────────────────────────────
+// Modal helpers
+// ─────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+function overlayClick(e, id) {
+  if (e.target === document.getElementById(id)) closeModal(id);
+}
+
+// ─────────────────────────────────────────────
+// Toast
+// ─────────────────────────────────────────────
+let toastTimer;
+function toast(msg, dur = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ─────────────────────────────────────────────
+// Google Drive Sync
+// ─────────────────────────────────────────────
+function getDriveToken() { return lsGet(LS_TOKEN); }
+function getClientId() { return lsGet(LS_CLIENT); }
+function tokenExpired() {
+  const exp = parseInt(lsGet(LS_EXPIRES) || '0', 10);
+  return exp < Date.now() + 60000;
+}
+
+function updateDriveStatus() {
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-status-text');
+  const btn = document.getElementById('btn-drive-auth');
+  if (!dot || !txt) return;
+  const token = getDriveToken();
+  const cid = getClientId();
+  if (!cid) {
+    dot.className = 'sync-dot';
+    txt.textContent = 'Client ID未設定';
+    if (btn) btn.textContent = '連携';
+  } else if (!token || tokenExpired()) {
+    dot.className = 'sync-dot';
+    txt.textContent = '未ログイン';
+    if (btn) btn.textContent = 'ログイン';
+  } else {
+    dot.className = 'sync-dot ok';
+    txt.textContent = '連携済み';
+    if (btn) btn.textContent = '再認証';
+  }
+}
+
+async function ensureGSI() {
+  if (gsiLoaded) return;
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = () => { gsiLoaded = true; resolve(); };
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+async function driveAuth() {
+  const cid = getClientId() || document.getElementById('input-client-id').value.trim();
+  if (!cid) { toast('Client IDを先に入力・保存してください'); return; }
+  lsSet(LS_CLIENT, cid);
+  try {
+    await ensureGSI();
+    await new Promise((resolve, reject) => {
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: cid,
+        scope: 'https://www.googleapis.com/auth/drive.file',
+        callback: (resp) => {
+          if (resp.error) { reject(new Error(resp.error)); return; }
+          lsSet(LS_TOKEN, resp.access_token);
+          lsSet(LS_EXPIRES, String(Date.now() + (resp.expires_in || 3600) * 1000));
+          resolve();
+        },
+        error_callback: reject,
+      });
+      client.requestAccessToken();
+    });
+    toast('Driveに接続しました ☁️');
+    updateDriveStatus();
+    schedulePush();
+  } catch(e) {
+    toast('ログインに失敗しました: ' + (e.message || e));
+  }
+}
+
+function driveLogout() {
+  if (!confirm('Driveの連携を解除しますか？')) return;
+  lsDel(LS_TOKEN);
+  lsDel(LS_EXPIRES);
+  lsDel(LS_FOLDER);
+  updateDriveStatus();
+  toast('ログアウトしました');
+}
+
+async function driveRequest(method, path, opts = {}) {
+  const token = getDriveToken();
+  if (!token || tokenExpired()) throw new Error('token_expired');
+  const url = path.startsWith('http') ? path : `https://www.googleapis.com${path}`;
+  const headers = { Authorization: `Bearer ${token}`, ...opts.headers };
+  const res = await fetch(url, { method, headers, body: opts.body, signal: AbortSignal.timeout(15000) });
+  if (res.status === 401) { lsDel(LS_TOKEN); throw new Error('token_expired'); }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('json')) return res.json();
+  return res.text();
+}
+
+async function getOrCreateFolder() {
+  let fid = lsGet(LS_FOLDER);
+  if (fid) return fid;
+  // Search for existing
+  const q = encodeURIComponent("name='MyClips' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+  const list = await driveRequest('GET', `/drive/v3/files?q=${q}&fields=files(id,name)`);
+  if (list.files && list.files.length > 0) {
+    fid = list.files[0].id;
+  } else {
+    // Create
+    const meta = { name: 'MyClips', mimeType: 'application/vnd.google-apps.folder' };
+    const res = await driveRequest('POST', '/drive/v3/files', {
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(meta),
+    });
+    fid = res.id;
+  }
+  lsSet(LS_FOLDER, fid);
+  return fid;
+}
+
+async function pushToDrive() {
+  const token = getDriveToken();
+  if (!token || tokenExpired()) return;
+  const fid = await getOrCreateFolder();
+  const payload = JSON.stringify({ clips, categories, syncedAt: Date.now() });
+
+  // Check if file exists
+  const q = encodeURIComponent(`name='clips-data.json' and '${fid}' in parents and trashed=false`);
+  const list = await driveRequest('GET', `/drive/v3/files?q=${q}&fields=files(id)`);
+  const existing = list.files && list.files[0] ? list.files[0].id : null;
+
+  const form = new FormData();
+  const metaObj = existing ? {} : { name: 'clips-data.json', parents: [fid] };
+  form.append('metadata', new Blob([JSON.stringify(metaObj)], { type: 'application/json' }));
+  form.append('file', new Blob([payload], { type: 'application/json' }));
+
+  const method = existing ? 'PATCH' : 'POST';
+  const path = existing
+    ? `https://www.googleapis.com/upload/drive/v3/files/${existing}?uploadType=multipart`
+    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
+
+  await driveRequest(method, path, { body: form });
+}
+
+async function pullFromDrive() {
+  const token = getDriveToken();
+  if (!token || tokenExpired()) return;
+  const fid = await getOrCreateFolder();
+  const q = encodeURIComponent(`name='clips-data.json' and '${fid}' in parents and trashed=false`);
+  const list = await driveRequest('GET', `/drive/v3/files?q=${q}&fields=files(id)`);
+  if (!list.files || !list.files[0]) return;
+  const fileId = list.files[0].id;
+  const text = await driveRequest('GET', `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
+  const data = JSON.parse(typeof text === 'string' ? text : JSON.stringify(text));
+
+  if (Array.isArray(data.clips)) {
+    const map = new Map(clips.map(c => [c.id, c]));
+    for (const c of data.clips) {
+      if (!c.id) continue;
+      if (!map.has(c.id) || (c.updatedAt||0) > (map.get(c.id).updatedAt||0)) {
+        map.set(c.id, c);
+      }
+    }
+    clips = Array.from(map.values());
+    saveClips(clips);
+  }
+  if (Array.isArray(data.categories)) {
+    for (const cat of data.categories) {
+      if (!categories.includes(cat)) categories.push(cat);
+    }
+    saveCats(categories);
+  }
+}
+
+async function syncDrive() {
+  const token = getDriveToken();
+  if (!token) {
+    if (!getClientId()) { toast('設定からDriveを連携してください'); return; }
+    await driveAuth();
+    return;
+  }
+  const btn = document.getElementById('btn-sync');
+  btn.classList.add('syncing');
+  btn.style.pointerEvents = 'none';
+  try {
+    await pullFromDrive();
+    await pushToDrive();
+    render();
+    toast('同期しました ☁️');
+  } catch(e) {
+    if (e.message === 'token_expired') {
+      updateDriveStatus();
+      toast('セッションが切れました。再ログインしてください');
+    } else {
+      toast('同期エラー: ' + (e.message || e));
+    }
+  } finally {
+    btn.classList.remove('syncing');
+    btn.style.pointerEvents = '';
+    updateDriveStatus();
+  }
+}
+
+function schedulePush() {
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(async () => {
+    const token = getDriveToken();
+    if (!token || tokenExpired()) return;
+    try { await pushToDrive(); } catch {}
+  }, 3000);
+}
+
+// ─────────────────────────────────────────────
+// Auto-pull on load
+// ─────────────────────────────────────────────
+async function autoPull() {
+  const token = getDriveToken();
+  if (!token || tokenExpired()) return;
+  try {
+    await ensureGSI();
+    await pullFromDrive();
+    render();
+  } catch {}
+}
+
+// ─────────────────────────────────────────────
+// Keyboard shortcuts
+// ─────────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('search-input').focus();
+  }
+  if (e.key === 'Escape') {
+    ['modal-add','modal-cats','modal-settings'].forEach(id => {
+      if (document.getElementById(id).classList.contains('open')) closeModal(id);
+    });
+  }
+});
+
+// Enter on new cat input
+document.getElementById('input-new-cat').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addCategory();
+});
+
+// Auto-fetch on paste into URL
+document.getElementById('input-url').addEventListener('paste', (e) => {
+  setTimeout(async () => {
+    const url = document.getElementById('input-url').value.trim();
+    if (url && !editingId) {
+      await fetchMeta();
+    }
+  }, 100);
+});
+
+// ─────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────
+render();
+updateDriveStatus();
+autoPull();
+</script>
+</body>
+</html>
