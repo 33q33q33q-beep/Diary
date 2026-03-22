@@ -236,6 +236,33 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .cal-day.has-plan{background:#e8f0ff!important}
 .cal-plan-dot{width:6px;height:6px;border-radius:50%;background:#4a80d0;margin-top:2px;flex-shrink:0}
 .cal-plan-text{font-size:9px;color:#3a60b0;line-height:1.2;text-align:center;overflow:hidden;max-width:100%;padding:0 2px;white-space:nowrap;text-overflow:ellipsis;z-index:1}
+/* ── スケジュールページ ── */
+.schedule-week-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:8px}
+.schedule-week-label{font-size:15px;font-weight:700;color:var(--primary-dark);text-align:center;flex:1}
+.schedule-day-group{margin-bottom:16px}
+.schedule-day-header{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--primary);color:#fff;border-radius:8px 8px 0 0;font-weight:700;font-size:14px}
+.schedule-day-header.today-header{background:var(--accent)}
+.schedule-day-header.past-header{background:#aaa}
+.schedule-items{border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;overflow:hidden}
+.schedule-item{padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface)}
+.schedule-item:last-child{border-bottom:none}
+.schedule-item.done-item .schedule-title{text-decoration:line-through;color:var(--text-muted)}
+.schedule-item.done-item{opacity:.65}
+.schedule-item-row{display:flex;align-items:center;gap:8px}
+.schedule-time{font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap;min-width:100px}
+.schedule-title{flex:1;font-size:14px;color:var(--text);line-height:1.4}
+.schedule-memo-area{margin-top:8px;display:none}
+.schedule-memo-area.open{display:block}
+.schedule-memo-area textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;line-height:1.7;resize:vertical;min-height:72px;background:var(--bg);color:var(--text)}
+.schedule-memo-area textarea:focus{outline:none;border-color:var(--primary)}
+.schedule-add-form{padding:10px 12px;background:#fafaf5;border:1px solid var(--border);border-top:1px dashed var(--border);border-radius:0 0 8px 8px;display:none}
+.schedule-add-form.open{display:block}
+.schedule-add-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
+.schedule-add-row input{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text)}
+.sched-time-inp{width:90px}
+.sched-title-inp{flex:1;min-width:120px}
+.btn-sched-icon{padding:4px 8px;font-size:14px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;transition:.2s;line-height:1}
+.btn-sched-icon:hover{background:#f0ebe0}
 /* Anniversary banner */
 #anniv-banner{display:none;background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:10px 14px;margin-top:14px}
 #anniv-banner h3{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
@@ -319,6 +346,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   <button class="nav-btn" onclick="showPage('anniversary')" id="nav-anniversary"><span class="icon">🎉</span><span>記念日</span></button>
   <button class="nav-btn" onclick="showPage('media')" id="nav-media"><span class="icon">🎬</span><span>映画・本</span></button>
   <button class="nav-btn" onclick="showPage('todo')" id="nav-todo"><span class="icon">🎯</span><span>Ambition・Aspiration</span></button>
+    <button class="nav-btn" onclick="showPage('schedule')" id="nav-schedule"><span class="icon">📋</span><span>スケジュール</span></button>
   <div id="sync-area">
     <div class="sync-status"><div class="sync-dot" id="sync-dot"></div><span id="sync-label">未設定</span></div>
     <button type="button" class="nav-btn" id="btn-sync" style="font-size:12px;padding:8px 10px;margin-top:4px;font-weight:600;color:var(--text)" onclick="SYNC.smartSync()">🔄 同期</button>
@@ -367,6 +395,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
         <button type="button" class="mob-page-btn" data-page="anniversary" onclick="showPage('anniversary')" title="記念日" aria-label="記念日">🎉</button>
         <button type="button" class="mob-page-btn" data-page="media" onclick="showPage('media')" title="映画・本" aria-label="映画・本">🎬</button>
         <button type="button" class="mob-page-btn" data-page="todo" onclick="showPage('todo')" title="Ambition" aria-label="Ambition">🎯</button>
+        <button type="button" class="mob-page-btn" data-page="schedule" onclick="showPage('schedule')" title="スケジュール" aria-label="スケジュール">📋</button>
       </div>
       <div class="calendar-mobile-nav-tools">
         <button type="button" class="mob-tool-btn" onclick="SYNC.smartSync()" title="同期">🔄</button>
@@ -479,6 +508,16 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
         <div id="vision-list"></div>
       </div>
     </div>
+  </div>
+  <div class="page" id="page-schedule">
+    <div class="page-title">📋 スケジュール ／ 未来日記</div>
+    <div class="schedule-week-nav">
+      <button class="btn" onclick="scheduleChangeWeek(-1)">＜ 前週</button>
+      <div class="schedule-week-label" id="schedule-week-label"></div>
+      <button class="btn" onclick="scheduleChangeWeek(1)">次週 ＞</button>
+    </div>
+    <button class="btn" onclick="scheduleGoToday()" style="margin-bottom:14px;font-size:12px">📍 今週に戻る</button>
+    <div id="schedule-content"></div>
   </div>
 </main>
 </div>
@@ -802,6 +841,7 @@ function showPage(name){
   if(name==='anniversary') renderAnniversaries();
   if(name==='media') renderMedia();
   if(name==='todo'){ renderGoals(); renderVisions(); }
+  if(name==='schedule'){ seedInitialSchedule(); renderSchedule(); }
 }
 
 // ─── Calendar ────────────────────────────────────────────────────────────────
@@ -2225,6 +2265,7 @@ function applyDiaryPayloadToLocal(d){
   if(d.todos) trySet('diary_todos', d.todos);
   if(d.goals) trySet('diary_goals', d.goals);
   if(d.visions) trySet('diary_visions', d.visions);
+  if(d.schedule && Array.isArray(d.schedule)) trySet('diary_schedule', d.schedule);
   if(d.userTags) trySet('diary_user_tags', d.userTags);
   if(d.fbBirthdays && Array.isArray(d.fbBirthdays)) trySet('diary_fb_birthdays', d.fbBirthdays);
   if(errors.length) alert('一部保存できませんでした:\n'+errors.join('\n'));
@@ -2911,6 +2952,7 @@ const SYNC = {
       fbBirthdays: Array.isArray(fbBirthdays) ? fbBirthdays : [],
       media: DB.getMedia(), todos: DB.getTodos(), goals: DB.getGoals(), visions: DB.getVisions(),
       userTags: getUserTags(),
+      schedule: SCHEDULE_DB.getAll(),
       updatedAt: Date.now()
     };
   },
@@ -3397,6 +3439,154 @@ document.addEventListener('visibilitychange',()=>{
   }
   if(document.visibilityState==='hidden') SYNC.flushPending(true);
 });
+// ─── SCHEDULE DB ─────────────────────────────────────────────────────────────
+const SCHEDULE_STORE_KEY='diary_schedule';
+const SCHEDULE_SEED_KEY='diary_schedule_seeded_v1';
+const SCHEDULE_DB={
+  getAll(){ const d=JSON.parse(localStorage.getItem(SCHEDULE_STORE_KEY)||'[]'); return Array.isArray(d)?d:[]; },
+  save(items){ localStorage.setItem(SCHEDULE_STORE_KEY,JSON.stringify(items)); SYNC.schedule(); },
+  add(item){ const a=this.getAll(); a.push(item); this.save(a); },
+  update(id,patch){ this.save(this.getAll().map(x=>x.id===id?{...x,...patch}:x)); },
+  remove(id){ this.save(this.getAll().filter(x=>x.id!==id)); }
+};
+function scheduleId(){ return 'sc_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+function seedInitialSchedule(){
+  if(localStorage.getItem(SCHEDULE_SEED_KEY)) return;
+  const seed=[
+    {id:scheduleId(),date:'2026-03-23',startTime:'13:00',endTime:'14:00',title:'広島定例',memo:'',done:false},
+    {id:scheduleId(),date:'2026-03-24',startTime:'10:30',endTime:'12:00',title:'請求書処理',memo:'',done:false},
+    {id:scheduleId(),date:'2026-03-24',startTime:'13:00',endTime:'15:45',title:'安原さん 機材レクチャー',memo:'',done:false},
+    {id:scheduleId(),date:'2026-03-25',startTime:'09:30',endTime:'11:45',title:'横浜ロケハン',memo:'',done:false},
+    {id:scheduleId(),date:'2026-03-25',startTime:'14:00',endTime:'15:00',title:'【決定】GCTVサイマル配信方針（TOJプレス発表前）',memo:'',done:false},
+    {id:scheduleId(),date:'2026-03-25',startTime:'16:00',endTime:'17:00',title:'JBCF 東京都',memo:'',done:false},
+    {id:scheduleId(),date:'2026-03-26',startTime:'10:30',endTime:'12:00',title:'TOJサイマル方針決定 or 大場さんと経営打ち合わせ',memo:'',done:false},
+    {id:scheduleId(),date:'2026-03-26',startTime:'14:00',endTime:'15:00',title:'TOJプレス発表（ビデオライフ）',memo:'',done:false},
+    {id:scheduleId(),date:'2026-03-26',startTime:'15:00',endTime:'17:00',title:'（仮）大場さんと経営打ち合わせ',memo:'',done:false},
+    {id:scheduleId(),date:'2026-03-26',startTime:'18:00',endTime:'19:00',title:'ASPI',memo:'',done:false},
+    {id:scheduleId(),date:'2026-03-26',startTime:'20:00',endTime:'22:00',title:'冬野',memo:'',done:false},
+  ];
+  SCHEDULE_DB.save([...SCHEDULE_DB.getAll(),...seed]);
+  localStorage.setItem(SCHEDULE_SEED_KEY,'1');
+}
+
+let scheduleWeekOffset=0;
+function getWeekMon(offset){
+  const n=new Date();
+  const dow=n.getDay();
+  const diff=(dow===0)?-6:1-dow;
+  n.setDate(n.getDate()+diff+offset*7);
+  n.setHours(0,0,0,0);
+  return n;
+}
+function scheduleGoToday(){ scheduleWeekOffset=0; renderSchedule(); }
+function scheduleChangeWeek(d){ scheduleWeekOffset+=d; renderSchedule(); }
+
+function renderSchedule(){
+  const mon=getWeekMon(scheduleWeekOffset);
+  const sun=new Date(mon); sun.setDate(sun.getDate()+6);
+  const fmt=d=>`${d.getMonth()+1}/${d.getDate()}`;
+  document.getElementById('schedule-week-label').textContent=
+    `${mon.getFullYear()}年 ${fmt(mon)}（月）〜 ${fmt(sun)}（日）`;
+  const todayKey=today();
+  const allItems=SCHEDULE_DB.getAll();
+  const DOW=['日','月','火','水','木','金','土'];
+  const content=document.getElementById('schedule-content');
+  content.innerHTML='';
+  for(let i=0;i<7;i++){
+    const day=new Date(mon); day.setDate(day.getDate()+i);
+    const key=dateKey(day.getFullYear(),day.getMonth()+1,day.getDate());
+    const isToday=key===todayKey, isPast=key<todayKey;
+    const dayItems=allItems.filter(x=>x.date===key).sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||''));
+    const dow=day.getDay();
+    const grp=document.createElement('div'); grp.className='schedule-day-group';
+    const hcls=isToday?'today-header':isPast?'past-header':'';
+    const dstr=`${day.getMonth()+1}月${day.getDate()}日（${DOW[dow]}）`;
+    grp.innerHTML=`<div class="schedule-day-header ${hcls}"><span>${isToday?'📍 ':''}${dstr}</span><button class="btn-sched-icon" style="background:rgba(255,255,255,.2);border:none;color:#fff;margin-left:auto;font-size:12px;padding:3px 10px" onclick="openSchedAddForm('${key}')">＋ 追加</button></div>`;
+    const wrap=document.createElement('div'); wrap.className='schedule-items'; wrap.id='si-'+key;
+    if(!dayItems.length){
+      wrap.innerHTML=`<div style="padding:10px 12px;font-size:13px;color:var(--text-muted)">予定なし</div>`;
+    } else {
+      dayItems.forEach(item=>wrap.appendChild(buildSchedItem(item)));
+    }
+    const form=document.createElement('div'); form.className='schedule-add-form'; form.id='saf-'+key;
+    form.innerHTML=`<div class="schedule-add-row">
+      <input class="sched-time-inp" type="time" id="sa-s-${key}">
+      <span style="font-size:13px">〜</span>
+      <input class="sched-time-inp" type="time" id="sa-e-${key}">
+      <input class="sched-title-inp" type="text" id="sa-t-${key}" placeholder="予定のタイトル" onkeydown="if(event.key==='Enter'&&!event.isComposing)addSchedItem('${key}')">
+    </div>
+    <div style="display:flex;gap:6px;justify-content:flex-end">
+      <button class="btn" onclick="closeSchedAddForm('${key}')" style="font-size:12px">キャンセル</button>
+      <button class="btn btn-primary" onclick="addSchedItem('${key}')" style="font-size:12px">追加</button>
+    </div>`;
+    grp.appendChild(wrap); grp.appendChild(form); content.appendChild(grp);
+  }
+}
+
+function buildSchedItem(item){
+  const div=document.createElement('div');
+  div.className='schedule-item'+(item.done?' done-item':'');
+  div.id='si-'+item.id;
+  const tl=item.startTime?(item.startTime+(item.endTime?'–'+item.endTime:'')):'';
+  div.innerHTML=`<div class="schedule-item-row">
+    <input type="checkbox" ${item.done?'checked':''} onchange="toggleSchedDone('${item.id}',this.checked)" style="cursor:pointer;width:16px;height:16px;flex-shrink:0">
+    <span class="schedule-time">${tl}</span>
+    <span class="schedule-title">${escHtml(item.title)}</span>
+    <button class="btn-sched-icon" onclick="toggleSchedMemo('${item.id}')" title="メモ（未来日記）">${item.memo?'📝':'✎'}</button>
+    <button class="btn-sched-icon" onclick="deleteSchedItem('${item.id}')" title="削除" style="color:#c00">✕</button>
+  </div>
+  <div class="schedule-memo-area${item.memo?' open':''}" id="sm-${item.id}">
+    <textarea placeholder="この予定への展望・振り返りを書きましょう（未来日記）" onblur="saveSchedMemo('${item.id}',this.value)">${escHtml(item.memo||'')}</textarea>
+  </div>`;
+  return div;
+}
+function toggleSchedMemo(id){
+  const a=document.getElementById('sm-'+id); if(!a)return;
+  a.classList.toggle('open');
+  if(a.classList.contains('open')) a.querySelector('textarea').focus();
+}
+function saveSchedMemo(id,val){
+  SCHEDULE_DB.update(id,{memo:val});
+  const btn=document.querySelector(`#si-${id} .btn-sched-icon[title="メモ（未来日記）"]`);
+  if(btn) btn.textContent=val.trim()?'📝':'✎';
+}
+function toggleSchedDone(id,done){
+  SCHEDULE_DB.update(id,{done});
+  const d=document.getElementById('si-'+id); if(!d)return;
+  d.classList.toggle('done-item',done);
+}
+function deleteSchedItem(id){
+  if(!confirm('この予定を削除しますか？'))return;
+  SCHEDULE_DB.remove(id);
+  const el=document.getElementById('si-'+id); if(el)el.remove();
+}
+function openSchedAddForm(dk){
+  document.querySelectorAll('.schedule-add-form.open').forEach(f=>f.classList.remove('open'));
+  const f=document.getElementById('saf-'+dk); if(!f)return;
+  f.classList.add('open'); document.getElementById('sa-t-'+dk).focus();
+}
+function closeSchedAddForm(dk){
+  const f=document.getElementById('saf-'+dk); if(f)f.classList.remove('open');
+}
+function addSchedItem(dk){
+  const s=document.getElementById('sa-s-'+dk).value;
+  const e=document.getElementById('sa-e-'+dk).value;
+  const t=document.getElementById('sa-t-'+dk).value.trim();
+  if(!t){alert('タイトルを入力してください');return;}
+  const item={id:scheduleId(),date:dk,startTime:s,endTime:e,title:t,memo:'',done:false};
+  SCHEDULE_DB.add(item);
+  closeSchedAddForm(dk);
+  const wrap=document.getElementById('si-'+dk);
+  if(wrap){
+    const empty=wrap.querySelector('div[style*="予定なし"]'); if(empty)empty.remove();
+    wrap.appendChild(buildSchedItem(item));
+  }
+  document.getElementById('sa-s-'+dk).value='';
+  document.getElementById('sa-e-'+dk).value='';
+  document.getElementById('sa-t-'+dk).value='';
+}
+
 // ウィンドウがフォーカスされた時
 window.addEventListener('focus', autoPull);
 // タブを閉じる/ページ遷移時にも未送信分を即時同期
