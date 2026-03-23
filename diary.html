@@ -79,6 +79,12 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 .cal-toggle#toggle-holiday.on::before{background:#e05050}
 .cal-toggle#toggle-memorial.on::before{background:#7070b0}
 .cal-media-icons{font-size:10px;line-height:1;margin-top:2px;z-index:1}
+.cal-moon-icon{font-size:8px;line-height:1;text-align:center;opacity:0.65;margin-top:1px;}
+#cal-info-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;}
+#cal-info-bar>span{font-size:12px;padding:4px 10px;background:var(--surface);border:1px solid var(--border);border-radius:14px;color:var(--text-muted);white-space:nowrap;}
+#cal-countdown-info{cursor:pointer;user-select:none;}
+#cal-countdown-info:hover{background:var(--bg2,#f0f0f0);}
+@media(max-width:600px){#cal-info-bar>span{font-size:11px;padding:3px 8px;}}
 .cal-tags-dot{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;margin-top:2px;z-index:1}
 .cal-tags-dot span{width:5px;height:5px;border-radius:50%;background:var(--primary-dark);opacity:.5}
 /* PCのChrome等（マウス操作）: カレンダー表記を1.5倍。タッチ端末は除外してiPhoneのレイアウトを維持 */
@@ -400,6 +406,10 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <div class="cal-toggles">
       <button class="cal-toggle" id="toggle-holiday" onclick="toggleCalFilter('holiday')">🎌 祝日</button>
       <button class="cal-toggle" id="toggle-memorial" onclick="toggleCalFilter('memorial')">🕯️ 大切な日</button>
+    </div>
+    <div id="cal-info-bar">
+      <span id="cal-lunar-info">🌙 旧暦 — 日</span>
+      <span id="cal-countdown-info" onclick="openCountdownEdit()" title="クリックで変更">📅 今年あと—日</span>
     </div>
     <div class="cal-grid" id="cal-grid">
       <div class="cal-header">日</div><div class="cal-header">月</div><div class="cal-header">火</div>
@@ -930,6 +940,7 @@ function initCalendar(){
   const n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth();
   renderCalendar();
   showAnnivBanner();
+  updateCalInfoBar();
   // スワイプ・ドラッグで月移動（タッチ・マウス共通）
   const page=document.getElementById('page-calendar');
   let _px=0,_py=0,_dragging=false;
@@ -995,6 +1006,70 @@ function initCalToggles(){
   });
 }
 
+// ─── 旧暦・月の満ち欠け ──────────────────────────────────────────────────
+function _getJD(date){
+  const y=date.getFullYear(),m=date.getMonth()+1,d=date.getDate();
+  const a=Math.floor((14-m)/12),y2=y+4800-a,m2=m+12*a-3;
+  return d+Math.floor((153*m2+2)/5)+365*y2+Math.floor(y2/4)-Math.floor(y2/100)+Math.floor(y2/400)-32045;
+}
+const _SYN=29.53058770576, _REF_JD=2451550.1; // 2000-01-06 新月
+function getLunarPhase(date){
+  let p=(_getJD(date)-_REF_JD)%_SYN;
+  return p<0?p+_SYN:p;
+}
+function getLunarDay(date){ return Math.floor(getLunarPhase(date))+1; }
+function getMoonEmoji(phase){
+  const p=phase/_SYN;
+  if(p<0.0625||p>=0.9375) return '🌑';
+  if(p<0.1875) return '🌒';
+  if(p<0.3125) return '🌓';
+  if(p<0.4375) return '🌔';
+  if(p<0.5625) return '🌕';
+  if(p<0.6875) return '🌖';
+  if(p<0.8125) return '🌗';
+  return '🌘';
+}
+function getMoonPhaseName(phase){
+  const p=phase/_SYN;
+  if(p<0.0625||p>=0.9375) return '新月';
+  if(p<0.1875) return '三日月';
+  if(p<0.3125) return '上弦の月';
+  if(p<0.4375) return '十三夜月';
+  if(p<0.5625) return '満月';
+  if(p<0.6875) return '十六夜月';
+  if(p<0.8125) return '下弦の月';
+  return '有明月';
+}
+// ─── カウントダウン ───────────────────────────────────────────────────────
+const COUNTDOWN_KEY='diary_countdown_target';
+function getCountdownTarget(){ return localStorage.getItem(COUNTDOWN_KEY)||'12-31'; }
+function getCountdownDays(){
+  const today=new Date();
+  const [mm,dd]=getCountdownTarget().split('-').map(Number);
+  let t=new Date(today.getFullYear(),mm-1,dd);
+  if(t<today) t.setFullYear(today.getFullYear()+1);
+  return Math.ceil((t-new Date(today.getFullYear(),today.getMonth(),today.getDate()))/(864e5));
+}
+function openCountdownEdit(){
+  const cur=getCountdownTarget();
+  const v=prompt('カウントダウン先の日付（MM-DD形式）\n例: 12-31（年末）　03-31（年度末）',cur);
+  if(!v||!/^\d{2}-\d{2}$/.test(v)){ if(v!==null) alert('MM-DD形式で入力してください（例: 12-31）'); return; }
+  localStorage.setItem(COUNTDOWN_KEY,v);
+  updateCalInfoBar();
+}
+function updateCalInfoBar(){
+  const today=new Date();
+  const phase=getLunarPhase(today);
+  const lunarEl=document.getElementById('cal-lunar-info');
+  if(lunarEl) lunarEl.textContent=`🌙 旧暦${getLunarDay(today)}日 ${getMoonEmoji(phase)} ${getMoonPhaseName(phase)}`;
+  const cdEl=document.getElementById('cal-countdown-info');
+  if(cdEl){
+    const days=getCountdownDays();
+    const [mm,dd]=getCountdownTarget().split('-').map(Number);
+    cdEl.textContent=`📅 ${mm}/${dd}まであと ${days}日`;
+  }
+}
+
 function renderCalendar(){
   const entries=DB.getEntries();
   const annivs=DB.getAnniversaries();
@@ -1029,6 +1104,7 @@ function renderCalendar(){
   for(let d=1;d<=remaining;d++){
     addCalCell(grid, calMonth+2>12?calYear+1:calYear, calMonth+2>12?1:calMonth+2, d, true, entries, annivs, todayKey, media);
   }
+  updateCalInfoBar();
 }
 const MOOD_BG={
   '😊':'#e8f5e9','😄':'#fffde7','😐':'#f0f0f0','😔':'#e3f2fd',
@@ -1082,6 +1158,11 @@ function addCalCell(grid,y,m,d,other,entries,annivs,todayKey,media){
   numEl.className='cal-num';
   numEl.textContent=d;
   cell.appendChild(numEl);
+  // 月の満ち欠け（小さく）
+  const moonEl=document.createElement('div');
+  moonEl.className='cal-moon-icon';
+  moonEl.textContent=getMoonEmoji(getLunarPhase(new Date(y,m-1,d)));
+  cell.appendChild(moonEl);
 
   // 祝日名 or 大切な日名
   if(holidayName){
@@ -4073,6 +4154,28 @@ function checkRestoreBanner(){
     if(rb) rb.style.display='block';
   }
 }
+
+// ─── 自動更新 ────────────────────────────────────────────────────────────
+(function setupAutoRefresh(){
+  let _lastSync = Date.now();
+  // タブがアクティブに戻った時、5分以上経過していたら同期
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.hidden) return;
+    if(Date.now() - _lastSync < 5*60*1000) return;
+    _lastSync = Date.now();
+    if(getSyncBackend()==='gdrive'){
+      DRIVE_SYNC.pull(true).then(()=>{ renderCalendar(); showAnnivBanner(); updateCalInfoBar(); }).catch(()=>{});
+    } else if(SYNC.key && SYNC.gistId){
+      SYNC.pull({silent:true}).catch(()=>{});
+    }
+  });
+  // 1分ごとに日付変更チェック（日跨ぎでカレンダー自動更新）
+  let _today = new Date().toDateString();
+  setInterval(()=>{
+    const now = new Date().toDateString();
+    if(now !== _today){ _today=now; renderCalendar(); showAnnivBanner(); updateCalInfoBar(); }
+  }, 60*1000);
+})();
 </script>
 </body>
 </html>
