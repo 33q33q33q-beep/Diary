@@ -556,23 +556,11 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
         <button class="today-year-btn" onclick="navigateTodayPage(-1,0,0)" title="昨年の同日">▲ 昨年</button>
         <button class="today-year-btn" onclick="navigateTodayPage(1,0,0)" title="来年の同日">来年 ▼</button>
       </div>
-      <!-- 情報バー上段：旧暦・カウントダウン -->
-      <div class="today-info-bar" id="today-info-bar"></div>
-      <!-- 情報バー下段：誕生日・記念日 -->
-      <div class="today-anniv-bar" id="today-anniv-bar"></div>
       <div id="today-weather-bar" style="font-size:13px;color:var(--text-muted);margin-top:4px"></div>
       <!-- スワイプヒント（モバイルのみ） -->
-      <div class="today-swipe-hint" id="today-swipe-hint">↕ 年移動　↔ 日移動</div>
+      <div class="today-swipe-hint" id="today-swipe-hint">← 昨日　フリックで日移動　明日 →</div>
     </div>
-    <!-- 記念日バー -->
-    <div id="today-birthday-bar" style="display:none;background:#fff8f0;border:1px solid #f0c080;border-radius:8px;padding:9px 14px;margin-bottom:14px;font-size:14px;color:#a05000"></div>
-    <!-- 予定メモ -->
-    <div class="today-card">
-      <div class="today-section-label">📅 予定メモ</div>
-      <div id="today-sched-items" style="display:none;margin-bottom:10px;font-size:13px;color:var(--text-light);line-height:1.8"></div>
-      <textarea class="today-textarea today-plan-textarea" id="today-plan" placeholder="予定を入力… (例: 10:00 MTG / 14:00 ランチ)"></textarea>
-    </div>
-    <!-- 日記 -->
+    <!-- 日記（先に表示） -->
     <div class="today-card">
       <div class="today-section-label">📔 日記</div>
       <div class="mood-select" id="today-mood-select" style="margin-bottom:12px"></div>
@@ -585,12 +573,24 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
         <div class="photo-grid" id="today-photo-grid"></div>
       </div>
     </div>
+    <!-- 予定メモ -->
+    <div class="today-card">
+      <div class="today-section-label">📅 予定メモ</div>
+      <div id="today-sched-items" style="display:none;margin-bottom:10px;font-size:13px;color:var(--text-light);line-height:1.8"></div>
+      <textarea class="today-textarea today-plan-textarea" id="today-plan" placeholder="予定を入力… (例: 10:00 MTG / 14:00 ランチ)"></textarea>
+    </div>
     <!-- 保存 -->
     <div class="today-save-row">
       <button class="today-save-btn" onclick="saveTodayEntry()">💾 保存する</button>
       <div class="today-saved-msg" id="today-saved-msg">✅ 保存しました</div>
     </div>
     <div class="today-streak" id="today-streak"></div>
+    <!-- 旧暦・カウントダウン・誕生日（一番下） -->
+    <div style="margin-top:16px;padding:12px 14px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow)">
+      <div id="today-info-bar-bottom"></div>
+      <div id="today-anniv-bar-bottom" style="margin-top:6px"></div>
+      <div id="today-birthday-bar-bottom" style="display:none;margin-top:6px;font-size:13px;color:#a05000"></div>
+    </div>
   </div>
 
   <!-- Timeline -->
@@ -1211,54 +1211,58 @@ function renderTodayPage(){
     }
   } else notTodayBar.style.display='none';
 
-  // ── 上段：旧暦・カウントダウン ──
-  const infoBar=document.getElementById('today-info-bar');
-  infoBar.innerHTML='';
-  const phase=getLunarPhase(view);
-  const moonChip=document.createElement('span');
-  moonChip.className='today-info-chip';
-  moonChip.textContent=`🌙 旧暦${getLunarDay(view)}日 ${getMoonEmoji(phase)} ${getMoonPhaseName(phase)}`;
-  infoBar.appendChild(moonChip);
-  if(isToday){
-    const cdChip=document.createElement('span');
-    cdChip.className='today-info-chip clickable';
-    const days=getCountdownDays();
-    const [mm2,dd2]=getCountdownTarget().split('-').map(Number);
-    cdChip.textContent=`📅 ${mm2}/${dd2}まであと${days}日`;
-    cdChip.onclick=openCountdownEdit;
-    infoBar.appendChild(cdChip);
+  // ── 旧暦・カウントダウン（下部に表示） ──
+  const infoBar=document.getElementById('today-info-bar-bottom');
+  if(infoBar){
+    infoBar.innerHTML='';
+    infoBar.className='today-info-bar';
+    const phase=getLunarPhase(view);
+    const moonChip=document.createElement('span');
+    moonChip.className='today-info-chip';
+    moonChip.textContent=`🌙 旧暦${getLunarDay(view)}日 ${getMoonEmoji(phase)} ${getMoonPhaseName(phase)}`;
+    infoBar.appendChild(moonChip);
+    if(isToday){
+      const cdChip=document.createElement('span');
+      cdChip.className='today-info-chip clickable';
+      const days=getCountdownDays();
+      const [mm2,dd2]=getCountdownTarget().split('-').map(Number);
+      cdChip.textContent=`📅 ${mm2}/${dd2}まであと${days}日`;
+      cdChip.onclick=openCountdownEdit;
+      infoBar.appendChild(cdChip);
+    }
   }
 
-  // ── 下段：誕生日・記念日・祝日 ──
-  const annivBar=document.getElementById('today-anniv-bar');
-  annivBar.innerHTML='';
-  const mmdd=`${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-  const bdays=DB.getAnniversaries().filter(a=>a.date===mmdd);
-  const hday=_holidays[key];
-  const memorial=MEMORIAL_DAYS.find(x=>x.date===mmdd);
-  // 誕生日チップ（個別）
-  bdays.forEach(a=>{
-    const chip=document.createElement('span');
-    chip.className='today-anniv-chip';
-    chip.textContent=`🎂 ${a.name}`;
-    annivBar.appendChild(chip);
-  });
-  if(hday){
-    const chip=document.createElement('span');
-    chip.className='today-anniv-chip';
-    chip.style.cssText='background:#fff0f0;border-color:#f0a0a0;color:#a02020';
-    chip.textContent=`🎌 ${hday}`;
-    annivBar.appendChild(chip);
+  // ── 誕生日・記念日・祝日（下部に表示） ──
+  const annivBar=document.getElementById('today-anniv-bar-bottom');
+  if(annivBar){
+    annivBar.innerHTML='';
+    annivBar.className='today-anniv-bar';
+    const mmdd=`${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const bdays=DB.getAnniversaries().filter(a=>a.date===mmdd);
+    const hday=_holidays[key];
+    const memorial=MEMORIAL_DAYS.find(x=>x.date===mmdd);
+    bdays.forEach(a=>{
+      const chip=document.createElement('span');
+      chip.className='today-anniv-chip';
+      chip.textContent=`🎂 ${a.name}`;
+      annivBar.appendChild(chip);
+    });
+    if(hday){
+      const chip=document.createElement('span');
+      chip.className='today-anniv-chip';
+      chip.style.cssText='background:#fff0f0;border-color:#f0a0a0;color:#a02020';
+      chip.textContent=`🎌 ${hday}`;
+      annivBar.appendChild(chip);
+    }
+    if(memorial){
+      const chip=document.createElement('span');
+      chip.className='today-anniv-chip';
+      chip.style.cssText='background:#f0f0ff;border-color:#a0a0d0;color:#404090';
+      chip.textContent=`${memorial.icon} ${memorial.name}`;
+      annivBar.appendChild(chip);
+    }
   }
-  if(memorial){
-    const chip=document.createElement('span');
-    chip.className='today-anniv-chip';
-    chip.style.cssText='background:#f0f0ff;border-color:#a0a0d0;color:#404090';
-    chip.textContent=`${memorial.icon} ${memorial.name}`;
-    annivBar.appendChild(chip);
-  }
-  // 旧来の today-birthday-bar は非表示（anniv-bar に統合）
-  const bEl=document.getElementById('today-birthday-bar');
+  const bEl=document.getElementById('today-birthday-bar-bottom');
   if(bEl) bEl.style.display='none';
 
   // インポートスケジュール
@@ -1401,24 +1405,31 @@ function initTodaySwipe(){
   if(!area) return;
 
   // ── タッチスワイプ（iPhone等） ──
-  let sx=0,sy=0,st=0,touchActive=false;
+  // ヘッダーエリアは常にスワイプ有効、それ以外はTEXTAREA/INPUT除外
+  const swipeHeader=document.getElementById('today-swipe-area');
+  let sx=0,sy=0,st=0,touchActive=false,swipeFromHeader=false;
   area.addEventListener('touchstart',e=>{
-    if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
-    sx=e.touches[0].clientX; sy=e.touches[0].clientY; st=Date.now(); touchActive=true;
+    const inHeader=swipeHeader&&swipeHeader.contains(e.target);
+    if(!inHeader&&(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT')) return;
+    sx=e.touches[0].clientX; sy=e.touches[0].clientY; st=Date.now();
+    touchActive=true; swipeFromHeader=inHeader;
   },{passive:true});
   area.addEventListener('touchend',e=>{
     if(!touchActive) return; touchActive=false;
     const dx=e.changedTouches[0].clientX-sx;
     const dy=e.changedTouches[0].clientY-sy;
     const dt=Date.now()-st;
-    if(Math.sqrt(dx*dx+dy*dy)<40||dt>500) return;
-    const isHoriz=Math.abs(dx)>Math.abs(dy);
+    // ヘッダーからなら閾値を下げて敏感に（30px/400ms）、それ以外は従来通り
+    const minDist=swipeFromHeader?30:40;
+    const maxTime=swipeFromHeader?400:500;
+    if(Math.sqrt(dx*dx+dy*dy)<minDist||dt>maxTime) return;
+    const isHoriz=Math.abs(dx)>Math.abs(dy)*0.8;
     if(isHoriz){
-      if(dx<-40) navigateTodayPage(0,0,1);   // 左→明日
-      else if(dx>40) navigateTodayPage(0,0,-1); // 右→昨日
+      if(dx<-minDist) navigateTodayPage(0,0,1);   // 左→明日
+      else if(dx>minDist) navigateTodayPage(0,0,-1); // 右→昨日
     } else {
-      if(dy<-40) navigateTodayPage(1,0,0);   // 上→来年
-      else if(dy>40) navigateTodayPage(-1,0,0); // 下→昨年
+      if(dy<-minDist) navigateTodayPage(1,0,0);   // 上→来年
+      else if(dy>minDist) navigateTodayPage(-1,0,0); // 下→昨年
     }
   },{passive:true});
 
