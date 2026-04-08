@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="LifeTime Diary">
-<meta name="theme-color" content="#f25c22">
+<meta name="theme-color" content="#c4a03c">
 <link rel="dns-prefetch" href="https://api.github.com">
 <link rel="preconnect" href="https://api.github.com" crossorigin>
 <link rel="dns-prefetch" href="https://gist.githubusercontent.com">
@@ -18,45 +18,65 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#f5f0e8;--surface:#fff;--primary:#7a9e7e;--primary-dark:#5a7e5e;
-  --accent:#c4956a;--text:#333;--text-light:#666;--text-muted:#999;
-  --border:#e0d8cc;--shadow:0 2px 8px rgba(0,0,0,.1);--radius:12px
+  /* ── Prestige Gold ライトモード ── */
+  --bg:#faf7f0;--surface:#fff;--primary:#c4a03c;--primary-dark:#9a7828;
+  --accent:#c4956a;--text:#3a2a10;--text-light:#7a6040;--text-muted:#b0986a;
+  --border:#dfd0aa;--shadow:0 2px 12px rgba(80,50,10,.1);--radius:12px;
+  --transition:.2s ease;
+  --sidebar-bg:#f4efe2;--sidebar-border:#dfd0aa;
+  color-scheme: light dark;
+}
+/* ダークモード（Prestige Gold Dark） */
+[data-theme="dark"]{
+  --bg:#0f0d08;--surface:#1a1608;--primary:#c4a03c;--primary-dark:#dab84e;
+  --accent:#d4956a;--text:#f0e8d0;--text-light:#c0a870;--text-muted:#60501a;
+  --border:#3a2e10;--shadow:0 2px 16px rgba(0,0,0,.5);
+  --sidebar-bg:#141008;--sidebar-border:#3a2e10;
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f0d08;--surface:#1a1608;--primary:#c4a03c;--primary-dark:#dab84e;
+    --accent:#d4956a;--text:#f0e8d0;--text-light:#c0a870;--text-muted:#60501a;
+    --border:#3a2e10;--shadow:0 2px 16px rgba(0,0,0,.5);
+    --sidebar-bg:#141008;--sidebar-border:#3a2e10;
+  }
 }
 html,body{height:100%;overflow:hidden}
 body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(--bg);color:var(--text)}
 #app{display:flex;height:100vh;height:100svh;height:calc(var(--app-vh,1vh)*100);padding-top:env(safe-area-inset-top)}
 /* Sidebar */
-#sidebar{width:var(--sidebar-w,220px);min-width:160px;max-width:360px;height:100%;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0 0;flex-shrink:0;box-shadow:var(--shadow);overflow-y:auto;position:relative}
+#sidebar{width:var(--sidebar-w,220px);min-width:160px;max-width:360px;height:100%;background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;padding:20px 0 0;flex-shrink:0;box-shadow:var(--shadow);overflow-y:auto;position:relative;transition:background var(--transition)}
 #sidebar-resizer{position:absolute;top:0;right:0;width:5px;height:100%;cursor:col-resize;z-index:10;background:transparent;transition:background .15s}
 #sidebar-resizer:hover,#sidebar-resizer.dragging{background:var(--primary);opacity:.5}
-#sync-area{padding:12px 16px;border-top:1px solid var(--border);margin-top:auto;padding-bottom:max(12px,env(safe-area-inset-bottom))}
-#sidebar h1{font-size:18px;font-weight:700;color:var(--primary-dark);padding:0 20px 20px;border-bottom:1px solid var(--border)}
-#sidebar h1 .brand-title{display:block;font-size:15px;font-weight:700;color:#e05028;letter-spacing:.02em;line-height:1.2}
-#sidebar h1 .brand-sub{display:block;font-size:12px;color:var(--text-muted);font-weight:400;margin-top:4px}
-.nav-btn{display:flex;align-items:center;gap:10px;padding:12px 20px;cursor:pointer;font-size:14px;color:var(--text-light);border:none;background:none;width:100%;text-align:left;transition:.2s}
-.nav-btn:hover{background:#f0ebe0;color:var(--text)}
-.nav-btn.active{background:#e8f0e9;color:var(--primary-dark);font-weight:600;border-right:3px solid var(--primary)}
+#sync-area{padding:12px 16px;border-top:1px solid var(--sidebar-border);margin-top:auto;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+#sidebar h1{font-size:18px;font-weight:700;color:var(--primary-dark);padding:0 20px 16px;border-bottom:1px solid var(--sidebar-border);display:flex;align-items:center;justify-content:space-between}
+#sidebar h1 .brand-title{display:block;font-size:14px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:var(--primary-dark);letter-spacing:.06em;line-height:1.2}
+#sidebar h1 .brand-sub{display:block;font-size:11px;color:var(--text-muted);font-family:Georgia,serif;font-style:italic;font-weight:400;margin-top:4px}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:12px 20px;cursor:pointer;font-size:13px;color:var(--text-light);border:none;background:none;width:100%;text-align:left;transition:all var(--transition);border-radius:0}
+.nav-btn:hover{background:rgba(196,160,60,.08);color:var(--text);padding-left:24px}
+.nav-btn.active{background:linear-gradient(90deg,rgba(196,160,60,.16) 0%,transparent 100%);color:var(--primary-dark);font-weight:700;border-left:2px solid var(--primary);padding-left:18px}
 .nav-btn .icon{font-size:18px;width:24px;text-align:center}
 /* Main */
 #main{flex:1;height:100%;overflow-y:auto;padding:24px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
 .page{display:none}
 .page.active{display:block}
-.page-title{font-size:20px;font-weight:700;color:var(--primary-dark);margin-bottom:20px}
+.page-title{font-size:20px;font-weight:700;font-family:Georgia,'Times New Roman',serif;font-style:italic;color:var(--primary-dark);margin-bottom:20px;letter-spacing:.03em}
 /* Calendar */
 .cal-nav{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.cal-nav h2{flex:1;font-size:18px;font-weight:600}
-.btn{padding:6px 14px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:13px;transition:.2s}
-.btn:hover{background:#f0ebe0}
-.btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
-.btn-primary:hover{background:var(--primary-dark)}
+.cal-nav h2{flex:1;font-size:19px;font-weight:700;font-family:Georgia,'Times New Roman',serif;font-style:italic;color:var(--primary-dark);letter-spacing:.04em}
+.btn{padding:7px 16px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:13px;transition:all var(--transition);color:var(--text)}
+.btn:hover{background:var(--bg);transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:linear-gradient(135deg,var(--primary),#dab84e);color:#fff;border-color:var(--primary);font-weight:700;letter-spacing:.02em}
+.btn-primary:hover{background:linear-gradient(135deg,var(--primary-dark),var(--primary));box-shadow:0 3px 14px rgba(196,160,60,.45)}
 .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;align-items:start;max-width:min(100%,720px);margin-inline:auto}
 .cal-header{text-align:center;font-size:12px;font-weight:600;color:var(--text-muted);padding:6px 0}
 .cal-header:nth-child(1){color:#e07070}
 .cal-header:nth-child(7){color:#7090e0}
-.cal-day{aspect-ratio:1;min-height:0;min-width:0;width:100%;height:auto;display:flex;flex-direction:column;align-items:center;border-radius:10px;cursor:pointer;font-size:13px;padding:5px 3px 4px;border:2px solid transparent;position:relative;overflow:hidden;transition:.15s;background:var(--surface)}
+.cal-day{aspect-ratio:1;min-height:0;min-width:0;width:100%;height:auto;display:flex;flex-direction:column;align-items:center;border-radius:10px;cursor:pointer;font-size:13px;padding:5px 3px 4px;border:2px solid transparent;position:relative;overflow:hidden;transition:all .15s ease;background:var(--surface);contain:layout style}
 .cal-day:hover{filter:brightness(.95);border-color:var(--primary)}
-.cal-day.today{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
-.cal-day.today .cal-num{background:var(--primary);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.cal-day.today{border-color:var(--primary);box-shadow:0 2px 10px rgba(196,160,60,.35)}
+.cal-day.today .cal-num{background:linear-gradient(135deg,var(--primary),#dab84e);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(196,160,60,.4)}
 .cal-day.other-month{opacity:.35}
 .cal-day.sun .cal-num{color:#e07070}
 .cal-day.sat .cal-num{color:#7090e0}
@@ -208,9 +228,10 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .modal-todo-section{margin:12px 0;padding:12px;background:var(--bg);border-radius:8px}
 .modal-todo-section .todo-item{padding:6px 0}
 /* Modal */
-#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;overflow-y:auto;padding:20px}
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;overflow-y:auto;padding:20px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 #modal.open{display:flex;align-items:flex-start;justify-content:center}
-#modal-inner{background:var(--surface);border-radius:var(--radius);width:100%;max-width:700px;padding:24px;position:relative;margin:auto}
+#modal-inner{background:var(--surface);border-radius:16px;width:100%;max-width:700px;padding:24px;position:relative;margin:auto;box-shadow:0 20px 60px rgba(80,50,10,.25);animation:modalIn .2s ease;border:1px solid var(--border)}
+@keyframes modalIn{from{opacity:0;transform:translateY(-12px) scale(.98)}to{opacity:1;transform:none}}
 #modal-close{position:absolute;top:16px;right:16px;font-size:20px;cursor:pointer;color:var(--text-muted);background:none;border:none}
 #modal-date{font-size:16px;font-weight:700;color:var(--primary-dark);margin-bottom:16px}
 .mood-select{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
@@ -219,7 +240,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .tags-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
 .tag-chip{padding:3px 10px;background:#e8f0e9;color:var(--primary-dark);border-radius:20px;font-size:12px;cursor:pointer;border:1px solid transparent}
 .tag-chip:hover{border-color:var(--primary)}
-.tag-chip.active{background:var(--primary);color:#fff}
+.tag-chip.active{background:linear-gradient(135deg,var(--primary),#dab84e);color:#fff;font-weight:600}
 #tagInput{border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:12px;width:80px;font-family:inherit}
 #tagInput:focus{outline:none;border-color:var(--primary)}
 #diaryText{width:100%;min-height:200px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;line-height:1.8;resize:vertical}
@@ -299,32 +320,37 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 #lightbox.open{display:flex}
 #lightbox img{max-width:90vw;max-height:90vh;border-radius:8px}
 #lightbox-close{position:absolute;top:16px;right:20px;color:#fff;font-size:28px;cursor:pointer}
-/* カレンダー画面用モバイルメニュー（デスクトップ・幅広Chromeでは非表示のまま） */
-#calendar-mobile-nav{display:none}
-.calendar-mobile-nav{flex-direction:column;gap:6px;margin:8px 0 6px;padding:8px 6px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+/* グローバルモバイルナビ（デスクトップでは非表示） */
+#global-mobile-nav{display:none}
+.calendar-mobile-nav{flex-direction:column;gap:6px;margin:0;padding:10px 8px;background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -2px 12px rgba(0,0,0,.08)}
 .calendar-mobile-nav-pages{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
-.mob-page-btn{min-width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--bg);font-size:18px;line-height:1;cursor:pointer;padding:0;transition:.15s}
-.mob-page-btn:active{transform:scale(.96)}
-.mob-page-btn.active{background:#e8f0e9;border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
-.calendar-mobile-nav-tools{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;border-top:1px solid var(--border);padding-top:6px;margin-top:2px}
-.mob-tool-btn{min-width:36px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--bg);font-size:15px;line-height:1;cursor:pointer;padding:0 6px;transition:.15s}
-.mob-tool-btn:active{filter:brightness(.95)}
+.mob-page-btn{min-width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:var(--bg);font-size:20px;line-height:1;cursor:pointer;padding:0;transition:.15s}
+.mob-page-btn:active{transform:scale(.93)}
+.mob-page-btn.active{background:linear-gradient(135deg,rgba(196,160,60,.18),rgba(218,184,78,.1));border-color:var(--primary);box-shadow:0 0 0 2px rgba(196,160,60,.25)}
+.calendar-mobile-nav-tools{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;border-top:1px solid var(--border);padding-top:8px;margin-top:4px}
+.mob-tool-btn{min-width:38px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--bg);font-size:16px;line-height:1;cursor:pointer;padding:0 6px;transition:.15s}
+.mob-tool-btn:active{filter:brightness(.93)}
 /* Responsive */
 @media(max-width:600px){
-  /* カレンダー表示中のみ: 左サイドバーを隠してメインを全幅 → カレンダーを大きく */
-  #app:has(#page-calendar.active) #sidebar{display:none!important}
-  #app:has(#page-calendar.active) #main{flex:1;width:100%;max-width:100%}
-  #app:has(#page-calendar.active) #calendar-mobile-nav{display:flex}
-  #sidebar{width:60px;overflow:hidden}
-  #sidebar h1{padding:8px 4px;text-align:center}
-  #sidebar h1 .brand-title{font-size:10px;color:#e05028}
-  #sidebar h1 .brand-sub{font-size:9px;margin-top:2px}
-  .nav-btn span:not(.icon){display:none}
-  .nav-btn{padding:14px;justify-content:center}
-  #sync-area{padding:4px 0}
-  #sync-area .sync-status{display:none}
-  #sync-area .nav-btn{padding:10px;font-size:16px}
-  #main{padding:12px}
+  /* モバイル共通：サイドバー非表示、ナビバー表示 */
+  #sidebar{display:none!important}
+  #main{flex:1;width:100%;max-width:100%;padding:12px 12px 0}
+  #global-mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:100;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+  #main{padding-bottom:calc(130px + env(safe-area-inset-bottom))!important}
+  /* page-today モバイル最適化 */
+  #page-today{max-width:100%;padding-bottom:8px}
+  .today-header{padding:6px 0 2px;margin-bottom:14px}
+  .today-date-main{font-size:28px}
+  .today-date-nav{gap:8px}
+  .today-nav-btn{font-size:13px;padding:5px 10px}
+  .today-info-bar{gap:6px;margin:8px 0 2px}
+  .today-info-chip{font-size:12px;padding:4px 10px}
+  .today-card{padding:14px 16px;margin-bottom:12px}
+  .today-textarea{font-size:14px;min-height:130px;padding:12px}
+  .today-plan-textarea{min-height:60px}
+  .today-save-btn{font-size:15px;padding:13px}
+  .today-section-label{font-size:11px}
+  /* カレンダー最適化 */
   .cal-grid{max-width:100%}
   .cal-day{padding:3px 2px 2px}
   .cal-num{font-size:11px}
@@ -334,13 +360,81 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   #modal-inner{padding:16px}
   .cal-toggles{gap:4px}
   .cal-toggle{font-size:11px;padding:3px 8px}
-  /* 今週の記念日: コンパクト化。件数が多いときはスクロール */
   #page-calendar #anniv-banner{padding:6px 8px;margin-top:8px}
   #page-calendar #anniv-banner h3{font-size:11px;margin-bottom:4px}
   #page-calendar .anniv-chip{font-size:10px;padding:2px 7px}
   #page-calendar #banner-items{max-height:min(26vh,160px);overflow-y:auto;-webkit-overflow-scrolling:touch;gap:4px}
+  /* ミニカレンダーをモバイルでは非表示 */
+  .mini-cal-wrap{display:none}
 }
 .empty{text-align:center;padding:40px;color:var(--text-muted);font-size:14px}
+/* Aspiration チェック済みスタイル */
+.vision-checked{background:color-mix(in srgb,var(--primary) 8%,var(--surface))!important;border-radius:8px;transition:background var(--transition)}
+
+/* ─── Today Page ─────────────────────────────────────────────────────────── */
+#page-today{max-width:760px;margin:0 auto;padding-bottom:24px}
+/* ヘッダー */
+.today-header{text-align:center;margin-bottom:22px;padding:8px 0 6px;position:relative;user-select:none}
+.today-date-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:6px}
+.today-nav-btn{background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text-muted);font-size:15px;padding:4px 10px;line-height:1;transition:.15s;flex-shrink:0}
+.today-nav-btn:hover{background:rgba(196,160,60,.12);border-color:var(--primary);color:var(--primary-dark)}
+.today-date-block{display:flex;flex-direction:column;align-items:center;gap:2px}
+.today-date-year{font-family:'Meiryo','メイリオ','Hiragino Kaku Gothic ProN',sans-serif;font-size:14px;color:var(--text-muted);letter-spacing:.08em}
+.today-date-main{font-family:'Meiryo','メイリオ','Hiragino Kaku Gothic ProN',sans-serif;font-size:32px;font-weight:700;color:var(--primary-dark);letter-spacing:.02em;line-height:1.15}
+.today-date-dow{font-family:'Meiryo','メイリオ','Hiragino Kaku Gothic ProN',sans-serif;font-size:15px;color:var(--text-muted);margin-top:2px;letter-spacing:.04em}
+.today-date-badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 10px;border-radius:20px;background:linear-gradient(135deg,var(--primary),#dab84e);color:#fff;margin-top:4px;box-shadow:0 1px 6px rgba(196,160,60,.4)}
+/* 情報バー：旧暦・カウントダウン（上段）／ 誕生日・記念日（下段）*/
+.today-info-bar{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:10px 0 2px}
+.today-anniv-bar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px 0 2px;min-height:0}
+.today-info-chip{font-size:13px;padding:5px 14px;border-radius:20px;background:var(--surface);border:1px solid var(--border);color:var(--text-light);box-shadow:0 1px 4px rgba(0,0,0,.06);cursor:default}
+.today-anniv-chip{font-size:13px;padding:4px 12px;border-radius:20px;background:#fff8f0;border:1px solid #f0c080;color:#a05000;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.today-info-chip.clickable{cursor:pointer}
+.today-info-chip.clickable:hover{border-color:var(--primary);color:var(--primary-dark)}
+.today-swipe-hint{font-size:11px;color:var(--text-muted);text-align:center;margin-top:4px;opacity:.55}
+/* カード */
+.today-card{background:var(--surface);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+.today-section-label{font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px}
+.today-textarea{width:100%;min-height:160px;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:15px;font-family:inherit;color:var(--text);background:var(--bg);resize:vertical;line-height:1.8;transition:border-color var(--transition)}
+.today-textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px rgba(196,160,60,.15)}
+.today-plan-textarea{min-height:70px}
+.today-save-row{display:flex;flex-direction:column;gap:8px;align-items:center;margin-top:4px}
+.today-save-btn{width:100%;max-width:400px;padding:15px;background:linear-gradient(135deg,var(--primary),#dab84e);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:.04em;transition:.2s;box-shadow:0 3px 12px rgba(196,160,60,.35)}
+.today-save-btn:hover{opacity:.9;transform:translateY(-1px)}
+.today-save-btn:active{transform:translateY(0)}
+.today-saved-msg{color:var(--primary-dark);font-size:14px;font-weight:600;opacity:0;transition:opacity .4s}
+.today-saved-msg.show{opacity:1}
+.today-streak{font-size:13px;color:var(--text-muted);text-align:center;margin-top:10px}
+/* 年移動矢印 */
+.today-year-nav{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px}
+.today-year-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:12px;padding:3px 10px;border-radius:6px;transition:.15s}
+.today-year-btn:hover{background:rgba(196,160,60,.12);color:var(--primary-dark)}
+/* 非今日の日付表示 */
+.today-not-today-bar{text-align:center;margin-bottom:10px;font-size:13px;color:var(--text-muted)}
+.today-back-today-btn{display:inline-block;margin-left:10px;padding:3px 12px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:12px;cursor:pointer;font-weight:600}
+/* アニメーション */
+@keyframes todaySlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.today-slide-in{animation:todaySlideIn .2s ease forwards}
+
+/* ─── Mini Calendar (Sidebar) ────────────────────────────────────────────── */
+.mini-cal-wrap{padding:10px 12px 8px;border-top:1px solid var(--sidebar-border)}
+.mini-cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.mini-cal-month{font-size:11px;font-weight:700;color:var(--primary-dark);font-family:Georgia,serif}
+.mini-cal-nav-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:11px;padding:2px 5px;border-radius:4px;line-height:1}
+.mini-cal-nav-btn:hover{background:rgba(196,160,60,.12);color:var(--primary-dark)}
+.mini-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
+.mini-cal-head{text-align:center;font-size:9px;color:var(--text-muted);font-weight:700;padding:2px 0}
+.mini-cal-head:first-child{color:#e07070}
+.mini-cal-head:last-child{color:#7090e0}
+.mini-cal-cell{text-align:center;font-size:10px;padding:3px 0;border-radius:5px;cursor:pointer;position:relative;line-height:1.4;transition:.12s}
+.mini-cal-cell:hover:not(.mini-cal-empty){background:rgba(196,160,60,.15)}
+.mini-cal-cell.mc-today{background:var(--primary);color:#fff!important;font-weight:700;border-radius:50%}
+.mini-cal-cell.mc-has-entry::after{content:'';position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:var(--primary)}
+.mini-cal-cell.mc-today.mc-has-entry::after{background:#fff}
+.mini-cal-cell.mc-sun{color:#e07070}
+.mini-cal-cell.mc-sat{color:#7090e0}
+.mini-cal-cell.mc-other{opacity:.32}
+.mini-cal-empty{cursor:default}
+
 .sync-status{font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px;margin-bottom:8px}
 .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--text-muted);flex-shrink:0}
 .sync-dot.green{background:#5a9e5e}
@@ -365,14 +459,29 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 <div id="app">
 <nav id="sidebar">
   <div id="sidebar-resizer" title="ドラッグで幅を調整"></div>
-  <h1><span class="brand-title">LifeTime Diary</span><span class="brand-sub">私の日記</span></h1>
-  <button class="nav-btn active" onclick="showPage('calendar')" id="nav-calendar"><span class="icon">📅</span><span>カレンダー</span></button>
+  <h1><div><span class="brand-title">LifeTime Diary</span><span class="brand-sub">私の日記</span></div><button id="dark-toggle" onclick="toggleDarkMode()" title="ダーク/ライト切替">🌙</button></h1>
+  <button class="nav-btn active" onclick="showPage('today')" id="nav-today"><span class="icon">✏️</span><span>今日の日記</span></button>
+  <button class="nav-btn" onclick="showPage('calendar')" id="nav-calendar"><span class="icon">📅</span><span>カレンダー</span></button>
   <button class="nav-btn" onclick="showPage('timeline')" id="nav-timeline"><span class="icon">⏳</span><span>タイムライン</span></button>
   <button class="nav-btn" onclick="showPage('search')" id="nav-search"><span class="icon">🔍</span><span>検索</span></button>
   <button class="nav-btn" onclick="showPage('anniversary')" id="nav-anniversary"><span class="icon">🎉</span><span>記念日</span></button>
   <button class="nav-btn" onclick="showPage('media')" id="nav-media"><span class="icon">🎬</span><span>映画・本</span></button>
   <button class="nav-btn" onclick="showPage('todo')" id="nav-todo"><span class="icon">🎯</span><span>Ambition・Aspiration</span></button>
     <button class="nav-btn" onclick="showPage('schedule')" id="nav-schedule"><span class="icon">📋</span><span>スケジュール</span></button>
+    <button class="nav-btn" onclick="showPage('stats')" id="nav-stats"><span class="icon">📊</span><span>統計・サマリー</span></button>
+  <!-- Mini Calendar -->
+  <div class="mini-cal-wrap" id="mini-cal-wrap">
+    <div class="mini-cal-header">
+      <button class="mini-cal-nav-btn" onclick="miniCalMove(-1)" title="前の月">◀</button>
+      <span class="mini-cal-month" id="mini-cal-month"></span>
+      <button class="mini-cal-nav-btn" onclick="miniCalMove(1)" title="次の月">▶</button>
+    </div>
+    <div class="mini-cal-grid" id="mini-cal-grid">
+      <div class="mini-cal-head">日</div><div class="mini-cal-head">月</div><div class="mini-cal-head">火</div>
+      <div class="mini-cal-head">水</div><div class="mini-cal-head">木</div><div class="mini-cal-head">金</div>
+      <div class="mini-cal-head">土</div>
+    </div>
+  </div>
   <div id="sync-area">
     <div class="sync-status"><div class="sync-dot" id="sync-dot"></div><span id="sync-label">未設定</span></div>
     <button type="button" class="nav-btn" id="btn-sync" style="font-size:14px;padding:10px 12px;margin-top:4px;font-weight:700;color:var(--text)" onclick="SYNC.smartSync()">🔄 同期</button>
@@ -392,7 +501,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   <button onclick="document.getElementById('restore-banner').style.display='none'" style="margin-left:6px;padding:4px 10px;background:transparent;border:1px solid #aaa;border-radius:6px;cursor:pointer">閉じる</button>
 </div>
   <!-- Calendar -->
-  <div class="page active" id="page-calendar">
+  <div class="page" id="page-calendar">
     <div id="mobile-sync-banner" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;text-align:center">
       ⚙️ 同期が未設定です。<button onclick="SYNC.openSettings()" style="margin-left:8px;padding:3px 12px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-weight:600">設定する</button>
     </div>
@@ -417,29 +526,73 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <div class="cal-header">土</div>
     </div>
     </div>
-    <!-- 狭い画面（iPhone等）: カレンダーを横幅いっぱいにし、左メニュー相当を記念日バナーの上に配置 -->
-    <div id="calendar-mobile-nav" class="calendar-mobile-nav" aria-label="画面メニュー">
-      <div class="calendar-mobile-nav-pages">
-        <button type="button" class="mob-page-btn active" data-page="calendar" onclick="showPage('calendar')" title="カレンダー" aria-label="カレンダー">📅</button>
-        <button type="button" class="mob-page-btn" data-page="timeline" onclick="showPage('timeline')" title="タイムライン" aria-label="タイムライン">⏳</button>
-        <button type="button" class="mob-page-btn" data-page="search" onclick="showPage('search')" title="検索" aria-label="検索">🔍</button>
-        <button type="button" class="mob-page-btn" data-page="anniversary" onclick="showPage('anniversary')" title="記念日" aria-label="記念日">🎉</button>
-        <button type="button" class="mob-page-btn" data-page="media" onclick="showPage('media')" title="映画・本" aria-label="映画・本">🎬</button>
-        <button type="button" class="mob-page-btn" data-page="todo" onclick="showPage('todo')" title="Ambition" aria-label="Ambition">🎯</button>
-        <button type="button" class="mob-page-btn" data-page="schedule" onclick="showPage('schedule')" title="スケジュール" aria-label="スケジュール">📋</button>
-      </div>
-      <div class="calendar-mobile-nav-tools">
-        <button type="button" class="mob-tool-btn" onclick="SYNC.smartSync()" title="同期">🔄</button>
-        <button type="button" class="mob-tool-btn" onclick="SYNC.openSettings()" title="設定">⚙️</button>
-        <button type="button" class="mob-tool-btn" onclick="SYNC.gistRestore()" title="Gistから復元">☁️</button>
-        <button type="button" class="mob-tool-btn" onclick="exportData()" title="ファイル保存">📤</button>
-        <button type="button" class="mob-tool-btn" onclick="importData()" title="ファイル復元">📥</button>
-        <button type="button" class="mob-tool-btn" onclick="FOLDER_SYNC.exportZip()" title="ZIP書出し">📦</button>
-        <button type="button" class="mob-tool-btn" onclick="FOLDER_SYNC.importZipClick()" title="ZIP読込">📂</button>
-      </div>
-    </div>
     <div id="anniv-banner" style="margin-top:14px"><h3 style="display:flex;align-items:center;justify-content:space-between">🎉 今週の記念日<button onclick="showPage('anniversary')" style="font-size:11px;padding:2px 8px;border:1px solid var(--primary);color:var(--primary);background:white;border-radius:6px;cursor:pointer">＋ 追加</button></h3><div class="anniv-items" id="banner-items"></div></div>
   </div>
+  <!-- Today Page -->
+  <div class="page active" id="page-today">
+    <div id="today-sync-banner" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;text-align:center">
+      ⚙️ 同期が未設定です。<button onclick="SYNC.openSettings()" style="margin-left:8px;padding:3px 12px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-weight:600">設定する</button>
+    </div>
+    <!-- 非今日の時に表示するバー -->
+    <div class="today-not-today-bar" id="today-not-today-bar" style="display:none">
+      <span id="today-not-today-label"></span>
+      <button class="today-back-today-btn" onclick="navigateTodayPage(0,0,0)">今日に戻る</button>
+    </div>
+    <!-- 日付ヘッダー -->
+    <div class="today-header" id="today-swipe-area">
+      <!-- 左右ナビ（日移動） -->
+      <div class="today-date-nav">
+        <button class="today-nav-btn" onclick="navigateTodayPage(0,0,-1)" title="昨日">‹ 昨日</button>
+        <div class="today-date-block">
+          <div class="today-date-year" id="today-date-year"></div>
+          <div class="today-date-main" id="today-date-main"></div>
+          <div class="today-date-dow" id="today-date-dow"></div>
+          <div id="today-date-badge-wrap"></div>
+        </div>
+        <button class="today-nav-btn" onclick="navigateTodayPage(0,0,1)" title="明日">明日 ›</button>
+      </div>
+      <!-- 年移動 -->
+      <div class="today-year-nav">
+        <button class="today-year-btn" onclick="navigateTodayPage(-1,0,0)" title="昨年の同日">▲ 昨年</button>
+        <button class="today-year-btn" onclick="navigateTodayPage(1,0,0)" title="来年の同日">来年 ▼</button>
+      </div>
+      <!-- 情報バー上段：旧暦・カウントダウン -->
+      <div class="today-info-bar" id="today-info-bar"></div>
+      <!-- 情報バー下段：誕生日・記念日 -->
+      <div class="today-anniv-bar" id="today-anniv-bar"></div>
+      <div id="today-weather-bar" style="font-size:13px;color:var(--text-muted);margin-top:4px"></div>
+      <!-- スワイプヒント（モバイルのみ） -->
+      <div class="today-swipe-hint" id="today-swipe-hint">↕ 年移動　↔ 日移動</div>
+    </div>
+    <!-- 記念日バー -->
+    <div id="today-birthday-bar" style="display:none;background:#fff8f0;border:1px solid #f0c080;border-radius:8px;padding:9px 14px;margin-bottom:14px;font-size:14px;color:#a05000"></div>
+    <!-- 予定メモ -->
+    <div class="today-card">
+      <div class="today-section-label">📅 予定メモ</div>
+      <div id="today-sched-items" style="display:none;margin-bottom:10px;font-size:13px;color:var(--text-light);line-height:1.8"></div>
+      <textarea class="today-textarea today-plan-textarea" id="today-plan" placeholder="予定を入力… (例: 10:00 MTG / 14:00 ランチ)"></textarea>
+    </div>
+    <!-- 日記 -->
+    <div class="today-card">
+      <div class="today-section-label">📔 日記</div>
+      <div class="mood-select" id="today-mood-select" style="margin-bottom:12px"></div>
+      <div class="tags-row" id="today-tags-row" style="margin-bottom:12px"></div>
+      <textarea class="today-textarea" id="today-diary" placeholder="今日の出来事を書いてみましょう…"></textarea>
+      <div class="photo-section" style="margin-top:14px">
+        <label class="btn" style="cursor:pointer;display:inline-block;font-size:14px">📷 写真を追加
+          <input type="file" id="today-photo-input" accept="image/*" multiple style="display:none" onchange="addTodayPhotos(this)">
+        </label>
+        <div class="photo-grid" id="today-photo-grid"></div>
+      </div>
+    </div>
+    <!-- 保存 -->
+    <div class="today-save-row">
+      <button class="today-save-btn" onclick="saveTodayEntry()">💾 保存する</button>
+      <div class="today-saved-msg" id="today-saved-msg">✅ 保存しました</div>
+    </div>
+    <div class="today-streak" id="today-streak"></div>
+  </div>
+
   <!-- Timeline -->
   <div class="page" id="page-timeline">
     <div class="page-title" id="tl-title">タイムライン</div>
@@ -520,25 +673,58 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   <!-- Ambition・Aspiration -->
   <div class="page" id="page-todo">
     <div class="page-title">Ambition · Aspiration</div>
+    <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;margin-bottom:16px;box-shadow:var(--shadow)">
+      <span style="font-size:13px;font-weight:600;color:var(--text-light)">🔤 文字サイズ</span>
+      <input type="range" id="todo-font-size" min="11" max="24" value="13" style="flex:1;max-width:180px;accent-color:var(--primary)" oninput="applyTodoFontSize(this.value)">
+      <span id="todo-font-label" style="font-size:13px;font-weight:700;color:var(--primary-dark);min-width:32px">13px</span>
+      <span style="font-size:11px;color:var(--text-muted)">小 ←→ 大</span>
+    </div>
     <div class="todo-sections">
       <div class="section-card">
-        <h3>🏆 Ambition</h3>
+        <h3 style="display:flex;align-items:center;justify-content:space-between">
+          <span>🏆 Ambition</span>
+          <select id="goal-sort" onchange="renderGoals()" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">
+            <option value="priority">優先度順</option>
+            <option value="add">追加順</option>
+            <option value="progress">進捗順</option>
+          </select>
+        </h3>
         <div class="todo-add">
           <input type="text" id="goalInput" placeholder="目標を追加… (Shift+Enterで決定)" onkeydown="if(event.key==='Enter'&&!event.isComposing&&event.shiftKey)addGoal()">
+          <select id="goalPriority" style="padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:var(--surface);color:var(--text)">
+            <option value="3">🔴 高</option>
+            <option value="2" selected>🟡 中</option>
+            <option value="1">🟢 低</option>
+          </select>
           <button class="btn btn-primary" onclick="addGoal()">追加</button>
         </div>
         <div id="goal-list"></div>
       </div>
       <div class="section-card">
         <h3>✨ Aspiration（毎日の習慣）</h3>
-        <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px">毎日リセット。達成した日数が累積カウントされます。</p>
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px">達成した日数が累積カウントされます。毎朝チェックをリセットできます。</p>
         <div class="todo-add">
           <input type="text" id="visionInput" placeholder="習慣を追加… (Shift+Enterで決定)" onkeydown="if(event.key==='Enter'&&!event.isComposing&&event.shiftKey)addVision()">
           <button class="btn btn-primary" onclick="addVision()">追加</button>
         </div>
         <div id="vision-list"></div>
+        <button class="btn" onclick="resetAspirationChecks()" style="margin-top:10px;font-size:12px;width:100%">🌅 本日のチェックをリセット</button>
       </div>
     </div>
+  </div>
+  <!-- Stats Page -->
+  <div class="page" id="page-stats">
+    <div class="page-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>📊 統計・サマリー</span>
+      <select id="stats-range" onchange="renderStats()" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text)">
+        <option value="30">直近30日</option>
+        <option value="90">直近90日</option>
+        <option value="180">直近180日</option>
+        <option value="365">今年</option>
+        <option value="0">全期間</option>
+      </select>
+    </div>
+    <div id="stats-content"></div>
   </div>
   <div class="page" id="page-schedule">
     <div class="page-title">📋 スケジュール ／ 未来日記</div>
@@ -562,6 +748,29 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <div id="schedule-content"></div>
   </div>
 </main>
+<!-- グローバルモバイルナビバー（全ページ共通・モバイルのみ表示） -->
+<div id="global-mobile-nav" class="calendar-mobile-nav" aria-label="ナビゲーション">
+  <div class="calendar-mobile-nav-pages">
+    <button type="button" class="mob-page-btn active" data-page="today" onclick="showPage('today')" title="今日の日記" aria-label="今日の日記">✏️</button>
+    <button type="button" class="mob-page-btn" data-page="calendar" onclick="showPage('calendar')" title="カレンダー" aria-label="カレンダー">📅</button>
+    <button type="button" class="mob-page-btn" data-page="timeline" onclick="showPage('timeline')" title="タイムライン" aria-label="タイムライン">⏳</button>
+    <button type="button" class="mob-page-btn" data-page="search" onclick="showPage('search')" title="検索" aria-label="検索">🔍</button>
+    <button type="button" class="mob-page-btn" data-page="anniversary" onclick="showPage('anniversary')" title="記念日" aria-label="記念日">🎉</button>
+    <button type="button" class="mob-page-btn" data-page="media" onclick="showPage('media')" title="映画・本" aria-label="映画・本">🎬</button>
+    <button type="button" class="mob-page-btn" data-page="todo" onclick="showPage('todo')" title="Ambition" aria-label="Ambition">🎯</button>
+    <button type="button" class="mob-page-btn" data-page="schedule" onclick="showPage('schedule')" title="スケジュール" aria-label="スケジュール">📋</button>
+    <button type="button" class="mob-page-btn" data-page="stats" onclick="showPage('stats')" title="統計" aria-label="統計">📊</button>
+  </div>
+  <div class="calendar-mobile-nav-tools">
+    <button type="button" class="mob-tool-btn" onclick="SYNC.smartSync()" title="同期">🔄</button>
+    <button type="button" class="mob-tool-btn" onclick="SYNC.openSettings()" title="設定">⚙️</button>
+    <button type="button" class="mob-tool-btn" onclick="SYNC.gistRestore()" title="Gistから復元">☁️</button>
+    <button type="button" class="mob-tool-btn" onclick="exportData()" title="ファイル保存">📤</button>
+    <button type="button" class="mob-tool-btn" onclick="importData()" title="ファイル復元">📥</button>
+    <button type="button" class="mob-tool-btn" onclick="FOLDER_SYNC.exportZip()" title="ZIP書出し">📦</button>
+    <button type="button" class="mob-tool-btn" onclick="FOLDER_SYNC.importZipClick()" title="ZIP読込">📂</button>
+  </div>
+</div>
 </div>
 
 <!-- Diary Modal -->
@@ -922,16 +1131,388 @@ function todayDate(){ return new Date() }
 function showPage(name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  document.getElementById('nav-'+name).classList.add('active');
+  const pageEl=document.getElementById('page-'+name);
+  const navEl=document.getElementById('nav-'+name);
+  if(pageEl) pageEl.classList.add('active');
+  if(navEl) navEl.classList.add('active');
   document.querySelectorAll('.mob-page-btn').forEach(b=>b.classList.toggle('active', b.getAttribute('data-page')===name));
+  // sync-banner モバイル（今日ページのみ）
+  const msb=document.getElementById('mobile-sync-banner');
+  if(msb) msb.style.display=(name==='today'&&(!window.SYNC||!SYNC.key))&&window.innerWidth<=600?'block':'none';
+  if(name==='today') renderTodayPage();
   if(name==='calendar') renderCalendar();
   if(name==='timeline') initTimeline();
   if(name==='search') renderTagCloud();
   if(name==='anniversary') renderAnniversaries();
   if(name==='media') renderMedia();
-  if(name==='todo'){ renderGoals(); renderVisions(); }
+  if(name==='todo'){ renderGoals(); renderVisions(); setTimeout(()=>{ const s=localStorage.getItem('diary_todo_font'); if(s) applyTodoFontSize(s); },0); }
   if(name==='schedule'){ seedInitialSchedule(); renderSchedule(); }
+  if(name==='stats'){ renderStats(); }
+}
+
+// ─── Today Page ──────────────────────────────────────────────────────────────
+let todayPhotos=[], todayTags=[], todayMood='';
+// 表示中の日付（今日以外も表示できる）
+let _viewDate=null; // null = 今日
+
+function _getViewDate(){
+  if(!_viewDate) return new Date();
+  return new Date(_viewDate.getTime());
+}
+// year/month/dayOffset を加算してページを移動
+function navigateTodayPage(yearDelta, monthDelta, dayDelta){
+  const base=_getViewDate();
+  const target=new Date(base.getFullYear()+yearDelta, base.getMonth()+monthDelta, base.getDate()+dayDelta);
+  const now=new Date();
+  const todayStr=dateKey(now.getFullYear(),now.getMonth()+1,now.getDate());
+  const targetStr=dateKey(target.getFullYear(),target.getMonth()+1,target.getDate());
+  _viewDate=(targetStr===todayStr)?null:target;
+  renderTodayPage();
+  // スライドアニメ
+  const card=document.getElementById('page-today');
+  card.classList.remove('today-slide-in');
+  void card.offsetWidth;
+  card.classList.add('today-slide-in');
+}
+
+function renderTodayPage(){
+  const now=new Date();
+  const view=_getViewDate();
+  const y=view.getFullYear(), m=view.getMonth()+1, d=view.getDate();
+  const key=dateKey(y,m,d);
+  const todayKey=dateKey(now.getFullYear(),now.getMonth()+1,now.getDate());
+  const isToday=(key===todayKey);
+  const DOW=['日','月','火','水','木','金','土'];
+  const dow=DOW[view.getDay()];
+
+  // 日付ヘッダー
+  document.getElementById('today-date-year').textContent=`${y}`;
+  document.getElementById('today-date-main').textContent=`${m}月${d}日`;
+  document.getElementById('today-date-dow').textContent=`（${dow}）`;
+
+  // バッジ（今日 / 過去 / 未来）
+  const badgeWrap=document.getElementById('today-date-badge-wrap');
+  const diffDays=Math.round((view-now)/(864e5));
+  if(isToday) badgeWrap.innerHTML='<span class="today-date-badge">TODAY</span>';
+  else if(diffDays<0) badgeWrap.innerHTML=`<span class="today-date-badge" style="background:linear-gradient(135deg,#8a7040,#c0a060)">${Math.abs(diffDays)}日前</span>`;
+  else badgeWrap.innerHTML=`<span class="today-date-badge" style="background:linear-gradient(135deg,#4a7090,#6090b0)">${diffDays}日後</span>`;
+
+  // 非今日バー
+  const notTodayBar=document.getElementById('today-not-today-bar');
+  const notTodayLabel=document.getElementById('today-not-today-label');
+  if(!isToday){
+    notTodayBar.style.display='block';
+    if(diffDays<0){
+      const yr=Math.abs(now.getFullYear()-y);
+      notTodayLabel.textContent=yr>0?`${yr}年前の今日`:`${Math.abs(diffDays)}日前`;
+    } else {
+      const yr=y-now.getFullYear();
+      notTodayLabel.textContent=yr>0?`${yr}年後の今日`:`${diffDays}日後`;
+    }
+  } else notTodayBar.style.display='none';
+
+  // ── 上段：旧暦・カウントダウン ──
+  const infoBar=document.getElementById('today-info-bar');
+  infoBar.innerHTML='';
+  const phase=getLunarPhase(view);
+  const moonChip=document.createElement('span');
+  moonChip.className='today-info-chip';
+  moonChip.textContent=`🌙 旧暦${getLunarDay(view)}日 ${getMoonEmoji(phase)} ${getMoonPhaseName(phase)}`;
+  infoBar.appendChild(moonChip);
+  if(isToday){
+    const cdChip=document.createElement('span');
+    cdChip.className='today-info-chip clickable';
+    const days=getCountdownDays();
+    const [mm2,dd2]=getCountdownTarget().split('-').map(Number);
+    cdChip.textContent=`📅 ${mm2}/${dd2}まであと${days}日`;
+    cdChip.onclick=openCountdownEdit;
+    infoBar.appendChild(cdChip);
+  }
+
+  // ── 下段：誕生日・記念日・祝日 ──
+  const annivBar=document.getElementById('today-anniv-bar');
+  annivBar.innerHTML='';
+  const mmdd=`${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const bdays=DB.getAnniversaries().filter(a=>a.date===mmdd);
+  const hday=_holidays[key];
+  const memorial=MEMORIAL_DAYS.find(x=>x.date===mmdd);
+  // 誕生日チップ（個別）
+  bdays.forEach(a=>{
+    const chip=document.createElement('span');
+    chip.className='today-anniv-chip';
+    chip.textContent=`🎂 ${a.name}`;
+    annivBar.appendChild(chip);
+  });
+  if(hday){
+    const chip=document.createElement('span');
+    chip.className='today-anniv-chip';
+    chip.style.cssText='background:#fff0f0;border-color:#f0a0a0;color:#a02020';
+    chip.textContent=`🎌 ${hday}`;
+    annivBar.appendChild(chip);
+  }
+  if(memorial){
+    const chip=document.createElement('span');
+    chip.className='today-anniv-chip';
+    chip.style.cssText='background:#f0f0ff;border-color:#a0a0d0;color:#404090';
+    chip.textContent=`${memorial.icon} ${memorial.name}`;
+    annivBar.appendChild(chip);
+  }
+  // 旧来の today-birthday-bar は非表示（anniv-bar に統合）
+  const bEl=document.getElementById('today-birthday-bar');
+  if(bEl) bEl.style.display='none';
+
+  // インポートスケジュール
+  const schedItems=(typeof SCHEDULE_DB!=='undefined'?SCHEDULE_DB.getAll():[]).filter(s=>s.date===key);
+  const schedEl=document.getElementById('today-sched-items');
+  if(schedItems.length){
+    schedEl.style.display='block';
+    schedEl.innerHTML=schedItems.map(s=>`<span style="display:inline-block;margin-right:14px">⏰ <b>${s.time_start||''}</b>${s.time_end?' – '+s.time_end:''} ${s.title||''}</span>`).join('');
+  } else schedEl.style.display='none';
+
+  // エントリ読み込み
+  const entry=DB.getEntries()[key]||{};
+  todayPhotos=[...(entry.photos||[])];
+  todayTags=[...(entry.tags||[])];
+  todayMood=entry.mood||'';
+  document.getElementById('today-plan').value=entry.plan||'';
+  document.getElementById('today-diary').value=entry.content||'';
+  // placeholder: 未来は未来日記
+  document.getElementById('today-diary').placeholder=key>todayKey?'まだ空白でOK。当日になったら書きましょう。':'今日の出来事を書いてみましょう…';
+
+  // Mood
+  const moodSel=document.getElementById('today-mood-select');
+  moodSel.innerHTML='<span style="font-size:14px;color:var(--text-muted);align-self:center">気分:</span>';
+  MOODS.forEach(mood=>{
+    const btn=document.createElement('button');
+    btn.className='mood-btn'+(todayMood===mood?' selected':'');
+    btn.textContent=mood;
+    btn.onclick=()=>{todayMood=mood;moodSel.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');};
+    moodSel.appendChild(btn);
+  });
+
+  renderTodayTagsRow();
+  renderTodayPhotoGrid();
+
+  // 天気（今日のみ取得）
+  const wEl=document.getElementById('today-weather-bar');
+  const existingW=entry.weather;
+  const city=typeof getWeatherCity==='function'?getWeatherCity():'';
+  const cityBtn=city?`<span onclick="typeof changeWeatherCity==='function'&&changeWeatherCity()" style="font-size:12px;color:var(--primary);cursor:pointer;margin-left:6px">📍${city}</span>`:'';
+  if(existingW){
+    wEl.innerHTML=`<span class="weather-badge">${existingW.e} ${existingW.temp}°C・${existingW.d}（12時）</span>${cityBtn}`;
+  } else if(isToday && typeof fetchWeather==='function'){
+    wEl.innerHTML=`<span style="color:var(--text-muted);font-size:13px">🌡️ 取得中…</span>${cityBtn}`;
+    fetchWeather(key).then(w=>{
+      if(w) wEl.innerHTML=`<span class="weather-badge">${w.e} ${w.temp}°C・${w.d}（12時）</span>${cityBtn}`;
+      else wEl.innerHTML=`<span style="color:var(--text-muted);font-size:13px">🌡️ 取得不可</span>${cityBtn}`;
+    });
+  } else wEl.innerHTML='';
+
+  // 連続記録（今日のみ）
+  if(isToday) renderTodayStreak(todayKey);
+  else document.getElementById('today-streak').textContent='';
+}
+
+function renderTodayTagsRow(){
+  const row=document.getElementById('today-tags-row');
+  row.innerHTML='<span style="font-size:14px;color:var(--text-muted);align-self:center">タグ:</span>';
+  allTags().forEach(t=>{
+    const chip=document.createElement('div');
+    chip.className='tag-chip'+(todayTags.includes(t)?' active':'');
+    chip.textContent=t;
+    chip.onclick=()=>{
+      if(todayTags.includes(t)) todayTags=todayTags.filter(x=>x!==t);
+      else todayTags.push(t);
+      chip.classList.toggle('active');
+    };
+    row.appendChild(chip);
+  });
+  const inp=document.createElement('input');
+  inp.type='text'; inp.placeholder='新しいタグ…';
+  inp.onkeydown=e=>{
+    if(e.key==='Enter'&&!e.isComposing&&inp.value.trim()){
+      const t=inp.value.trim();
+      saveUserTag(t);
+      if(!todayTags.includes(t)) todayTags.push(t);
+      inp.value=''; renderTodayTagsRow();
+    }
+  };
+  row.appendChild(inp);
+}
+function renderTodayPhotoGrid(){
+  const grid=document.getElementById('today-photo-grid');
+  grid.innerHTML='';
+  todayPhotos.forEach((src,i)=>{
+    const wrap=document.createElement('div'); wrap.className='photo-wrap';
+    const img=document.createElement('img'); img.src=src; img.className='photo-thumb';
+    img.onclick=()=>typeof openLightbox==='function'&&openLightbox(src);
+    const del=document.createElement('button'); del.className='photo-del'; del.textContent='✕';
+    del.onclick=e=>{e.stopPropagation();todayPhotos.splice(i,1);renderTodayPhotoGrid();};
+    wrap.appendChild(img); wrap.appendChild(del); grid.appendChild(wrap);
+  });
+}
+function addTodayPhotos(input){
+  const files=[...input.files];
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{todayPhotos.push(e.target.result);renderTodayPhotoGrid();};
+    reader.readAsDataURL(file);
+  });
+  input.value='';
+}
+function saveTodayEntry(){
+  const view=_getViewDate();
+  const y=view.getFullYear(), m=view.getMonth()+1, d=view.getDate();
+  const key=dateKey(y,m,d);
+  const content=document.getElementById('today-diary').value.trim();
+  const plan=document.getElementById('today-plan').value.trim();
+  const entries=DB.getEntries();
+  if(!content&&!plan&&todayPhotos.length===0&&!todayMood&&todayTags.length===0){
+    delete entries[key];
+  } else {
+    const existing=entries[key]||{};
+    entries[key]={...existing,content,mood:todayMood,tags:todayTags,photos:todayPhotos,
+      plan:plan||undefined,updatedAt:Date.now()};
+  }
+  DB.setEntries(entries);
+  const msg=document.getElementById('today-saved-msg');
+  msg.classList.add('show');
+  setTimeout(()=>msg.classList.remove('show'),2200);
+  if(typeof renderCalendar==='function') renderCalendar();
+  renderMiniCal();
+  const now=new Date();
+  renderTodayStreak(dateKey(now.getFullYear(),now.getMonth()+1,now.getDate()));
+}
+function renderTodayStreak(todayKey){
+  const entries=DB.getEntries();
+  let streak=0, d=new Date();
+  for(let i=0;i<365;i++){
+    const k=dateKey(d.getFullYear(),d.getMonth()+1,d.getDate());
+    if(entries[k]&&entries[k].content) streak++;
+    else if(i>0) break;
+    d.setDate(d.getDate()-1);
+  }
+  const el=document.getElementById('today-streak');
+  if(el) el.textContent=streak>1?`🔥 ${streak}日連続で記録中！`:'';
+}
+// ─── スワイプ＆Magic Mouseジェスチャー（Today Page） ─────────────────────────
+function initTodaySwipe(){
+  const area=document.getElementById('page-today');
+  if(!area) return;
+
+  // ── タッチスワイプ（iPhone等） ──
+  let sx=0,sy=0,st=0,touchActive=false;
+  area.addEventListener('touchstart',e=>{
+    if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
+    sx=e.touches[0].clientX; sy=e.touches[0].clientY; st=Date.now(); touchActive=true;
+  },{passive:true});
+  area.addEventListener('touchend',e=>{
+    if(!touchActive) return; touchActive=false;
+    const dx=e.changedTouches[0].clientX-sx;
+    const dy=e.changedTouches[0].clientY-sy;
+    const dt=Date.now()-st;
+    if(Math.sqrt(dx*dx+dy*dy)<40||dt>500) return;
+    const isHoriz=Math.abs(dx)>Math.abs(dy);
+    if(isHoriz){
+      if(dx<-40) navigateTodayPage(0,0,1);   // 左→明日
+      else if(dx>40) navigateTodayPage(0,0,-1); // 右→昨日
+    } else {
+      if(dy<-40) navigateTodayPage(1,0,0);   // 上→来年
+      else if(dy>40) navigateTodayPage(-1,0,0); // 下→昨年
+    }
+  },{passive:true});
+
+  // ── Magic Mouse / トラックパッド ホイールフリック ──
+  // deltaX: 左右フリック  deltaY: 上下フリック
+  let _wheelAccX=0, _wheelAccY=0, _wheelTimer=null, _wheelCooldown=false;
+  const WHEEL_THRESHOLD=80; // フリック検知の感度（小さいほど敏感）
+  const COOLDOWN_MS=600;    // 連続誤発火防止
+
+  area.addEventListener('wheel', e=>{
+    if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
+    // トラックパッドのピンチ（ctrlKey付き）は無視
+    if(e.ctrlKey) return;
+
+    _wheelAccX += e.deltaX;
+    _wheelAccY += e.deltaY;
+
+    clearTimeout(_wheelTimer);
+    _wheelTimer = setTimeout(()=>{
+      const ax=Math.abs(_wheelAccX), ay=Math.abs(_wheelAccY);
+      if(!_wheelCooldown && (ax>WHEEL_THRESHOLD || ay>WHEEL_THRESHOLD)){
+        _wheelCooldown=true;
+        setTimeout(()=>{ _wheelCooldown=false; }, COOLDOWN_MS);
+        if(ax>ay){
+          // 左右（日移動）
+          if(_wheelAccX>0) navigateTodayPage(0,0,1);   // 右→明日
+          else navigateTodayPage(0,0,-1);               // 左→昨日
+        } else {
+          // 上下（年移動）
+          if(_wheelAccY<0) navigateTodayPage(1,0,0);   // 上→来年
+          else navigateTodayPage(-1,0,0);               // 下→昨年
+        }
+      }
+      _wheelAccX=0; _wheelAccY=0;
+    }, 80);
+  },{passive:true});
+}
+
+// ─── Mini Calendar ────────────────────────────────────────────────────────────
+let miniCalYear, miniCalMonth;
+function initMiniCal(){
+  const n=new Date(); miniCalYear=n.getFullYear(); miniCalMonth=n.getMonth();
+  renderMiniCal();
+}
+function miniCalMove(d){
+  miniCalMonth+=d;
+  if(miniCalMonth<0){miniCalMonth=11;miniCalYear--;}
+  if(miniCalMonth>11){miniCalMonth=0;miniCalYear++;}
+  renderMiniCal();
+}
+function renderMiniCal(){
+  if(miniCalYear===undefined){const n=new Date();miniCalYear=n.getFullYear();miniCalMonth=n.getMonth();}
+  const monthEl=document.getElementById('mini-cal-month');
+  const gridEl=document.getElementById('mini-cal-grid');
+  if(!monthEl||!gridEl) return;
+  const monthNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  monthEl.textContent=`${miniCalYear}年 ${monthNames[miniCalMonth]}`;
+  // 既存ヘッダー保持
+  const headers=gridEl.querySelectorAll('.mini-cal-head');
+  gridEl.innerHTML='';
+  headers.forEach(h=>gridEl.appendChild(h.cloneNode(true)));
+  const entries=DB.getEntries();
+  const now=new Date();
+  const todayKey=dateKey(now.getFullYear(),now.getMonth()+1,now.getDate());
+  const first=new Date(miniCalYear,miniCalMonth,1);
+  const startDow=first.getDay(); // 0=Sun
+  // 前月の空白
+  for(let i=0;i<startDow;i++){
+    const cell=document.createElement('div');
+    cell.className='mini-cal-cell mini-cal-empty';
+    gridEl.appendChild(cell);
+  }
+  const days=new Date(miniCalYear,miniCalMonth+1,0).getDate();
+  for(let day=1;day<=days;day++){
+    const k=dateKey(miniCalYear,miniCalMonth+1,day);
+    const dow=(startDow+day-1)%7;
+    const cell=document.createElement('div');
+    let cls='mini-cal-cell';
+    if(dow===0) cls+=' mc-sun';
+    if(dow===6) cls+=' mc-sat';
+    if(k===todayKey) cls+=' mc-today';
+    else if(k<todayKey) cls+=' mc-past';
+    if(entries[k]&&entries[k].content) cls+=' mc-has-entry';
+    cell.className=cls;
+    cell.textContent=day;
+    cell.onclick=(()=>{
+      const cy=miniCalYear, cm=miniCalMonth+1, cd=day, ck=k;
+      return ()=>{
+        if(ck===todayKey){ showPage('today'); }
+        else { openModal(cy,cm,cd); }
+      };
+    })();
+    gridEl.appendChild(cell);
+  }
 }
 
 // ─── Calendar ────────────────────────────────────────────────────────────────
@@ -2061,28 +2642,47 @@ function delTodo(id){
 function addGoal(){
   const val=document.getElementById('goalInput').value.trim();
   if(!val) return;
+  const priority=Number(document.getElementById('goalPriority')?.value||2);
   const goals=DB.getGoals();
-  goals.unshift({id:Date.now(),text:val,progress:0});
+  goals.unshift({id:Date.now(),text:val,progress:0,priority});
   DB.setGoals(goals);
   document.getElementById('goalInput').value='';
   renderGoals();
 }
+function getSortedGoals(){
+  const goals=DB.getGoals().map(g=>({priority:2,...g}));
+  const sortMode=document.getElementById('goal-sort')?.value||'priority';
+  if(sortMode==='priority') return [...goals].sort((a,b)=>b.priority-a.priority);
+  if(sortMode==='progress') return [...goals].sort((a,b)=>b.progress-a.progress);
+  return goals; // 追加順（元の順番）
+}
+const PRIORITY_MAP={3:{label:'🔴 高',color:'#e05050'},2:{label:'🟡 中',color:'#c09030'},1:{label:'🟢 低',color:'#5a9e5e'}};
 function renderGoals(){
-  const goals=DB.getGoals();
+  const goals=getSortedGoals();
   const list=document.getElementById('goal-list');
+  if(!list) return;
   if(goals.length===0){list.innerHTML='<div class="empty" style="padding:20px">目標はありません<br><button onclick="restoreFromGistV26()" style="margin-top:10px;padding:6px 16px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">⚠️ 旧データから復元</button></div>';return;}
-  list.innerHTML=goals.map(g=>`
-    <div class="goal-item">
+  list.innerHTML=goals.map((g,idx)=>{
+    const p=PRIORITY_MAP[g.priority]||PRIORITY_MAP[2];
+    return `<div class="goal-item" style="border-left:3px solid ${p.color};padding-left:8px;margin-left:0">
       <div class="goal-text">
-        <span class="goal-label" onclick="startEditGoal(${g.id},this)" title="クリックして編集">${escHtml(g.text)}</span>
-        <span style="display:flex;gap:6px;align-items:center">
+        <span style="font-size:11px;font-weight:700;color:var(--text-muted);min-width:18px">${idx+1}.</span>
+        <span style="font-size:10px;padding:1px 6px;border-radius:10px;background:${p.color}22;color:${p.color};font-weight:600;white-space:nowrap">${p.label}</span>
+        <span class="goal-label" onclick="startEditGoal(${g.id},this)" title="クリックして編集" style="flex:1">${escHtml(g.text)}</span>
+        <span style="display:flex;gap:4px;align-items:center">
           <span class="goal-pct">${g.progress}%</span>
-          <button class="card-del" onclick="delGoal(${g.id})">削除</button>
+          ${g.progress>=100?`<button style="padding:2px 8px;font-size:11px;background:#e8ffe8;color:#2a8a2a;border:1px solid #8a8;border-radius:6px;cursor:pointer" onclick="achieveGoal(${g.id})">🏆 達成！</button>`:`<button class="card-del" onclick="delGoal(${g.id})">削除</button>`}
         </span>
       </div>
       <div class="progress-bar"><div class="progress-fill" style="width:${g.progress}%"></div></div>
       <input type="range" min="0" max="100" value="${g.progress}" style="width:100%;margin-top:4px;accent-color:var(--primary)" oninput="updateGoalProgress(${g.id},this.value)">
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+function achieveGoal(id){
+  if(!confirm('この目標を達成として削除しますか？🎉')) return;
+  DB.setGoals(DB.getGoals().filter(g=>g.id!==id));
+  renderGoals();
 }
 function startEditGoal(id,el){
   const current=DB.getGoals().find(g=>g.id===id);
@@ -2114,12 +2714,14 @@ function delGoal(id){
   DB.setGoals(DB.getGoals().filter(g=>g.id!==id)); renderGoals();
 }
 
-// ─── Vision ──────────────────────────────────────────────────────────────────
+// ─── Vision / Aspiration ────────────────────────────────────────────────────
+// checkedDates: 過去に達成した日付の配列（累積カウント用）
+// checked: 現在のチェック状態（手動リセットボタンで一括解除）
 function addVision(){
   const val=document.getElementById('visionInput').value.trim();
   if(!val) return;
   const visions=DB.getVisions();
-  visions.unshift({id:Date.now(),text:val,checkedDates:[]});
+  visions.unshift({id:Date.now(),text:val,checkedDates:[],checked:false});
   DB.setVisions(visions);
   document.getElementById('visionInput').value='';
   renderVisions();
@@ -2129,13 +2731,13 @@ function renderVisions(){
   const list=document.getElementById('vision-list');
   if(!list) return;
   if(visions.length===0){list.innerHTML='<div class="empty" style="padding:20px">習慣がありません</div>';return;}
-  const td=today();
   list.innerHTML=visions.map(v=>{
-    const checked=v.checkedDates.includes(td);
-    const count=v.checkedDates.length;
-    return `<div class="vision-item">
+    // 旧データ互換: checkedDatesがあればcountに使用
+    const count=(v.checkedDates||[]).length;
+    const checked=!!v.checked;
+    return `<div class="vision-item${checked?' vision-checked':''}">
       <input type="checkbox" ${checked?'checked':''} onchange="toggleVision(${v.id},this.checked)">
-      <span class="text">${escHtml(v.text)}</span>
+      <span class="text" style="${checked?'text-decoration:line-through;opacity:.6':''}">${escHtml(v.text)}</span>
       <span class="count">🔥 ${count}日</span>
       <span class="del" onclick="delVision(${v.id})">✕</span>
     </div>`;
@@ -2145,10 +2747,16 @@ function toggleVision(id,checked){
   const td=today();
   const visions=DB.getVisions().map(v=>{
     if(v.id!==id) return v;
-    const dates=v.checkedDates.filter(d=>d!==td);
+    // checkedDates: 達成した日を記録（重複なし）
+    const dates=(v.checkedDates||[]).filter(d=>d!==td);
     if(checked) dates.push(td);
-    return {...v,checkedDates:dates};
+    return {...v,checked,checkedDates:dates};
   });
+  DB.setVisions(visions); renderVisions();
+}
+function resetAspirationChecks(){
+  if(!confirm('本日のチェックをすべてリセットしますか？\n（累積達成日数は保持されます）')) return;
+  const visions=DB.getVisions().map(v=>({...v,checked:false}));
   DB.setVisions(visions); renderVisions();
 }
 function delVision(id){
@@ -2441,7 +3049,8 @@ function applyDiaryPayloadToLocal(d){
   if(d.media) trySet('diary_media', d.media);
   if(d.todos) trySet('diary_todos', d.todos);
   if(d.goals) trySet('diary_goals', d.goals);
-  if(d.visions) trySet('diary_visions', d.visions);
+  if(d.visions && (Array.isArray(d.visions) ? d.visions.length > 0 : true)) trySet('diary_visions', d.visions);
+  else if(!d.visions && DB.getVisions().length > 0) { /* ローカルを保持 */ }
   if(d.schedule && Array.isArray(d.schedule)) trySet('diary_schedule', d.schedule);
   if(d.schedule_summary && typeof d.schedule_summary==='object') trySet('diary_schedule_summary', d.schedule_summary);
   if(d.userTags) trySet('diary_user_tags', d.userTags);
@@ -3383,7 +3992,9 @@ const SYNC = {
     const gistGoals=toArr(d.goals); const localGoals=DB.getGoals();
     if(gistGoals.length===0&&localGoals.length>0){ console.warn('GistのGoalsが0件のためローカルを保持'); }
     else if(d.goals) trySet('diary_goals', gistGoals);
-    if(d.visions)  trySet('diary_visions',   toArr(d.visions));
+    const gistVisions=toArr(d.visions); const localVisions=DB.getVisions();
+    if(gistVisions.length===0&&localVisions.length>0){ console.warn('GistのVisionsが0件のためローカルを保持'); }
+    else if(d.visions) trySet('diary_visions', gistVisions);
     if(d.userTags) trySet('diary_user_tags', toArr(d.userTags));
     // scheduleは別ファイル(diary-schedule.json)から取得
     const schedFileInfo = j.files[this.SCHED_FILE];
@@ -3637,7 +4248,11 @@ function warnIfTypoGithubHost(){
   updateAppViewportHeight();
   initCalendar();
   initCalToggles();
+  initMiniCal();
+  initTodaySwipe();
   loadHolidays(new Date().getFullYear());
+  // デフォルト画面を「今日の日記」に変更
+  showPage('today');
   window.addEventListener('resize', updateAppViewportHeight);
   window.addEventListener('orientationchange', updateAppViewportHeight);
   if(window.visualViewport){
@@ -4176,6 +4791,156 @@ function checkRestoreBanner(){
     if(now !== _today){ _today=now; renderCalendar(); showAnnivBanner(); updateCalInfoBar(); }
   }, 60*1000);
 })();
+
+// ─── ダークモード ────────────────────────────────────────────────────────────
+function toggleDarkMode(){
+  const html=document.documentElement;
+  const isDark=html.getAttribute('data-theme')==='dark';
+  const newTheme=isDark?'light':'dark';
+  html.setAttribute('data-theme',newTheme);
+  localStorage.setItem('diary_theme',newTheme);
+  document.getElementById('dark-toggle').textContent=newTheme==='dark'?'☀️':'🌙';
+}
+(function initTheme(){
+  const saved=localStorage.getItem('diary_theme');
+  const prefersDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const theme=saved||(prefersDark?'dark':'light');
+  document.documentElement.setAttribute('data-theme',theme);
+  const btn=document.getElementById('dark-toggle');
+  if(btn) btn.textContent=theme==='dark'?'☀️':'🌙';
+})();
+
+// ─── 文字サイズ変更 ─────────────────────────────────────────────────────────
+function applyTodoFontSize(size){
+  document.querySelectorAll('.goal-item,.vision-item').forEach(el=>{ el.style.fontSize=size+'px'; });
+  const label=document.getElementById('todo-font-label');
+  if(label) label.textContent=size+'px';
+  localStorage.setItem('diary_todo_font',size);
+}
+(function initTodoFont(){
+  const saved=localStorage.getItem('diary_todo_font');
+  if(!saved) return;
+  const slider=document.getElementById('todo-font-size');
+  if(slider){ slider.value=saved; }
+  applyTodoFontSize(saved);
+})();
+
+// ─── 統計・サマリーページ ────────────────────────────────────────────────────
+function renderStats(){
+  const container=document.getElementById('stats-content');
+  if(!container) return;
+  const rangeEl=document.getElementById('stats-range');
+  const days=Number(rangeEl?.value||30);
+  const entries=DB.getEntries();
+  const allKeys=Object.keys(entries).sort();
+  if(allKeys.length===0){ container.innerHTML='<div class="empty">日記データがまだありません</div>'; return; }
+
+  // 期間フィルタ
+  const now=new Date();
+  const cutoff=days>0?new Date(now.getTime()-days*86400000):new Date('2000-01-01');
+  const filtered=allKeys.filter(k=>new Date(k)>=cutoff);
+  const total=filtered.length;
+
+  // 記録率
+  const dayCount=days>0?days:Math.ceil((now-new Date(allKeys[0]))/86400000)+1;
+  const rate=Math.round(total/dayCount*100);
+
+  // 気分集計
+  const moodCount={};
+  const moodByWeek={};
+  filtered.forEach(k=>{
+    const e=entries[k];
+    if(e.mood){ moodCount[e.mood]=(moodCount[e.mood]||0)+1; }
+    // 週別集計（最新4週）
+    const d=new Date(k);
+    const weekAgo=Math.floor((now-d)/86400000/7);
+    if(weekAgo<8){
+      const wk='W'+weekAgo;
+      if(!moodByWeek[wk]) moodByWeek[wk]={pos:0,neg:0,neu:0};
+      const positives=['😊','😄','🥰','😆','😎','🤩'];
+      const negatives=['😢','😭','😤','😡','😰','😫','😩'];
+      if(positives.includes(e.mood)) moodByWeek[wk].pos++;
+      else if(negatives.includes(e.mood)) moodByWeek[wk].neg++;
+      else moodByWeek[wk].neu++;
+    }
+  });
+
+  // タグ集計
+  const tagCount={};
+  filtered.forEach(k=>{
+    const e=entries[k];
+    (e.tags||[]).forEach(t=>{ tagCount[t]=(tagCount[t]||0)+1; });
+  });
+  const topTags=Object.entries(tagCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+  // 月別記録数
+  const byMonth={};
+  filtered.forEach(k=>{
+    const ym=k.slice(0,7);
+    byMonth[ym]=(byMonth[ym]||0)+1;
+  });
+  const monthKeys=Object.keys(byMonth).sort().slice(-6);
+
+  // 写真付き日記数
+  const withPhotos=filtered.filter(k=>(entries[k].photos||[]).length>0).length;
+
+  // 文字数合計
+  const totalChars=filtered.reduce((s,k)=>s+(entries[k].text||'').length,0);
+
+  // レンダリング
+  const topMoods=Object.entries(moodCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const moodBar=topMoods.map(([m,c])=>`<span style="font-size:13px;padding:3px 10px;background:var(--bg);border:1px solid var(--border);border-radius:20px">${m} <b>${c}</b>回</span>`).join('');
+
+  // 月別バーチャート
+  const maxMonth=Math.max(...monthKeys.map(k=>byMonth[k]||0),1);
+  const monthChart=monthKeys.map(k=>{
+    const cnt=byMonth[k]||0;
+    const h=Math.round(cnt/maxMonth*60);
+    const label=k.slice(5)+'月';
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:0">
+      <span style="font-size:11px;color:var(--text-muted)">${cnt}</span>
+      <div style="width:100%;height:${h}px;min-height:4px;background:var(--primary);border-radius:4px 4px 0 0;opacity:.85"></div>
+      <span style="font-size:10px;color:var(--text-muted);white-space:nowrap">${label}</span>
+    </div>`;
+  }).join('');
+
+  container.innerHTML=`
+    <!-- KPIカード -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-bottom:20px">
+      ${statsCard('📝','記録数',total+'日','直近'+Math.min(days,dayCount)+'日分')}
+      ${statsCard('📈','記録率',rate+'%',dayCount+'日中'+total+'日')}
+      ${statsCard('📷','写真付き',withPhotos+'日','')}
+      ${statsCard('💬','総文字数',totalChars.toLocaleString()+'文字','')}
+    </div>
+    <!-- 月別グラフ -->
+    <div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;color:var(--primary-dark);margin-bottom:12px">📅 月別記録数（直近6ヶ月）</div>
+      <div style="display:flex;align-items:flex-end;gap:8px;height:80px;padding-bottom:4px">${monthChart||'<span style="color:var(--text-muted);font-size:13px">データが少ない</span>'}</div>
+    </div>
+    <!-- 気分ランキング -->
+    ${topMoods.length>0?`<div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;color:var(--primary-dark);margin-bottom:10px">😊 よく記録した気分</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${moodBar}</div>
+    </div>`:''}
+    <!-- タグクラウド -->
+    ${topTags.length>0?`<div style="background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;color:var(--primary-dark);margin-bottom:10px">🏷️ よく使ったタグ TOP10</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${topTags.map(([t,c],i)=>{
+        const sz=[18,16,15,14,13,13,12,12,12,12][i]||12;
+        return `<span style="font-size:${sz}px;padding:3px 10px;background:color-mix(in srgb,var(--primary) ${Math.round(20+c/topTags[0][1]*50)}%,var(--bg));color:var(--primary-dark);border-radius:20px;font-weight:600;cursor:pointer" onclick="showPage('search');setTimeout(()=>filterByTag('${t}'),100)">${t} <span style="opacity:.7">${c}</span></span>`;
+      }).join('')}</div>
+    </div>`:''}
+    <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:8px 0">データはすべてこの端末のみに保存されています</div>
+  `;
+}
+function statsCard(icon,label,value,sub){
+  return `<div style="background:var(--surface);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);text-align:center">
+    <div style="font-size:20px;margin-bottom:4px">${icon}</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">${label}</div>
+    <div style="font-size:22px;font-weight:700;color:var(--primary-dark);line-height:1.1">${value}</div>
+    ${sub?`<div style="font-size:10px;color:var(--text-muted);margin-top:3px">${sub}</div>`:''}
+  </div>`;
+}
 </script>
 </body>
 </html>

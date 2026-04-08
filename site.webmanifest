@@ -4,8 +4,9 @@
   "description": "ブラウザで使う日記アプリ",
   "start_url": "./diary.html",
   "display": "standalone",
-  "background_color": "#fff5f0",
-  "theme_color": "#f25c22",
+  "orientation": "portrait",
+  "background_color": "#faf7f0",
+  "theme_color": "#c4a03c",
   "icons": [
     {
       "src": "app-icon-1024.png",
