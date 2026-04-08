@@ -414,6 +414,16 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 /* アニメーション */
 @keyframes todaySlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .today-slide-in{animation:todaySlideIn .2s ease forwards}
+/* 日移動スライドアニメ */
+#today-content-wrap{will-change:transform;overflow:hidden}
+@keyframes slideFromRight{from{opacity:.4;transform:translateX(48px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideFromLeft{from{opacity:.4;transform:translateX(-48px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideFromTop{from{opacity:.4;transform:translateY(-28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideFromBottom{from{opacity:.4;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+.today-slide-next{animation:slideFromRight .22s cubic-bezier(.25,.46,.45,.94) both}
+.today-slide-prev{animation:slideFromLeft .22s cubic-bezier(.25,.46,.45,.94) both}
+.today-slide-future{animation:slideFromTop .22s cubic-bezier(.25,.46,.45,.94) both}
+.today-slide-past{animation:slideFromBottom .22s cubic-bezier(.25,.46,.45,.94) both}
 
 /* ─── Mini Calendar (Sidebar) ────────────────────────────────────────────── */
 .mini-cal-wrap{padding:10px 12px 8px;border-top:1px solid var(--sidebar-border)}
@@ -560,37 +570,40 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <!-- スワイプヒント（モバイルのみ） -->
       <div class="today-swipe-hint" id="today-swipe-hint">← 昨日　フリックで日移動　明日 →</div>
     </div>
-    <!-- 日記（先に表示） -->
-    <div class="today-card">
-      <div class="today-section-label">📔 日記</div>
-      <div class="mood-select" id="today-mood-select" style="margin-bottom:12px"></div>
-      <div class="tags-row" id="today-tags-row" style="margin-bottom:12px"></div>
-      <textarea class="today-textarea" id="today-diary" placeholder="今日の出来事を書いてみましょう…"></textarea>
-      <div class="photo-section" style="margin-top:14px">
-        <label class="btn" style="cursor:pointer;display:inline-block;font-size:14px">📷 写真を追加
-          <input type="file" id="today-photo-input" accept="image/*" multiple style="display:none" onchange="addTodayPhotos(this)">
-        </label>
-        <div class="photo-grid" id="today-photo-grid"></div>
+    <!-- スライドアニメ対象エリア -->
+    <div id="today-content-wrap">
+      <!-- 日記 -->
+      <div class="today-card">
+        <div class="today-section-label">📔 日記</div>
+        <textarea class="today-textarea" id="today-diary" placeholder="今日の出来事を書いてみましょう…"></textarea>
+        <div class="photo-section" style="margin-top:12px">
+          <label class="btn" style="cursor:pointer;display:inline-block;font-size:14px">📷 写真を追加
+            <input type="file" id="today-photo-input" accept="image/*" multiple style="display:none" onchange="addTodayPhotos(this)">
+          </label>
+          <div class="photo-grid" id="today-photo-grid"></div>
+        </div>
+        <div class="mood-select" id="today-mood-select" style="margin-top:14px;margin-bottom:8px"></div>
+        <div class="tags-row" id="today-tags-row"></div>
       </div>
-    </div>
-    <!-- 予定メモ -->
-    <div class="today-card">
-      <div class="today-section-label">📅 予定メモ</div>
-      <div id="today-sched-items" style="display:none;margin-bottom:10px;font-size:13px;color:var(--text-light);line-height:1.8"></div>
-      <textarea class="today-textarea today-plan-textarea" id="today-plan" placeholder="予定を入力… (例: 10:00 MTG / 14:00 ランチ)"></textarea>
-    </div>
-    <!-- 保存 -->
-    <div class="today-save-row">
-      <button class="today-save-btn" onclick="saveTodayEntry()">💾 保存する</button>
-      <div class="today-saved-msg" id="today-saved-msg">✅ 保存しました</div>
-    </div>
-    <div class="today-streak" id="today-streak"></div>
-    <!-- 旧暦・カウントダウン・誕生日（一番下） -->
-    <div style="margin-top:16px;padding:12px 14px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow)">
-      <div id="today-info-bar-bottom"></div>
-      <div id="today-anniv-bar-bottom" style="margin-top:6px"></div>
-      <div id="today-birthday-bar-bottom" style="display:none;margin-top:6px;font-size:13px;color:#a05000"></div>
-    </div>
+      <!-- 予定メモ -->
+      <div class="today-card">
+        <div class="today-section-label">📅 予定メモ</div>
+        <div id="today-sched-items" style="display:none;margin-bottom:10px;font-size:13px;color:var(--text-light);line-height:1.8"></div>
+        <textarea class="today-textarea today-plan-textarea" id="today-plan" placeholder="予定を入力… (例: 10:00 MTG / 14:00 ランチ)"></textarea>
+      </div>
+      <!-- 保存 -->
+      <div class="today-save-row">
+        <button class="today-save-btn" onclick="saveTodayEntry()">💾 保存する</button>
+        <div class="today-saved-msg" id="today-saved-msg">✅ 保存しました</div>
+      </div>
+      <div class="today-streak" id="today-streak"></div>
+      <!-- 旧暦・カウントダウン・誕生日（一番下） -->
+      <div style="margin-top:16px;padding:12px 14px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow)">
+        <div id="today-info-bar-bottom"></div>
+        <div id="today-anniv-bar-bottom" style="margin-top:6px"></div>
+        <div id="today-birthday-bar-bottom" style="display:none;margin-top:6px;font-size:13px;color:#a05000"></div>
+      </div>
+    </div><!-- /today-content-wrap -->
   </div>
 
   <!-- Timeline -->
@@ -1161,6 +1174,13 @@ function _getViewDate(){
 }
 // year/month/dayOffset を加算してページを移動
 function navigateTodayPage(yearDelta, monthDelta, dayDelta){
+  // 移動方向を判定
+  let animClass='';
+  if(dayDelta>0) animClass='today-slide-next';       // 明日 → 右から
+  else if(dayDelta<0) animClass='today-slide-prev';  // 昨日 → 左から
+  else if(yearDelta>0) animClass='today-slide-future'; // 来年 → 上から
+  else if(yearDelta<0) animClass='today-slide-past';   // 昨年 → 下から
+
   const base=_getViewDate();
   const target=new Date(base.getFullYear()+yearDelta, base.getMonth()+monthDelta, base.getDate()+dayDelta);
   const now=new Date();
@@ -1168,11 +1188,14 @@ function navigateTodayPage(yearDelta, monthDelta, dayDelta){
   const targetStr=dateKey(target.getFullYear(),target.getMonth()+1,target.getDate());
   _viewDate=(targetStr===todayStr)?null:target;
   renderTodayPage();
-  // スライドアニメ
-  const card=document.getElementById('page-today');
-  card.classList.remove('today-slide-in');
-  void card.offsetWidth;
-  card.classList.add('today-slide-in');
+
+  // コンテンツエリアにスライドアニメを適用
+  const wrap=document.getElementById('today-content-wrap');
+  if(wrap&&animClass){
+    wrap.classList.remove('today-slide-next','today-slide-prev','today-slide-future','today-slide-past');
+    void wrap.offsetWidth; // reflow
+    wrap.classList.add(animClass);
+  }
 }
 
 function renderTodayPage(){
@@ -1425,11 +1448,11 @@ function initTodaySwipe(){
     if(Math.sqrt(dx*dx+dy*dy)<minDist||dt>maxTime) return;
     const isHoriz=Math.abs(dx)>Math.abs(dy)*0.8;
     if(isHoriz){
-      if(dx<-minDist) navigateTodayPage(0,0,1);   // 左→明日
-      else if(dx>minDist) navigateTodayPage(0,0,-1); // 右→昨日
+      if(dx<-minDist) navigateTodayPage(0,0,1);    // 左フリック→明日
+      else if(dx>minDist) navigateTodayPage(0,0,-1); // 右フリック→昨日
     } else {
-      if(dy<-minDist) navigateTodayPage(1,0,0);   // 上→来年
-      else if(dy>minDist) navigateTodayPage(-1,0,0); // 下→昨年
+      if(dy<-minDist) navigateTodayPage(1,0,0);    // 上フリック→来年
+      else if(dy>minDist) navigateTodayPage(-1,0,0); // 下フリック→昨年
     }
   },{passive:true});
 
