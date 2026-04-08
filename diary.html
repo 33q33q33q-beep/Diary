@@ -414,16 +414,8 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 /* アニメーション */
 @keyframes todaySlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .today-slide-in{animation:todaySlideIn .2s ease forwards}
-/* 日移動スライドアニメ */
-#today-content-wrap{will-change:transform;overflow:hidden}
-@keyframes slideFromRight{from{opacity:.4;transform:translateX(48px)}to{opacity:1;transform:translateX(0)}}
-@keyframes slideFromLeft{from{opacity:.4;transform:translateX(-48px)}to{opacity:1;transform:translateX(0)}}
-@keyframes slideFromTop{from{opacity:.4;transform:translateY(-28px)}to{opacity:1;transform:translateY(0)}}
-@keyframes slideFromBottom{from{opacity:.4;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
-.today-slide-next{animation:slideFromRight .22s cubic-bezier(.25,.46,.45,.94) both}
-.today-slide-prev{animation:slideFromLeft .22s cubic-bezier(.25,.46,.45,.94) both}
-.today-slide-future{animation:slideFromTop .22s cubic-bezier(.25,.46,.45,.94) both}
-.today-slide-past{animation:slideFromBottom .22s cubic-bezier(.25,.46,.45,.94) both}
+/* 完全ページスライドアニメ（JSのinline transitionで制御） */
+#today-content-wrap{will-change:transform;position:relative}
 
 /* ─── Mini Calendar (Sidebar) ────────────────────────────────────────────── */
 .mini-cal-wrap{padding:10px 12px 8px;border-top:1px solid var(--sidebar-border)}
@@ -1174,28 +1166,60 @@ function _getViewDate(){
 }
 // year/month/dayOffset を加算してページを移動
 function navigateTodayPage(yearDelta, monthDelta, dayDelta){
-  // 移動方向を判定
-  let animClass='';
-  if(dayDelta>0) animClass='today-slide-next';       // 明日 → 右から
-  else if(dayDelta<0) animClass='today-slide-prev';  // 昨日 → 左から
-  else if(yearDelta>0) animClass='today-slide-future'; // 来年 → 上から
-  else if(yearDelta<0) animClass='today-slide-past';   // 昨年 → 下から
-
-  const base=_getViewDate();
-  const target=new Date(base.getFullYear()+yearDelta, base.getMonth()+monthDelta, base.getDate()+dayDelta);
-  const now=new Date();
-  const todayStr=dateKey(now.getFullYear(),now.getMonth()+1,now.getDate());
-  const targetStr=dateKey(target.getFullYear(),target.getMonth()+1,target.getDate());
-  _viewDate=(targetStr===todayStr)?null:target;
-  renderTodayPage();
-
-  // コンテンツエリアにスライドアニメを適用
+  const DUR=210; // アニメ時間(ms)
   const wrap=document.getElementById('today-content-wrap');
-  if(wrap&&animClass){
-    wrap.classList.remove('today-slide-next','today-slide-prev','today-slide-future','today-slide-past');
-    void wrap.offsetWidth; // reflow
-    wrap.classList.add(animClass);
-  }
+  const page=document.getElementById('page-today');
+
+  // 移動方向：outX=退場方向、inX=登場開始位置（単位%）
+  let outX=0, outY=0, inX=0, inY=0;
+  if(dayDelta>0)      { outX=-100; inX= 100; }  // 明日：左へ出て右から来る
+  else if(dayDelta<0) { outX= 100; inX=-100; }  // 昨日：右へ出て左から来る
+  else if(yearDelta>0){ outY=-60;  inY= 60;  }  // 来年：上へ出て下から来る
+  else if(yearDelta<0){ outY= 60;  inY=-60;  }  // 昨年：下へ出て上から来る
+
+  const ease_out='cubic-bezier(.4,0,1,1)';
+  const ease_in ='cubic-bezier(0,0,.2,1)';
+
+  const doUpdate=()=>{
+    const base=_getViewDate();
+    const target=new Date(base.getFullYear()+yearDelta,base.getMonth()+monthDelta,base.getDate()+dayDelta);
+    const now=new Date();
+    const todayStr=dateKey(now.getFullYear(),now.getMonth()+1,now.getDate());
+    const targetStr=dateKey(target.getFullYear(),target.getMonth()+1,target.getDate());
+    _viewDate=(targetStr===todayStr)?null:target;
+    renderTodayPage();
+  };
+
+  if(!wrap||(!outX&&!outY)){ doUpdate(); return; }
+
+  // Phase1: 現コンテンツを画面外へスライドアウト
+  page.style.overflow='hidden';
+  wrap.style.transition=`transform ${DUR}ms ${ease_out},opacity ${DUR}ms ease`;
+  wrap.style.transform=`translate(${outX}%,${outY}%)`;
+  wrap.style.opacity='0';
+
+  setTimeout(()=>{
+    // Phase2: コンテンツ更新＋反対側へ瞬間移動
+    wrap.style.transition='none';
+    wrap.style.transform=`translate(${inX}%,${inY}%)`;
+    wrap.style.opacity='0';
+    doUpdate();
+
+    // Phase3: 新コンテンツをスライドイン
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        wrap.style.transition=`transform ${DUR}ms ${ease_in},opacity ${DUR*0.6}ms ease`;
+        wrap.style.transform='translate(0,0)';
+        wrap.style.opacity='1';
+        setTimeout(()=>{
+          wrap.style.transition='';
+          wrap.style.transform='';
+          wrap.style.opacity='';
+          page.style.overflow='';
+        }, DUR+30);
+      });
+    });
+  }, DUR);
 }
 
 function renderTodayPage(){
