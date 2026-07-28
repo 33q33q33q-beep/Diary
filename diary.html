@@ -536,9 +536,9 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       ⚙️ 同期が未設定です。<button onclick="SYNC.openSettings()" style="margin-left:8px;padding:3px 12px;background:#ffc107;border:none;border-radius:6px;cursor:pointer;font-weight:600">設定する</button>
     </div>
     <!-- 非今日の時に表示するバー -->
-    <div class="today-not-today-bar" id="today-not-today-bar" style="display:none">
+    <div class="today-not-today-bar" id="today-not-today-bar" style="visibility:hidden">
       <span id="today-not-today-label"></span>
-      <button class="today-back-today-btn" onclick="navigateTodayPage(0,0,0)">今日に戻る</button>
+      <button class="today-back-today-btn" onclick="backToToday()">今日に戻る</button>
     </div>
     <!-- 日付ヘッダー -->
     <div class="today-header" id="today-swipe-area">
@@ -1164,33 +1164,16 @@ function _getViewDate(){
   if(!_viewDate) return new Date();
   return new Date(_viewDate.getTime());
 }
-// year/month/dayOffset を加算してページを移動
-function navigateTodayPage(yearDelta, monthDelta, dayDelta){
+// outX/outY/inX/inY のスライド演出付きで today ページの中身を更新する共通処理
+function _slideTodayContent(outX, outY, inX, inY, updateFn){
   const DUR=210; // アニメ時間(ms)
   const wrap=document.getElementById('today-content-wrap');
   const page=document.getElementById('page-today');
 
-  // 移動方向：outX=退場方向、inX=登場開始位置（単位%）
-  let outX=0, outY=0, inX=0, inY=0;
-  if(dayDelta>0)      { outX=-100; inX= 100; }  // 明日：左へ出て右から来る
-  else if(dayDelta<0) { outX= 100; inX=-100; }  // 昨日：右へ出て左から来る
-  else if(yearDelta>0){ outY=-60;  inY= 60;  }  // 来年：上へ出て下から来る
-  else if(yearDelta<0){ outY= 60;  inY=-60;  }  // 昨年：下へ出て上から来る
+  if(!wrap||(!outX&&!outY)){ updateFn(); return; }
 
   const ease_out='cubic-bezier(.4,0,1,1)';
   const ease_in ='cubic-bezier(0,0,.2,1)';
-
-  const doUpdate=()=>{
-    const base=_getViewDate();
-    const target=new Date(base.getFullYear()+yearDelta,base.getMonth()+monthDelta,base.getDate()+dayDelta);
-    const now=new Date();
-    const todayStr=dateKey(now.getFullYear(),now.getMonth()+1,now.getDate());
-    const targetStr=dateKey(target.getFullYear(),target.getMonth()+1,target.getDate());
-    _viewDate=(targetStr===todayStr)?null:target;
-    renderTodayPage();
-  };
-
-  if(!wrap||(!outX&&!outY)){ doUpdate(); return; }
 
   // Phase1: 現コンテンツを画面外へスライドアウト
   page.style.overflow='hidden';
@@ -1203,7 +1186,7 @@ function navigateTodayPage(yearDelta, monthDelta, dayDelta){
     wrap.style.transition='none';
     wrap.style.transform=`translate(${inX}%,${inY}%)`;
     wrap.style.opacity='0';
-    doUpdate();
+    updateFn();
 
     // Phase3: 新コンテンツをスライドイン
     requestAnimationFrame(()=>{
@@ -1220,6 +1203,54 @@ function navigateTodayPage(yearDelta, monthDelta, dayDelta){
       });
     });
   }, DUR);
+}
+
+// year/month/dayOffset を加算してページを移動
+function navigateTodayPage(yearDelta, monthDelta, dayDelta){
+  persistTodayEntry(); // 移動前に今表示中の内容を保存（未保存のまま日付が変わって消えるのを防ぐ）
+
+  // 移動方向：outX=退場方向、inX=登場開始位置（単位%）
+  let outX=0, outY=0, inX=0, inY=0;
+  if(dayDelta>0)      { outX=-100; inX= 100; }  // 明日：左へ出て右から来る
+  else if(dayDelta<0) { outX= 100; inX=-100; }  // 昨日：右へ出て左から来る
+  else if(yearDelta>0){ outY=-60;  inY= 60;  }  // 来年：上へ出て下から来る
+  else if(yearDelta<0){ outY= 60;  inY=-60;  }  // 昨年：下へ出て上から来る
+
+  _slideTodayContent(outX, outY, inX, inY, ()=>{
+    const base=_getViewDate();
+    const target=new Date(base.getFullYear()+yearDelta,base.getMonth()+monthDelta,base.getDate()+dayDelta);
+    const now=new Date();
+    const todayStr=dateKey(now.getFullYear(),now.getMonth()+1,now.getDate());
+    const targetStr=dateKey(target.getFullYear(),target.getMonth()+1,target.getDate());
+    _viewDate=(targetStr===todayStr)?null:target;
+    renderTodayPage();
+  });
+}
+
+// 「今日に戻る」— 表示中の日付からの相対移動ではなく、実際の現在日へ直接ジャンプする
+function backToToday(){
+  persistTodayEntry(); // 移動前に今表示中の内容を保存
+  const view=_getViewDate();
+  const now=new Date();
+  const todayStr=dateKey(now.getFullYear(),now.getMonth()+1,now.getDate());
+  const viewStr=dateKey(view.getFullYear(),view.getMonth()+1,view.getDate());
+  if(viewStr===todayStr) return; // すでに今日なら何もしない
+
+  const isFuture=view.getTime()>now.getTime();
+  const yearDiff=view.getFullYear()!==now.getFullYear();
+  let outX=0, outY=0, inX=0, inY=0;
+  if(yearDiff){
+    if(isFuture){ outY=60;  inY=-60; }  // 来年側から戻る：下へ出て上から来る
+    else        { outY=-60; inY=60;  }  // 昨年側から戻る：上へ出て下から来る
+  } else {
+    if(isFuture){ outX=100;  inX=-100; } // 未来の日から戻る：右へ出て左から来る
+    else        { outX=-100; inX=100;  } // 過去の日から戻る：左へ出て右から来る
+  }
+
+  _slideTodayContent(outX, outY, inX, inY, ()=>{
+    _viewDate=null;
+    renderTodayPage();
+  });
 }
 
 function renderTodayPage(){
@@ -1244,11 +1275,13 @@ function renderTodayPage(){
   else if(diffDays<0) badgeWrap.innerHTML=`<span class="today-date-badge" style="background:linear-gradient(135deg,#8a7040,#c0a060)">${Math.abs(diffDays)}日前</span>`;
   else badgeWrap.innerHTML=`<span class="today-date-badge" style="background:linear-gradient(135deg,#4a7090,#6090b0)">${diffDays}日後</span>`;
 
-  // 非今日バー
+  // 非今日バー（display切替だと高さが消えて下の「昨年/来年」ボタンの位置がズレるので、
+  // 常にスペースは確保したまま visibility で見た目だけ切り替える）
   const notTodayBar=document.getElementById('today-not-today-bar');
   const notTodayLabel=document.getElementById('today-not-today-label');
+  notTodayBar.style.display='block';
   if(!isToday){
-    notTodayBar.style.display='block';
+    notTodayBar.style.visibility='visible';
     if(diffDays<0){
       const yr=Math.abs(now.getFullYear()-y);
       notTodayLabel.textContent=yr>0?`${yr}年前の今日`:`${Math.abs(diffDays)}日前`;
@@ -1256,7 +1289,7 @@ function renderTodayPage(){
       const yr=y-now.getFullYear();
       notTodayLabel.textContent=yr>0?`${yr}年後の今日`:`${diffDays}日後`;
     }
-  } else notTodayBar.style.display='none';
+  } else notTodayBar.style.visibility='hidden';
 
   // ── 旧暦・カウントダウン（下部に表示） ──
   const infoBar=document.getElementById('today-info-bar-bottom');
@@ -1411,12 +1444,15 @@ function addTodayPhotos(input){
   });
   input.value='';
 }
-function saveTodayEntry(){
+function persistTodayEntry(){
   const view=_getViewDate();
   const y=view.getFullYear(), m=view.getMonth()+1, d=view.getDate();
   const key=dateKey(y,m,d);
-  const content=document.getElementById('today-diary').value.trim();
-  const plan=document.getElementById('today-plan').value.trim();
+  const diaryEl=document.getElementById('today-diary');
+  const planEl=document.getElementById('today-plan');
+  if(!diaryEl||!planEl) return;
+  const content=diaryEl.value.trim();
+  const plan=planEl.value.trim();
   const entries=DB.getEntries();
   if(!content&&!plan&&todayPhotos.length===0&&!todayMood&&todayTags.length===0){
     delete entries[key];
@@ -1426,13 +1462,16 @@ function saveTodayEntry(){
       plan:plan||undefined,updatedAt:Date.now()};
   }
   DB.setEntries(entries);
-  const msg=document.getElementById('today-saved-msg');
-  msg.classList.add('show');
-  setTimeout(()=>msg.classList.remove('show'),2200);
   if(typeof renderCalendar==='function') renderCalendar();
   renderMiniCal();
   const now=new Date();
   renderTodayStreak(dateKey(now.getFullYear(),now.getMonth()+1,now.getDate()));
+}
+function saveTodayEntry(){
+  persistTodayEntry();
+  const msg=document.getElementById('today-saved-msg');
+  msg.classList.add('show');
+  setTimeout(()=>msg.classList.remove('show'),2200);
 }
 function renderTodayStreak(todayKey){
   const entries=DB.getEntries();
@@ -1498,16 +1537,27 @@ function initTodaySwipe(){
     _wheelTimer = setTimeout(()=>{
       const ax=Math.abs(_wheelAccX), ay=Math.abs(_wheelAccY);
       if(!_wheelCooldown && (ax>WHEEL_THRESHOLD || ay>WHEEL_THRESHOLD)){
-        _wheelCooldown=true;
-        setTimeout(()=>{ _wheelCooldown=false; }, COOLDOWN_MS);
         if(ax>ay){
           // 左右（日移動）
+          _wheelCooldown=true;
+          setTimeout(()=>{ _wheelCooldown=false; }, COOLDOWN_MS);
           if(_wheelAccX>0) navigateTodayPage(0,0,1);   // 右→明日
           else navigateTodayPage(0,0,-1);               // 左→昨日
         } else {
-          // 上下（年移動）
-          if(_wheelAccY<0) navigateTodayPage(1,0,0);   // 上→来年
-          else navigateTodayPage(-1,0,0);               // 下→昨年
+          // 上下（年移動）— まだ下にスクロールできる余地がある時は、
+          // 普通のスクロール（隠れた内容を見る）と区別するため発火させない
+          const main=document.getElementById('main');
+          const atTop = !main || main.scrollTop<=0;
+          const atBottom = !main || (main.scrollHeight-main.scrollTop-main.clientHeight)<=1;
+          if(_wheelAccY<0 && atTop){
+            _wheelCooldown=true;
+            setTimeout(()=>{ _wheelCooldown=false; }, COOLDOWN_MS);
+            navigateTodayPage(1,0,0);                   // 上→来年（一番上でさらに上へ）
+          } else if(_wheelAccY>0 && atBottom){
+            _wheelCooldown=true;
+            setTimeout(()=>{ _wheelCooldown=false; }, COOLDOWN_MS);
+            navigateTodayPage(-1,0,0);                  // 下→昨年（一番下でさらに下へ）
+          }
         }
       }
       _wheelAccX=0; _wheelAccY=0;
