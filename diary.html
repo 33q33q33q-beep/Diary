@@ -1029,6 +1029,13 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       </p>
       <button id="btn-recompress" type="button" class="btn" onclick="runRecompressPhotos()" style="font-size:12px">🗜️ 既存写真を一括最適化</button>
     </div>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
+      <p style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">🛟 事故防止</p>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">
+        同期で日記データが上書きされる直前、自動で1つ前の状態を保存しています。おかしくなった時はここから戻せます。
+      </p>
+      <button type="button" class="btn" onclick="restorePrevEntriesBackup()" style="font-size:12px">⏮️ 直前の状態に戻す</button>
+    </div>
     <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px">
       <button type="button" class="btn" onclick="SYNC.closeSettings()">閉じる（同期はそのまま）</button>
     </div>
@@ -1061,6 +1068,48 @@ const DB = {
   getColumns(){ const d=JSON.parse(localStorage.getItem('diary_columns')||'[]'); return Array.isArray(d)?d:[]; },
   setColumns(d){ localStorage.setItem('diary_columns', JSON.stringify(d)); SYNC.schedule(); },
 };
+
+// ─── 同期の事故防止：件数が減る上書きは確認を求め、上書き前に必ず1つ前の状態を保存する ───
+function backupEntriesBeforeOverwrite(){
+  try{
+    const cur = localStorage.getItem('diary_entries');
+    if(cur) localStorage.setItem('diary_entries_backup', JSON.stringify({at:Date.now(), data:cur}));
+  }catch(e){ /* 保存領域が厳しい場合は諦める（本処理は継続） */ }
+}
+/** 取得した日記データで上書きする前に安全確認する。falseなら上書きを中止すべき。 */
+function guardEntriesOverwrite(newEntries){
+  let localCount = 0, newCount = 0;
+  try{
+    localCount = Object.keys(DB.getEntries()||{}).length;
+    newCount = Object.keys(newEntries||{}).length;
+  }catch(e){}
+  backupEntriesBeforeOverwrite();
+  if(localCount > 0 && newCount < localCount){
+    return confirm(
+      `⚠️ 同期先の日記データが今より少ないようです（今:${localCount}件 → 取得分:${newCount}件）。\n`+
+      `このまま上書きすると、今だけにある日記が消える可能性があります。\n\n`+
+      `本当に上書きしますか？\n`+
+      `「キャンセル」を押すと、今のデータはそのまま残ります。\n`+
+      `（直前の状態は自動保存済みなので、設定画面の「⏮️ 直前の状態に戻す」で後からでも復元できます）`
+    );
+  }
+  return true;
+}
+function restorePrevEntriesBackup(){
+  let backup;
+  try{ backup = JSON.parse(localStorage.getItem('diary_entries_backup')||'null'); }catch(e){}
+  if(!backup || !backup.data){ alert('復元できる直前のバックアップが見つかりません。'); return; }
+  const when = new Date(backup.at).toLocaleString('ja-JP');
+  if(!confirm(`${when} 時点の状態に戻します。\n今の日記データは上書きされます。よろしいですか？`)) return;
+  try{
+    const cur = localStorage.getItem('diary_entries');
+    localStorage.setItem('diary_entries', backup.data);
+    if(cur) localStorage.setItem('diary_entries_backup', JSON.stringify({at:Date.now(), data:cur}));
+    alert('復元しました。');
+    renderCalendar(); if(typeof renderCurrentPage==='function') renderCurrentPage();
+    document.getElementById('jsonbin-modal')?.classList.remove('open');
+  }catch(e){ alert('復元に失敗しました: '+e.message); }
+}
 
 function getCookie(name){
   const m = document.cookie.match(new RegExp('(?:^|; )'+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'=([^;]*)'));
@@ -3421,7 +3470,7 @@ function applyDiaryPayloadToLocal(d){
     try{ localStorage.setItem(key, JSON.stringify(val)); }
     catch(e){ errors.push(key+': '+e.message); }
   };
-  if(d.entries) trySet('diary_entries', d.entries);
+  if(d.entries){ if(guardEntriesOverwrite(d.entries)) trySet('diary_entries', d.entries); }
   if(d.annivs) trySet('diary_annivs', d.annivs);
   if(d.media) trySet('diary_media', d.media);
   if(d.todos) trySet('diary_todos', d.todos);
@@ -4366,7 +4415,7 @@ const SYNC = {
             ge.photos=ge.photos.map((p,i)=>p===GIST_PHOTO_PLACEHOLDER?(le.photos[i]||p):p);
           }
         }
-        trySet('diary_entries', gistEntries);
+        if(guardEntriesOverwrite(gistEntries)) trySet('diary_entries', gistEntries);
       }
     }
     if(d.annivs) trySet('diary_annivs', toArr(d.annivs));
