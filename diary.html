@@ -1412,7 +1412,10 @@ function renderTodayPage(){
 
   // バッジ（今日 / 過去 / 未来）
   const badgeWrap=document.getElementById('today-date-badge-wrap');
-  const diffDays=Math.round((view-now)/(864e5));
+  // 時刻成分があると「時間差」で日数がずれる（例:昨日0:00と今日20:00の差は1.83日→2日前と誤表示）ため、日付だけで差分を取る
+  const nowMid=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const viewMid=new Date(view.getFullYear(),view.getMonth(),view.getDate());
+  const diffDays=Math.round((viewMid-nowMid)/(864e5));
   if(isToday) badgeWrap.innerHTML='<span class="today-date-badge">TODAY</span>';
   else if(diffDays<0) badgeWrap.innerHTML=`<span class="today-date-badge" style="background:linear-gradient(135deg,#8a7040,#c0a060)">${Math.abs(diffDays)}日前</span>`;
   else badgeWrap.innerHTML=`<span class="today-date-badge" style="background:linear-gradient(135deg,#4a7090,#6090b0)">${diffDays}日後</span>`;
