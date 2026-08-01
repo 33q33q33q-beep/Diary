@@ -24,8 +24,9 @@
   --border:#dfd0aa;--shadow:0 2px 12px rgba(80,50,10,.1);--radius:12px;
   --transition:.2s ease;
   --sidebar-bg:#f4efe2;--sidebar-border:#dfd0aa;
-  color-scheme: light dark;
+  color-scheme: light;
 }
+[data-theme="dark"]{ color-scheme: dark; }
 /* ダークモード（Prestige Gold Dark） */
 [data-theme="dark"]{
   --bg:#0f0d08;--surface:#1a1608;--primary:#c4a03c;--primary-dark:#dab84e;
@@ -33,16 +34,8 @@
   --border:#3a2e10;--shadow:0 2px 16px rgba(0,0,0,.5);
   --sidebar-bg:#141008;--sidebar-border:#3a2e10;
 }
-@media(prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --bg:#0f0d08;--surface:#1a1608;--primary:#c4a03c;--primary-dark:#dab84e;
-    --accent:#d4956a;--text:#f0e8d0;--text-light:#c0a870;--text-muted:#60501a;
-    --border:#3a2e10;--shadow:0 2px 16px rgba(0,0,0,.5);
-    --sidebar-bg:#141008;--sidebar-border:#3a2e10;
-  }
-}
 html,body{height:100%;overflow:hidden}
-body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(--bg);color:var(--text)}
+body{font-family:'Hiragino Maru Gothic ProN','Hiragino Maru Gothic Pro','M PLUS Rounded 1c','BIZ UDGothic',sans-serif;background:var(--bg);color:var(--text)}
 #app{display:flex;height:100vh;height:100svh;height:calc(var(--app-vh,1vh)*100);padding-top:env(safe-area-inset-top)}
 /* Sidebar */
 #sidebar{width:var(--sidebar-w,220px);min-width:160px;max-width:360px;height:100%;background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;padding:20px 0 0;flex-shrink:0;box-shadow:var(--shadow);overflow-y:auto;position:relative;transition:background var(--transition)}
@@ -195,6 +188,26 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 @media(max-width:700px){.todo-sections{grid-template-columns:1fr}}
 .section-card{background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
 .section-card h3{font-size:15px;font-weight:600;color:var(--primary-dark);margin-bottom:12px}
+#kakeibo-amount-display{font-size:38px;font-weight:700;text-align:right;color:var(--primary-dark);padding:10px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);margin-bottom:14px;letter-spacing:.02em}
+.kakeibo-numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kakeibo-key{padding:16px 0;font-size:20px;font-weight:700;border:1px solid var(--border);background:var(--surface);border-radius:10px;cursor:pointer;color:var(--text);transition:all .15s}
+.kakeibo-key:active{transform:scale(.95);background:var(--bg)}
+.kakeibo-key-clear{color:#c0392b}
+.kakeibo-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.kakeibo-cat-btn{padding:12px 6px;font-size:13px;font-weight:600;border:1px solid var(--border);background:var(--surface);border-radius:10px;cursor:pointer;color:var(--text);transition:all .15s}
+.kakeibo-cat-btn:hover{border-color:var(--primary);color:var(--primary-dark)}
+.kakeibo-cat-btn:active{transform:scale(.96)}
+.kakeibo-item{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);font-size:13px}
+.kakeibo-item:last-child{border-bottom:none}
+.kakeibo-item-cat{font-weight:600;min-width:64px}
+.kakeibo-item-amount{margin-left:auto;font-weight:700;color:var(--primary-dark)}
+.kakeibo-item-del{border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:2px 6px}
+.column-list-item{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border);cursor:pointer}
+.column-list-item:last-child{border-bottom:none}
+.column-list-item:hover{background:var(--bg)}
+.column-list-date{font-size:12px;font-weight:700;color:var(--primary-dark);min-width:90px;flex-shrink:0}
+.column-list-preview{font-size:13px;color:var(--text-light);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.column-list-len{font-size:11px;color:var(--text-muted);flex-shrink:0}
 .todo-add{display:flex;gap:8px;margin-bottom:12px}
 .todo-add input{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit}
 .todo-add input:focus{outline:none;border-color:var(--primary)}
@@ -379,9 +392,9 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .today-nav-btn{background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text-muted);font-size:15px;padding:4px 10px;line-height:1;transition:.15s;flex-shrink:0}
 .today-nav-btn:hover{background:rgba(196,160,60,.12);border-color:var(--primary);color:var(--primary-dark)}
 .today-date-block{display:flex;flex-direction:column;align-items:center;gap:2px}
-.today-date-year{font-family:'Meiryo','メイリオ','Hiragino Kaku Gothic ProN',sans-serif;font-size:14px;color:var(--text-muted);letter-spacing:.08em}
-.today-date-main{font-family:'Meiryo','メイリオ','Hiragino Kaku Gothic ProN',sans-serif;font-size:32px;font-weight:700;color:var(--primary-dark);letter-spacing:.02em;line-height:1.15}
-.today-date-dow{font-family:'Meiryo','メイリオ','Hiragino Kaku Gothic ProN',sans-serif;font-size:15px;color:var(--text-muted);margin-top:2px;letter-spacing:.04em}
+.today-date-year{font-family:'Hiragino Maru Gothic ProN','Hiragino Maru Gothic Pro','M PLUS Rounded 1c',sans-serif;font-size:14px;color:var(--text-muted);letter-spacing:.08em}
+.today-date-main{font-family:'Hiragino Maru Gothic ProN','Hiragino Maru Gothic Pro','M PLUS Rounded 1c',sans-serif;font-size:32px;font-weight:700;color:var(--primary-dark);letter-spacing:.02em;line-height:1.15}
+.today-date-dow{font-family:'Hiragino Maru Gothic ProN','Hiragino Maru Gothic Pro','M PLUS Rounded 1c',sans-serif;font-size:15px;color:var(--text-muted);margin-top:2px;letter-spacing:.04em}
 .today-date-badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 10px;border-radius:20px;background:linear-gradient(135deg,var(--primary),#dab84e);color:#fff;margin-top:4px;box-shadow:0 1px 6px rgba(196,160,60,.4)}
 /* 情報バー：旧暦・カウントダウン（上段）／ 誕生日・記念日（下段）*/
 .today-info-bar{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:10px 0 2px}
@@ -463,6 +476,8 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   <div id="sidebar-resizer" title="ドラッグで幅を調整"></div>
   <h1><div><span class="brand-title">LifeTime Diary</span><span class="brand-sub">私の日記</span></div><button id="dark-toggle" onclick="toggleDarkMode()" title="ダーク/ライト切替">🌙</button></h1>
   <button class="nav-btn active" onclick="showPage('today')" id="nav-today"><span class="icon">✏️</span><span>今日の日記</span></button>
+  <button class="nav-btn" onclick="showPage('kakeibo')" id="nav-kakeibo"><span class="icon">💰</span><span>お小遣い帳</span></button>
+  <button class="nav-btn" onclick="showPage('column')" id="nav-column"><span class="icon">📝</span><span>コラム</span></button>
   <button class="nav-btn" onclick="showPage('calendar')" id="nav-calendar"><span class="icon">📅</span><span>カレンダー</span></button>
   <button class="nav-btn" onclick="showPage('timeline')" id="nav-timeline"><span class="icon">⏳</span><span>タイムライン</span></button>
   <button class="nav-btn" onclick="showPage('search')" id="nav-search"><span class="icon">🔍</span><span>検索</span></button>
@@ -752,11 +767,78 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     </div>
     <div id="schedule-content"></div>
   </div>
+  <!-- Kakeibo (お小遣い帳) -->
+  <div class="page" id="page-kakeibo">
+    <div class="page-title">💰 お小遣い帳</div>
+    <div class="section-card" style="max-width:420px;margin:0 auto 20px">
+      <div id="kakeibo-amount-display">¥0</div>
+      <div class="kakeibo-numpad">
+        <button type="button" class="kakeibo-key" onclick="kakeiboKey('7')">7</button>
+        <button type="button" class="kakeibo-key" onclick="kakeiboKey('8')">8</button>
+        <button type="button" class="kakeibo-key" onclick="kakeiboKey('9')">9</button>
+        <button type="button" class="kakeibo-key" onclick="kakeiboKey('4')">4</button>
+        <button type="button" class="kakeibo-key" onclick="kakeiboKey('5')">5</button>
+        <button type="button" class="kakeibo-key" onclick="kakeiboKey('6')">6</button>
+        <button type="button" class="kakeibo-key" onclick="kakeiboKey('1')">1</button>
+        <button type="button" class="kakeibo-key" onclick="kakeiboKey('2')">2</button>
+        <button type="button" class="kakeibo-key" onclick="kakeiboKey('3')">3</button>
+        <button type="button" class="kakeibo-key" onclick="kakeiboKey('00')">00</button>
+        <button type="button" class="kakeibo-key" onclick="kakeiboKey('0')">0</button>
+        <button type="button" class="kakeibo-key kakeibo-key-clear" onclick="kakeiboClear()">C</button>
+      </div>
+      <div class="kakeibo-cats">
+        <button type="button" class="kakeibo-cat-btn" onclick="kakeiboRecord('通販')">🛒 通販</button>
+        <button type="button" class="kakeibo-cat-btn" onclick="kakeiboRecord('日用品')">🧻 日用品</button>
+        <button type="button" class="kakeibo-cat-btn" onclick="kakeiboRecord('食費')">🍚 食費</button>
+        <button type="button" class="kakeibo-cat-btn" onclick="kakeiboRecord('嗜好品')">🍷 嗜好品</button>
+        <button type="button" class="kakeibo-cat-btn" onclick="kakeiboRecord('サブスク')">📱 サブスク</button>
+        <button type="button" class="kakeibo-cat-btn" onclick="kakeiboRecord('その他')">✨ その他</button>
+      </div>
+    </div>
+    <div class="section-card" style="max-width:560px;margin:0 auto">
+      <h3 style="display:flex;align-items:center;justify-content:space-between">
+        <span>📒 記録</span>
+        <select id="kakeibo-range" onchange="renderKakeibo()" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">
+          <option value="month">今月</option>
+          <option value="all">全期間</option>
+        </select>
+      </h3>
+      <div id="kakeibo-total" style="font-size:14px;font-weight:700;color:var(--primary-dark);margin-bottom:10px"></div>
+      <div id="kakeibo-list"></div>
+    </div>
+  </div>
+  <!-- Column (コラム) -->
+  <div class="page" id="page-column">
+    <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <span>📝 コラム</span>
+      <button type="button" class="btn btn-primary" onclick="newColumn()">＋ 新規コラム</button>
+    </div>
+    <div class="section-card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label style="font-size:13px;font-weight:600;color:var(--text-light)">🎯 目標文字数</label>
+        <input type="number" id="column-target" min="1" value="800" style="width:90px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text)" onchange="onColumnTargetChange()">
+        <span style="font-size:12px;color:var(--text-muted)">文字</span>
+        <span id="column-count-label" style="margin-left:auto;font-size:15px;font-weight:700;color:var(--primary-dark)">0 / 800文字</span>
+      </div>
+      <textarea id="column-editor" placeholder="今日のコラムを書いてみましょう…" style="width:100%;min-height:320px;margin-top:14px;padding:14px;border:1px solid var(--border);border-radius:10px;font-size:15px;line-height:1.8;background:var(--surface);color:var(--text);resize:vertical;box-sizing:border-box" oninput="onColumnInput()"></textarea>
+      <div style="margin-top:10px;display:flex;align-items:center;justify-content:flex-end;gap:8px">
+        <span id="column-autosave-status" style="font-size:11px;color:var(--text-muted);margin-right:auto"></span>
+        <button type="button" class="btn" onclick="deleteCurrentColumn()">🗑️ 削除</button>
+        <button type="button" class="btn btn-primary" onclick="saveColumn()">💾 保存</button>
+      </div>
+    </div>
+    <div class="section-card">
+      <h3>📚 コラム一覧</h3>
+      <div id="column-list"></div>
+    </div>
+  </div>
 </main>
 <!-- グローバルモバイルナビバー（全ページ共通・モバイルのみ表示） -->
 <div id="global-mobile-nav" class="calendar-mobile-nav" aria-label="ナビゲーション">
   <div class="calendar-mobile-nav-pages">
     <button type="button" class="mob-page-btn active" data-page="today" onclick="showPage('today')" title="今日の日記" aria-label="今日の日記">✏️</button>
+    <button type="button" class="mob-page-btn" data-page="kakeibo" onclick="showPage('kakeibo')" title="お小遣い帳" aria-label="お小遣い帳">💰</button>
+    <button type="button" class="mob-page-btn" data-page="column" onclick="showPage('column')" title="コラム" aria-label="コラム">📝</button>
     <button type="button" class="mob-page-btn" data-page="calendar" onclick="showPage('calendar')" title="カレンダー" aria-label="カレンダー">📅</button>
     <button type="button" class="mob-page-btn" data-page="timeline" onclick="showPage('timeline')" title="タイムライン" aria-label="タイムライン">⏳</button>
     <button type="button" class="mob-page-btn" data-page="search" onclick="showPage('search')" title="検索" aria-label="検索">🔍</button>
@@ -974,6 +1056,10 @@ const DB = {
   setGoals(d){ localStorage.setItem('diary_goals', JSON.stringify(d)); SYNC.schedule(); },
   getVisions(){ const d=JSON.parse(localStorage.getItem('diary_visions')||'[]'); return Array.isArray(d)?d:[]; },
   setVisions(d){ localStorage.setItem('diary_visions', JSON.stringify(d)); SYNC.schedule(); },
+  getKakeibo(){ const d=JSON.parse(localStorage.getItem('diary_kakeibo')||'[]'); return Array.isArray(d)?d:[]; },
+  setKakeibo(d){ localStorage.setItem('diary_kakeibo', JSON.stringify(d)); SYNC.schedule(); },
+  getColumns(){ const d=JSON.parse(localStorage.getItem('diary_columns')||'[]'); return Array.isArray(d)?d:[]; },
+  setColumns(d){ localStorage.setItem('diary_columns', JSON.stringify(d)); SYNC.schedule(); },
 };
 
 function getCookie(name){
@@ -1114,6 +1200,8 @@ function hasLocalDiaryData(){
     const todos = DB.getTodos();
     const goals = DB.getGoals();
     const visions = DB.getVisions();
+    const kakeibo = DB.getKakeibo();
+    const columns = DB.getColumns();
     return (
       Object.keys(entries||{}).length>0 ||
       (Array.isArray(annivs) && annivs.length>0) ||
@@ -1121,7 +1209,9 @@ function hasLocalDiaryData(){
       (Array.isArray(media) && media.length>0) ||
       (Array.isArray(todos) && todos.length>0) ||
       (Array.isArray(goals) && goals.length>0) ||
-      (Array.isArray(visions) && visions.length>0)
+      (Array.isArray(visions) && visions.length>0) ||
+      (Array.isArray(kakeibo) && kakeibo.length>0) ||
+      (Array.isArray(columns) && columns.length>0)
     );
   }catch(e){
     return false;
@@ -1134,6 +1224,7 @@ function todayDate(){ return new Date() }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
 function showPage(name){
+  if(name!=='column') flushColumnAutosave();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   const pageEl=document.getElementById('page-'+name);
@@ -1153,6 +1244,8 @@ function showPage(name){
   if(name==='todo'){ renderGoals(); renderVisions(); setTimeout(()=>{ const s=localStorage.getItem('diary_todo_font'); if(s) applyTodoFontSize(s); },0); }
   if(name==='schedule'){ seedInitialSchedule(); renderSchedule(); }
   if(name==='stats'){ renderStats(); }
+  if(name==='kakeibo'){ renderKakeibo(); }
+  if(name==='column'){ renderColumnPage(); }
 }
 
 // ─── Today Page ──────────────────────────────────────────────────────────────
@@ -2871,6 +2964,176 @@ function delVision(id){
   DB.setVisions(DB.getVisions().filter(v=>v.id!==id)); renderVisions();
 }
 
+// ─── Kakeibo（お小遣い帳） ─────────────────────────────────────────────────────
+let kakeiboAmount='';
+function kakeiboKey(k){
+  if(kakeiboAmount.length>=9) return;
+  if(kakeiboAmount==='0') kakeiboAmount='';
+  kakeiboAmount+=k;
+  updateKakeiboDisplay();
+}
+function kakeiboClear(){
+  kakeiboAmount='';
+  updateKakeiboDisplay();
+}
+function updateKakeiboDisplay(){
+  const el=document.getElementById('kakeibo-amount-display');
+  if(el) el.textContent='¥'+Number(kakeiboAmount||'0').toLocaleString();
+}
+function kakeiboRecord(category){
+  const amount=Number(kakeiboAmount||'0');
+  if(!amount){ showToast('金額を入力してください'); return; }
+  const list=DB.getKakeibo();
+  list.push({id:Date.now()+'_'+Math.random().toString(36).slice(2), date:today(), amount, category, createdAt:Date.now()});
+  DB.setKakeibo(list);
+  kakeiboAmount='';
+  updateKakeiboDisplay();
+  renderKakeibo();
+  showToast('✅ '+category+' ¥'+amount.toLocaleString()+' を記録しました');
+}
+function deleteKakeiboEntry(id){
+  if(!confirm('この記録を削除しますか？')) return;
+  DB.setKakeibo(DB.getKakeibo().filter(e=>e.id!==id));
+  renderKakeibo();
+}
+function renderKakeibo(){
+  updateKakeiboDisplay();
+  const range=document.getElementById('kakeibo-range')?.value||'month';
+  let list=DB.getKakeibo().slice().sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt);
+  if(range==='month'){
+    const ym=today().slice(0,7);
+    list=list.filter(e=>e.date.startsWith(ym));
+  }
+  const total=list.reduce((s,e)=>s+e.amount,0);
+  const totalEl=document.getElementById('kakeibo-total');
+  if(totalEl) totalEl.textContent=(range==='month'?'今月の合計':'合計')+'：¥'+total.toLocaleString()+'（'+list.length+'件）';
+  const listEl=document.getElementById('kakeibo-list');
+  if(!listEl) return;
+  if(!list.length){ listEl.innerHTML='<p style="font-size:13px;color:var(--text-muted)">記録がありません</p>'; return; }
+  listEl.innerHTML=list.map(e=>`
+    <div class="kakeibo-item">
+      <span>${e.date}</span>
+      <span class="kakeibo-item-cat">${escHtml(e.category)}</span>
+      <span class="kakeibo-item-amount">¥${e.amount.toLocaleString()}</span>
+      <button type="button" class="kakeibo-item-del" onclick="deleteKakeiboEntry('${e.id}')" title="削除">✕</button>
+    </div>`).join('');
+}
+
+// ─── Column（コラム） ──────────────────────────────────────────────────────────
+let _currentColumnId=null;
+let _columnSaveTimer=null;
+function getColumnTarget(){
+  return Number(localStorage.getItem('diary_column_target')||'800')||800;
+}
+function setColumnTarget(n){ localStorage.setItem('diary_column_target', String(n)); }
+function onColumnTargetChange(){
+  const v=Math.max(1, Number(document.getElementById('column-target').value)||800);
+  setColumnTarget(v);
+  updateColumnCountLabel();
+  scheduleColumnAutosave();
+}
+function updateColumnCountLabel(){
+  const text=document.getElementById('column-editor')?.value||'';
+  const len=text.length;
+  const target=getColumnTarget();
+  const label=document.getElementById('column-count-label');
+  if(!label) return;
+  label.textContent=len+' / '+target+'文字';
+  label.style.color=len>=target?'#2e8b3d':'';
+}
+function onColumnInput(){
+  updateColumnCountLabel();
+  scheduleColumnAutosave();
+}
+function scheduleColumnAutosave(){
+  clearTimeout(_columnSaveTimer);
+  _columnSaveTimer=setTimeout(()=>saveColumn(true), 800);
+}
+function flushColumnAutosave(){
+  if(_columnSaveTimer){
+    clearTimeout(_columnSaveTimer);
+    _columnSaveTimer=null;
+    saveColumn(true);
+  }
+}
+function setColumnAutosaveStatus(text){
+  const el=document.getElementById('column-autosave-status');
+  if(el) el.textContent=text;
+}
+function newColumn(){
+  flushColumnAutosave();
+  _currentColumnId=null;
+  const ed=document.getElementById('column-editor');
+  if(ed) ed.value='';
+  const tgt=document.getElementById('column-target');
+  if(tgt) tgt.value=getColumnTarget();
+  updateColumnCountLabel();
+  setColumnAutosaveStatus('');
+}
+function saveColumn(silent){
+  const ed=document.getElementById('column-editor');
+  const text=ed?ed.value:'';
+  if(!text.trim()){ if(!silent) showToast('本文を入力してください'); return; }
+  const target=getColumnTarget();
+  const list=DB.getColumns();
+  if(_currentColumnId){
+    const idx=list.findIndex(c=>c.id===_currentColumnId);
+    if(idx>=0) list[idx]={...list[idx], text, targetLength:target, updatedAt:Date.now()};
+    else list.unshift({id:_currentColumnId, date:today(), text, targetLength:target, createdAt:Date.now(), updatedAt:Date.now()});
+  } else {
+    const entry={id:Date.now()+'_'+Math.random().toString(36).slice(2), date:today(), text, targetLength:target, createdAt:Date.now(), updatedAt:Date.now()};
+    list.unshift(entry);
+    _currentColumnId=entry.id;
+  }
+  DB.setColumns(list);
+  renderColumnList();
+  const now=new Date();
+  setColumnAutosaveStatus('✓ '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+' に自動保存済み');
+  if(!silent) showToast('💾 保存しました');
+}
+function loadColumn(id){
+  flushColumnAutosave();
+  const c=DB.getColumns().find(c=>c.id===id);
+  if(!c) return;
+  _currentColumnId=id;
+  const ed=document.getElementById('column-editor');
+  if(ed) ed.value=c.text;
+  const tgt=document.getElementById('column-target');
+  if(tgt) tgt.value=c.targetLength||getColumnTarget();
+  updateColumnCountLabel();
+  setColumnAutosaveStatus('');
+}
+function deleteCurrentColumn(){
+  clearTimeout(_columnSaveTimer);
+  _columnSaveTimer=null;
+  if(!_currentColumnId){ newColumn(); return; }
+  if(!confirm('このコラムを削除しますか？')) return;
+  DB.setColumns(DB.getColumns().filter(c=>c.id!==_currentColumnId));
+  newColumn();
+  renderColumnList();
+}
+window.addEventListener('beforeunload', flushColumnAutosave);
+function renderColumnList(){
+  const listEl=document.getElementById('column-list');
+  if(!listEl) return;
+  const list=DB.getColumns().slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  if(!list.length){ listEl.innerHTML='<p style="font-size:13px;color:var(--text-muted)">まだコラムがありません</p>'; return; }
+  listEl.innerHTML=list.map(c=>{
+    const preview=(c.text||'').replace(/\n/g,' ').slice(0,40);
+    return `<div class="column-list-item" onclick="loadColumn('${c.id}')">
+      <span class="column-list-date">${c.date}</span>
+      <span class="column-list-preview">${escHtml(preview)}</span>
+      <span class="column-list-len">${(c.text||'').length}字</span>
+    </div>`;
+  }).join('');
+}
+function renderColumnPage(){
+  const tgt=document.getElementById('column-target');
+  if(tgt) tgt.value=getColumnTarget();
+  updateColumnCountLabel();
+  renderColumnList();
+}
+
 // ─── Lightbox ────────────────────────────────────────────────────────────────
 function openLightbox(src){
   document.getElementById('lightbox-img').src=src;
@@ -2952,7 +3215,10 @@ async function exportData(){
     annivs:localStorage.getItem('diary_annivs'),
     media:localStorage.getItem('diary_media'),
     todos:localStorage.getItem('diary_todos'),
-    goals:localStorage.getItem('diary_goals')
+    goals:localStorage.getItem('diary_goals'),
+    visions:localStorage.getItem('diary_visions'),
+    kakeibo:localStorage.getItem('diary_kakeibo'),
+    columns:localStorage.getItem('diary_columns')
   };
   const jsonStr=JSON.stringify(d);
   const blob=new Blob([jsonStr],{type:'application/json'});
@@ -2993,6 +3259,9 @@ function importData(){
       if(d.media)   localStorage.setItem('diary_media',d.media);
       if(d.todos)   localStorage.setItem('diary_todos',d.todos);
       if(d.goals)   localStorage.setItem('diary_goals',d.goals);
+      if(d.visions) localStorage.setItem('diary_visions',d.visions);
+      if(d.kakeibo) localStorage.setItem('diary_kakeibo',d.kakeibo);
+      if(d.columns) localStorage.setItem('diary_columns',d.columns);
       alert('復元完了！');
       renderCurrentPage();
     };
@@ -3159,6 +3428,10 @@ function applyDiaryPayloadToLocal(d){
   if(d.goals) trySet('diary_goals', d.goals);
   if(d.visions && (Array.isArray(d.visions) ? d.visions.length > 0 : true)) trySet('diary_visions', d.visions);
   else if(!d.visions && DB.getVisions().length > 0) { /* ローカルを保持 */ }
+  if(d.kakeibo && (Array.isArray(d.kakeibo) ? d.kakeibo.length > 0 : true)) trySet('diary_kakeibo', d.kakeibo);
+  else if(!d.kakeibo && DB.getKakeibo().length > 0) { /* ローカルを保持 */ }
+  if(d.columns && (Array.isArray(d.columns) ? d.columns.length > 0 : true)) trySet('diary_columns', d.columns);
+  else if(!d.columns && DB.getColumns().length > 0) { /* ローカルを保持 */ }
   if(d.schedule && Array.isArray(d.schedule)) trySet('diary_schedule', d.schedule);
   if(d.schedule_summary && typeof d.schedule_summary==='object') trySet('diary_schedule_summary', d.schedule_summary);
   if(d.userTags) trySet('diary_user_tags', d.userTags);
@@ -3867,6 +4140,7 @@ const SYNC = {
       annivs: DB.getAnniversaries().filter(a=>a.desc!=='Facebook誕生日'),
       fbBirthdays: Array.isArray(fbBirthdays) ? fbBirthdays : [],
       media: DB.getMedia(), todos: DB.getTodos(), goals: DB.getGoals(), visions: DB.getVisions(),
+      kakeibo: DB.getKakeibo(), columns: DB.getColumns(),
       userTags: getUserTags(),
       schedule: SCHEDULE_DB.getAll(),
       schedule_summary: SCHEDULE_SUMMARY_DB.getAll(),
@@ -4103,6 +4377,12 @@ const SYNC = {
     const gistVisions=toArr(d.visions); const localVisions=DB.getVisions();
     if(gistVisions.length===0&&localVisions.length>0){ console.warn('GistのVisionsが0件のためローカルを保持'); }
     else if(d.visions) trySet('diary_visions', gistVisions);
+    const gistKakeibo=toArr(d.kakeibo); const localKakeibo=DB.getKakeibo();
+    if(gistKakeibo.length===0&&localKakeibo.length>0){ console.warn('Gistのお小遣い帳が0件のためローカルを保持'); }
+    else if(d.kakeibo) trySet('diary_kakeibo', gistKakeibo);
+    const gistColumns=toArr(d.columns); const localColumns=DB.getColumns();
+    if(gistColumns.length===0&&localColumns.length>0){ console.warn('Gistのコラムが0件のためローカルを保持'); }
+    else if(d.columns) trySet('diary_columns', gistColumns);
     if(d.userTags) trySet('diary_user_tags', toArr(d.userTags));
     // scheduleは別ファイル(diary-schedule.json)から取得
     const schedFileInfo = j.files[this.SCHED_FILE];
@@ -4910,9 +5190,9 @@ function toggleDarkMode(){
   document.getElementById('dark-toggle').textContent=newTheme==='dark'?'☀️':'🌙';
 }
 (function initTheme(){
+  // システムのダーク設定に関わらず、既定はライトモード（ユーザーが手動で切替た場合のみダークを保持）
   const saved=localStorage.getItem('diary_theme');
-  const prefersDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
-  const theme=saved||(prefersDark?'dark':'light');
+  const theme=saved||'light';
   document.documentElement.setAttribute('data-theme',theme);
   const btn=document.getElementById('dark-toggle');
   if(btn) btn.textContent=theme==='dark'?'☀️':'🌙';
@@ -5048,6 +5328,13 @@ function statsCard(icon,label,value,sub){
     <div style="font-size:22px;font-weight:700;color:var(--primary-dark);line-height:1.1">${value}</div>
     ${sub?`<div style="font-size:10px;color:var(--text-muted);margin-top:3px">${sub}</div>`:''}
   </div>`;
+}
+
+// ─── PWA: インストール可能にするためService Workerを登録 ───────────────────────
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
 }
 </script>
 </body>
