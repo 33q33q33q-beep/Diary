@@ -586,7 +586,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <!-- 日記 -->
       <div class="today-card">
         <div class="today-section-label">📔 日記</div>
-        <textarea class="today-textarea" id="today-diary" placeholder="今日の出来事を書いてみましょう…"></textarea>
+        <textarea class="today-textarea" id="today-diary" placeholder="今日の出来事を書いてみましょう…" oninput="scheduleTodayAutosave()"></textarea>
         <div class="photo-section" style="margin-top:12px">
           <label class="btn" style="cursor:pointer;display:inline-block;font-size:14px">📷 写真を追加
             <input type="file" id="today-photo-input" accept="image/*" multiple style="display:none" onchange="addTodayPhotos(this)">
@@ -600,7 +600,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <div class="today-card">
         <div class="today-section-label">📅 予定メモ</div>
         <div id="today-sched-items" style="display:none;margin-bottom:10px;font-size:13px;color:var(--text-light);line-height:1.8"></div>
-        <textarea class="today-textarea today-plan-textarea" id="today-plan" placeholder="予定を入力… (例: 10:00 MTG / 14:00 ランチ)"></textarea>
+        <textarea class="today-textarea today-plan-textarea" id="today-plan" placeholder="予定を入力… (例: 10:00 MTG / 14:00 ランチ)" oninput="scheduleTodayAutosave()"></textarea>
       </div>
       <!-- 保存 -->
       <div class="today-save-row">
@@ -1278,6 +1278,7 @@ function todayDate(){ return new Date() }
 // ─── Navigation ──────────────────────────────────────────────────────────────
 function showPage(name){
   if(name!=='column') flushColumnAutosave();
+  if(name!=='today') flushTodayAutosave();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   const pageEl=document.getElementById('page-'+name);
@@ -1353,6 +1354,7 @@ function _slideTodayContent(outX, outY, inX, inY, updateFn){
 
 // year/month/dayOffset を加算してページを移動
 function navigateTodayPage(yearDelta, monthDelta, dayDelta){
+  clearTimeout(_todaySaveTimer); _todaySaveTimer=null;
   persistTodayEntry(); // 移動前に今表示中の内容を保存（未保存のまま日付が変わって消えるのを防ぐ）
 
   // 移動方向：outX=退場方向、inX=登場開始位置（単位%）
@@ -1375,6 +1377,7 @@ function navigateTodayPage(yearDelta, monthDelta, dayDelta){
 
 // 「今日に戻る」— 表示中の日付からの相対移動ではなく、実際の現在日へ直接ジャンプする
 function backToToday(){
+  clearTimeout(_todaySaveTimer); _todaySaveTimer=null;
   persistTodayEntry(); // 移動前に今表示中の内容を保存
   const view=_getViewDate();
   const now=new Date();
@@ -1616,11 +1619,24 @@ function persistTodayEntry(){
   const now=new Date();
   renderTodayStreak(dateKey(now.getFullYear(),now.getMonth()+1,now.getDate()));
 }
-function saveTodayEntry(){
-  persistTodayEntry();
+let _todaySaveTimer=null;
+function scheduleTodayAutosave(){
+  clearTimeout(_todaySaveTimer);
+  _todaySaveTimer=setTimeout(()=>{ _todaySaveTimer=null; persistTodayEntry(); showTodaySavedMsg(); }, 800);
+}
+function flushTodayAutosave(){
+  if(_todaySaveTimer){ clearTimeout(_todaySaveTimer); _todaySaveTimer=null; persistTodayEntry(); }
+}
+function showTodaySavedMsg(){
   const msg=document.getElementById('today-saved-msg');
+  if(!msg) return;
   msg.classList.add('show');
   setTimeout(()=>msg.classList.remove('show'),2200);
+}
+function saveTodayEntry(){
+  clearTimeout(_todaySaveTimer); _todaySaveTimer=null;
+  persistTodayEntry();
+  showTodaySavedMsg();
 }
 function renderTodayStreak(todayKey){
   const entries=DB.getEntries();
@@ -3169,6 +3185,7 @@ function deleteCurrentColumn(){
   renderColumnList();
 }
 window.addEventListener('beforeunload', flushColumnAutosave);
+window.addEventListener('beforeunload', flushTodayAutosave);
 function renderColumnList(){
   const listEl=document.getElementById('column-list');
   if(!listEl) return;
