@@ -4043,7 +4043,14 @@ const SYNC = {
       alert('クライアント ID の形式が違います。例: 数字-英数字.apps.googleusercontent.com の1行全体です（プロジェクト番号だけではありません）。');
       return;
     }
-    const url=getDiaryPageAbsUrlNoHash()+'#gdrive_client='+encodeURIComponent(raw);
+    // 既にMacでフォルダ作成済みなら、そのフォルダIDも一緒に渡す。
+    // drive.fileスコープは端末ごとに既存フォルダを検索で見つけられないことがあり、
+    // 何もしないと端末ごとに別の「LifeTimeDiary」フォルダが増殖してしまうため。
+    const rootId=safeGet(localStorage,'diary_gdrive_root_folder_id');
+    const dataId=safeGet(localStorage,'diary_gdrive_data_folder_id');
+    let url=getDiaryPageAbsUrlNoHash()+'#gdrive_client='+encodeURIComponent(raw);
+    if(rootId) url+='&gdrive_root='+encodeURIComponent(rootId);
+    if(dataId) url+='&gdrive_data='+encodeURIComponent(dataId);
     navigator.clipboard.writeText(url).then(()=>alert('Drive用リンクをコピーしました！\n\n【重要】貼るのは「https://…/Diary/diary.html#gdrive_client=…」までの1本のURLです。\n（サイトのトップ https://〜/ だけでは日記が開けません）\n\n【iPhone】Safariのアドレス欄に、そのまま貼って開いてください。\nクライアントIDだけを貼ると404になります。\n\n開いたあと「ログインしてフォルダ作成」を押します。\n\n※人に送らないでください。')).catch(()=>{prompt('このURLをコピー：',url);});
   },
 
@@ -4604,6 +4611,8 @@ function updateAppViewportHeight(){
   const t=hp.get('token')||qp.get('token');
   const g=hp.get('gist')||qp.get('gist');
   const gd=hp.get('gdrive_client')||qp.get('gdrive_client')||hp.get('gdrive')||qp.get('gdrive');
+  const gdRoot=hp.get('gdrive_root')||qp.get('gdrive_root');
+  const gdData=hp.get('gdrive_data')||qp.get('gdrive_data');
   if(t||g) persistSyncCreds(t||getSyncToken(), g||getSyncGistId());
   if(gd){
     const cid=normalizeGdriveClientId(decodeURIComponent(gd));
@@ -4612,8 +4621,11 @@ function updateAppViewportHeight(){
       setSyncBackend('gdrive');
     }
   }
-  const hadSecretHash=(h && (hp.get('token')||hp.get('gist')||hp.get('gdrive_client')||hp.get('gdrive')));
-  const hadSecretQ=(location.search && (qp.get('token')||qp.get('gist')||qp.get('gdrive_client')||qp.get('gdrive')));
+  // 他端末で作成済みの既存フォルダIDを受け取り、同じフォルダに揃える（重複フォルダ作成を防ぐ）
+  if(gdRoot) safeSet(localStorage,'diary_gdrive_root_folder_id',decodeURIComponent(gdRoot));
+  if(gdData) safeSet(localStorage,'diary_gdrive_data_folder_id',decodeURIComponent(gdData));
+  const hadSecretHash=(h && (hp.get('token')||hp.get('gist')||hp.get('gdrive_client')||hp.get('gdrive')||hp.get('gdrive_root')||hp.get('gdrive_data')));
+  const hadSecretQ=(location.search && (qp.get('token')||qp.get('gist')||qp.get('gdrive_client')||qp.get('gdrive')||qp.get('gdrive_root')||qp.get('gdrive_data')));
   if(hadSecretHash || hadSecretQ){
     history.replaceState(null,'',location.pathname);
   }
