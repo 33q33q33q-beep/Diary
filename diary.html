@@ -1590,9 +1590,11 @@ function renderTodayPhotoGrid(){
 function addTodayPhotos(input){
   const files=[...input.files];
   files.forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=e=>{todayPhotos.push(e.target.result);renderTodayPhotoGrid();};
-    reader.readAsDataURL(file);
+    compressImage(file).then(dataUrl=>{
+      todayPhotos.push(dataUrl);
+      renderTodayPhotoGrid();
+      scheduleTodayAutosave();
+    });
   });
   input.value='';
 }
