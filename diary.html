@@ -215,6 +215,14 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .column-list-date{font-size:12px;font-weight:700;color:var(--primary-dark);min-width:90px;flex-shrink:0}
 .column-list-preview{font-size:13px;color:var(--text-light);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .column-list-len{font-size:11px;color:var(--text-muted);flex-shrink:0}
+.sub-notice-item{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#fff3cd,#ffe8a3);border:1px solid #e0b83c;border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:#7a5a00}
+.sub-item{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border);font-size:13px;flex-wrap:wrap}
+.sub-item:last-child{border-bottom:none}
+.sub-item-title{font-weight:700;color:var(--primary-dark);min-width:100px}
+.sub-item-meta{font-size:12px;color:var(--text-muted)}
+.sub-item-price{margin-left:auto;font-weight:700}
+.sub-item-actions{display:flex;gap:4px}
+.sub-item-btn{border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:2px 6px}
 .todo-add{display:flex;gap:8px;margin-bottom:12px}
 .todo-add input{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit}
 .todo-add input:focus{outline:none;border-color:var(--primary)}
@@ -485,6 +493,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   <button class="nav-btn active" onclick="showPage('today')" id="nav-today"><span class="icon">✏️</span><span>今日の日記</span></button>
   <button class="nav-btn" onclick="showPage('kakeibo')" id="nav-kakeibo"><span class="icon">💰</span><span>お小遣い帳</span></button>
   <button class="nav-btn" onclick="showPage('column')" id="nav-column"><span class="icon">📝</span><span>コラム</span></button>
+  <button class="nav-btn" onclick="showPage('subscription')" id="nav-subscription"><span class="icon">📱</span><span>サブスク管理</span></button>
   <button class="nav-btn" onclick="showPage('calendar')" id="nav-calendar"><span class="icon">📅</span><span>カレンダー</span></button>
   <button class="nav-btn" onclick="showPage('timeline')" id="nav-timeline"><span class="icon">⏳</span><span>タイムライン</span></button>
   <button class="nav-btn" onclick="showPage('search')" id="nav-search"><span class="icon">🔍</span><span>検索</span></button>
@@ -586,6 +595,8 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     </div>
     <!-- スライドアニメ対象エリア -->
     <div id="today-content-wrap">
+      <!-- サブスク更新Notice -->
+      <div id="today-subscription-notice" style="display:none"></div>
       <!-- 日記 -->
       <div class="today-card">
         <div class="today-section-label">📔 日記</div>
@@ -832,6 +843,32 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <div id="column-list"></div>
     </div>
   </div>
+  <!-- Subscription（サブスク管理） -->
+  <div class="page" id="page-subscription">
+    <div class="page-title">📱 サブスク管理</div>
+    <div class="section-card" style="max-width:560px;margin:0 auto 20px">
+      <h3>＋ 新規登録</h3>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input type="text" id="sub-title" placeholder="サブスク名（例: Netflix）" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+        <input type="text" id="sub-loginid" placeholder="ログインID（メールアドレスなど）" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div style="flex:1;min-width:140px">
+            <label style="font-size:11px;color:var(--text-muted)">更新日</label>
+            <input type="date" id="sub-renewdate" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+          </div>
+          <div style="flex:1;min-width:120px">
+            <label style="font-size:11px;color:var(--text-muted)">価格（円）</label>
+            <input type="number" id="sub-price" placeholder="例: 1490" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="addSubscription()">追加</button>
+      </div>
+    </div>
+    <div class="section-card">
+      <h3>📋 登録済みサブスク</h3>
+      <div id="subscription-list"></div>
+    </div>
+  </div>
 </main>
 <!-- グローバルモバイルナビバー（全ページ共通・モバイルのみ表示） -->
 <div id="global-mobile-nav" class="calendar-mobile-nav" aria-label="ナビゲーション">
@@ -839,6 +876,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <button type="button" class="mob-page-btn active" data-page="today" onclick="showPage('today')" title="今日の日記" aria-label="今日の日記">✏️</button>
     <button type="button" class="mob-page-btn" data-page="kakeibo" onclick="showPage('kakeibo')" title="お小遣い帳" aria-label="お小遣い帳">💰</button>
     <button type="button" class="mob-page-btn" data-page="column" onclick="showPage('column')" title="コラム" aria-label="コラム">📝</button>
+    <button type="button" class="mob-page-btn" data-page="subscription" onclick="showPage('subscription')" title="サブスク管理" aria-label="サブスク管理">📱</button>
     <button type="button" class="mob-page-btn" data-page="calendar" onclick="showPage('calendar')" title="カレンダー" aria-label="カレンダー">📅</button>
     <button type="button" class="mob-page-btn" data-page="timeline" onclick="showPage('timeline')" title="タイムライン" aria-label="タイムライン">⏳</button>
     <button type="button" class="mob-page-btn" data-page="search" onclick="showPage('search')" title="検索" aria-label="検索">🔍</button>
@@ -1076,6 +1114,8 @@ const DB = {
   setKakeiboCategories(d){ localStorage.setItem('diary_kakeibo_categories', JSON.stringify(d)); SYNC.schedule(); },
   getColumns(){ const d=JSON.parse(localStorage.getItem('diary_columns')||'[]'); return Array.isArray(d)?d:[]; },
   setColumns(d){ localStorage.setItem('diary_columns', JSON.stringify(d)); SYNC.schedule(); },
+  getSubscriptions(){ const d=JSON.parse(localStorage.getItem('diary_subscriptions')||'[]'); return Array.isArray(d)?d:[]; },
+  setSubscriptions(d){ localStorage.setItem('diary_subscriptions', JSON.stringify(d)); SYNC.schedule(); },
 };
 
 // ─── 同期の事故防止：件数が減る上書きは確認を求め、上書き前に必ず1つ前の状態を保存する ───
@@ -1308,6 +1348,7 @@ function showPage(name){
   if(name==='stats'){ renderStats(); }
   if(name==='kakeibo'){ renderKakeibo(); }
   if(name==='column'){ renderColumnPage(); }
+  if(name==='subscription'){ renderSubscriptionList(); }
 }
 
 // ─── Today Page ──────────────────────────────────────────────────────────────
@@ -1419,6 +1460,13 @@ function renderTodayPage(){
   const isToday=(key===todayKey);
   const DOW=['日','月','火','水','木','金','土'];
   const dow=DOW[view.getDay()];
+
+  // サブスク更新Notice（今日を見ている時だけ表示）
+  const subNoticeWrap=document.getElementById('today-subscription-notice');
+  if(subNoticeWrap){
+    if(isToday) renderSubscriptionNotice();
+    else { subNoticeWrap.style.display='none'; subNoticeWrap.innerHTML=''; }
+  }
 
   // 日付ヘッダー
   document.getElementById('today-date-year').textContent=`${y}`;
@@ -3273,6 +3321,91 @@ function renderColumnPage(){
   renderColumnList();
 }
 
+// ─── Subscription（サブスク管理） ───────────────────────────────────────────────
+function addSubscription(){
+  const title=document.getElementById('sub-title').value.trim();
+  const loginId=document.getElementById('sub-loginid').value.trim();
+  const renewDate=document.getElementById('sub-renewdate').value;
+  const price=Number(document.getElementById('sub-price').value)||0;
+  if(!title){ showToast('サブスク名を入力してください'); return; }
+  if(!renewDate){ showToast('更新日を入力してください'); return; }
+  const list=DB.getSubscriptions();
+  list.push({id:Date.now()+'_'+Math.random().toString(36).slice(2), title, loginId, renewDate, price, createdAt:Date.now()});
+  DB.setSubscriptions(list);
+  document.getElementById('sub-title').value='';
+  document.getElementById('sub-loginid').value='';
+  document.getElementById('sub-renewdate').value='';
+  document.getElementById('sub-price').value='';
+  renderSubscriptionList();
+  renderSubscriptionNotice();
+  showToast('✅ '+title+' を登録しました');
+}
+function deleteSubscription(id){
+  if(!confirm('このサブスクを削除しますか？')) return;
+  DB.setSubscriptions(DB.getSubscriptions().filter(s=>s.id!==id));
+  renderSubscriptionList();
+  renderSubscriptionNotice();
+}
+function editSubscription(id){
+  const list=DB.getSubscriptions();
+  const sub=list.find(s=>s.id===id);
+  if(!sub) return;
+  const title=prompt('サブスク名', sub.title);
+  if(title===null) return;
+  const loginId=prompt('ログインID', sub.loginId||'');
+  if(loginId===null) return;
+  const renewDate=prompt('更新日（YYYY-MM-DD）', sub.renewDate);
+  if(renewDate===null) return;
+  const priceStr=prompt('価格（円）', String(sub.price||0));
+  if(priceStr===null) return;
+  sub.title=title.trim()||sub.title;
+  sub.loginId=loginId.trim();
+  sub.renewDate=renewDate.trim()||sub.renewDate;
+  sub.price=Number(priceStr)||0;
+  DB.setSubscriptions(list);
+  renderSubscriptionList();
+  renderSubscriptionNotice();
+}
+function renderSubscriptionList(){
+  const wrap=document.getElementById('subscription-list');
+  if(!wrap) return;
+  const list=DB.getSubscriptions().slice().sort((a,b)=>(a.renewDate||'').localeCompare(b.renewDate||''));
+  if(!list.length){ wrap.innerHTML='<p style="font-size:13px;color:var(--text-muted)">登録されているサブスクはありません</p>'; return; }
+  wrap.innerHTML=list.map(s=>`
+    <div class="sub-item">
+      <span class="sub-item-title">${escHtml(s.title)}</span>
+      <span class="sub-item-meta">🆔 ${escHtml(s.loginId||'—')}</span>
+      <span class="sub-item-meta">📅 ${escHtml(s.renewDate||'—')}更新</span>
+      <span class="sub-item-price">¥${Number(s.price||0).toLocaleString()}</span>
+      <span class="sub-item-actions">
+        <button type="button" class="sub-item-btn" onclick="editSubscription('${s.id}')" title="編集">✏️</button>
+        <button type="button" class="sub-item-btn" onclick="deleteSubscription('${s.id}')" title="削除">✕</button>
+      </span>
+    </div>`).join('');
+}
+function getUpcomingSubscriptionNotices(){
+  const subs=DB.getSubscriptions();
+  const now=new Date();
+  const nowMid=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  return subs.map(s=>{
+    const rd=new Date(s.renewDate+'T00:00:00');
+    const diffDays=Math.round((rd-nowMid)/864e5);
+    return {...s, diffDays};
+  }).filter(s=>Number.isFinite(s.diffDays)&&s.diffDays>=0&&s.diffDays<=3)
+    .sort((a,b)=>a.diffDays-b.diffDays);
+}
+function renderSubscriptionNotice(){
+  const wrap=document.getElementById('today-subscription-notice');
+  if(!wrap) return;
+  const upcoming=getUpcomingSubscriptionNotices();
+  if(!upcoming.length){ wrap.style.display='none'; wrap.innerHTML=''; return; }
+  wrap.style.display='block';
+  wrap.innerHTML=upcoming.map(s=>{
+    const label=s.diffDays===0?'今日更新':`${s.diffDays}日後に更新`;
+    return `<div class="sub-notice-item">🔔 <strong>${escHtml(s.title)}</strong> が${label}（¥${Number(s.price||0).toLocaleString()}）</div>`;
+  }).join('');
+}
+
 // ─── Lightbox ────────────────────────────────────────────────────────────────
 function openLightbox(src){
   document.getElementById('lightbox-img').src=src;
@@ -3358,7 +3491,8 @@ async function exportData(){
     visions:localStorage.getItem('diary_visions'),
     kakeibo:localStorage.getItem('diary_kakeibo'),
     kakeiboCategories:localStorage.getItem('diary_kakeibo_categories'),
-    columns:localStorage.getItem('diary_columns')
+    columns:localStorage.getItem('diary_columns'),
+    subscriptions:localStorage.getItem('diary_subscriptions')
   };
   const jsonStr=JSON.stringify(d);
   const blob=new Blob([jsonStr],{type:'application/json'});
@@ -3403,6 +3537,7 @@ function importData(){
       if(d.kakeibo) localStorage.setItem('diary_kakeibo',d.kakeibo);
       if(d.kakeiboCategories) localStorage.setItem('diary_kakeibo_categories',d.kakeiboCategories);
       if(d.columns) localStorage.setItem('diary_columns',d.columns);
+      if(d.subscriptions) localStorage.setItem('diary_subscriptions',d.subscriptions);
       alert('復元完了！');
       renderCurrentPage();
     };
@@ -3574,6 +3709,8 @@ function applyDiaryPayloadToLocal(d){
   if(d.kakeiboCategories && (Array.isArray(d.kakeiboCategories) ? d.kakeiboCategories.length > 0 : true)) trySet('diary_kakeibo_categories', d.kakeiboCategories);
   if(d.columns && (Array.isArray(d.columns) ? d.columns.length > 0 : true)) trySet('diary_columns', d.columns);
   else if(!d.columns && DB.getColumns().length > 0) { /* ローカルを保持 */ }
+  if(d.subscriptions && (Array.isArray(d.subscriptions) ? d.subscriptions.length > 0 : true)) trySet('diary_subscriptions', d.subscriptions);
+  else if(!d.subscriptions && DB.getSubscriptions().length > 0) { /* ローカルを保持 */ }
   if(d.schedule && Array.isArray(d.schedule)) trySet('diary_schedule', d.schedule);
   if(d.schedule_summary && typeof d.schedule_summary==='object') trySet('diary_schedule_summary', d.schedule_summary);
   if(d.userTags) trySet('diary_user_tags', d.userTags);
@@ -4290,6 +4427,7 @@ const SYNC = {
       fbBirthdays: Array.isArray(fbBirthdays) ? fbBirthdays : [],
       media: DB.getMedia(), todos: DB.getTodos(), goals: DB.getGoals(), visions: DB.getVisions(),
       kakeibo: DB.getKakeibo(), kakeiboCategories: DB.getKakeiboCategories(), columns: DB.getColumns(),
+      subscriptions: DB.getSubscriptions(),
       userTags: getUserTags(),
       schedule: SCHEDULE_DB.getAll(),
       schedule_summary: SCHEDULE_SUMMARY_DB.getAll(),
@@ -4534,6 +4672,9 @@ const SYNC = {
     const gistColumns=toArr(d.columns); const localColumns=DB.getColumns();
     if(gistColumns.length===0&&localColumns.length>0){ console.warn('Gistのコラムが0件のためローカルを保持'); }
     else if(d.columns) trySet('diary_columns', gistColumns);
+    const gistSubs=toArr(d.subscriptions); const localSubs=DB.getSubscriptions();
+    if(gistSubs.length===0&&localSubs.length>0){ console.warn('Gistのサブスクが0件のためローカルを保持'); }
+    else if(d.subscriptions) trySet('diary_subscriptions', gistSubs);
     if(d.userTags) trySet('diary_user_tags', toArr(d.userTags));
     // scheduleは別ファイル(diary-schedule.json)から取得
     const schedFileInfo = j.files[this.SCHED_FILE];
