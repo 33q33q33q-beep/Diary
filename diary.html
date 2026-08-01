@@ -1289,7 +1289,10 @@ function showPage(name){
   // sync-banner モバイル（今日ページのみ）
   const msb=document.getElementById('mobile-sync-banner');
   if(msb) msb.style.display=(name==='today'&&(!window.SYNC||!SYNC.key))&&window.innerWidth<=600?'block':'none';
-  if(name==='today') renderTodayPage();
+  if(name==='today'){
+    // 写真圧縮が完了する前に再読み込みすると、保存前の古い内容で上書きしてしまうため待つ
+    _todayPhotoOpPromise.then(()=>{ if(document.getElementById('page-today').classList.contains('active')) renderTodayPage(); });
+  }
   if(name==='calendar') renderCalendar();
   if(name==='timeline') initTimeline();
   if(name==='search') renderTagCloud();
@@ -1589,13 +1592,15 @@ function renderTodayPhotoGrid(){
 }
 function addTodayPhotos(input){
   const files=[...input.files];
-  files.forEach(file=>{
-    compressImage(file).then(dataUrl=>{
-      todayPhotos.push(dataUrl);
-      renderTodayPhotoGrid();
-      scheduleTodayAutosave();
-    });
+  const op=Promise.all(files.map(file=>compressImage(file))).then(dataUrls=>{
+    todayPhotos.push(...dataUrls);
+    renderTodayPhotoGrid();
+    // 写真追加は都度の操作なのでデバウンスせず即保存する（コラム等へ移動→戻る際の
+    // renderTodayPage() 再読み込みで、圧縮完了前の古い内容に上書きされる事故を防ぐ）
+    persistTodayEntry();
+    showTodaySavedMsg();
   });
+  _todayPhotoOpPromise=_todayPhotoOpPromise.then(()=>op).catch(()=>{});
   input.value='';
 }
 function persistTodayEntry(){
@@ -1622,6 +1627,7 @@ function persistTodayEntry(){
   renderTodayStreak(dateKey(now.getFullYear(),now.getMonth()+1,now.getDate()));
 }
 let _todaySaveTimer=null;
+let _todayPhotoOpPromise=Promise.resolve();
 function scheduleTodayAutosave(){
   clearTimeout(_todaySaveTimer);
   _todaySaveTimer=setTimeout(()=>{ _todaySaveTimer=null; persistTodayEntry(); showTodaySavedMsg(); }, 800);
