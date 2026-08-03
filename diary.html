@@ -4874,12 +4874,16 @@ function renderCurrentPage(){
   const active = document.querySelector('.page.active');
   if(!active) return;
   const id = active.id.replace('page-','');
-  if(id==='calendar'){ renderCalendar(); showAnnivBanner(); }
+  if(id==='today') renderTodayPage();
+  else if(id==='calendar'){ renderCalendar(); showAnnivBanner(); }
   else if(id==='timeline') renderTimeline();
   else if(id==='search') renderTagCloud();
   else if(id==='anniversary') renderAnniversaries();
   else if(id==='media') renderMedia();
   else if(id==='todo'){ renderGoals(); renderVisions(); }
+  else if(id==='kakeibo') renderKakeibo();
+  else if(id==='column') renderColumnPage();
+  else if(id==='subscription') renderSubscriptionList();
 }
 
 function updateAppViewportHeight(){
