@@ -408,7 +408,8 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .today-nav-btn:hover{background:rgba(196,160,60,.12);border-color:var(--primary);color:var(--primary-dark)}
 .today-date-block{display:flex;flex-direction:column;align-items:center;gap:2px}
 .today-date-year{font-family:'Hiragino Maru Gothic ProN','Hiragino Maru Gothic Pro','M PLUS Rounded 1c',sans-serif;font-size:14px;color:var(--text-muted);letter-spacing:.08em}
-.today-date-main{font-family:'Hiragino Maru Gothic ProN','Hiragino Maru Gothic Pro','M PLUS Rounded 1c',sans-serif;font-size:32px;font-weight:700;color:var(--primary-dark);letter-spacing:.02em;line-height:1.15}
+.today-date-main{font-family:'Hiragino Maru Gothic ProN','Hiragino Maru Gothic Pro','M PLUS Rounded 1c',sans-serif;font-size:32px;font-weight:700;color:var(--primary-dark);letter-spacing:.02em;line-height:1.15;transition:color .2s}
+.today-date-main.is-today{color:var(--primary);font-weight:900}
 .today-date-dow{font-family:'Hiragino Maru Gothic ProN','Hiragino Maru Gothic Pro','M PLUS Rounded 1c',sans-serif;font-size:15px;color:var(--text-muted);margin-top:2px;letter-spacing:.04em}
 .today-date-badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 10px;border-radius:20px;background:linear-gradient(135deg,var(--primary),#dab84e);color:#fff;margin-top:4px;box-shadow:0 1px 6px rgba(196,160,60,.4)}
 /* 情報バー：旧暦・カウントダウン（上段）／ 誕生日・記念日（下段）*/
@@ -433,9 +434,10 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .today-saved-msg.show{opacity:1}
 .today-streak{font-size:13px;color:var(--text-muted);text-align:center;margin-top:10px}
 /* 年移動矢印 */
-.today-year-nav{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px}
-.today-year-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:12px;padding:3px 10px;border-radius:6px;transition:.15s}
-.today-year-btn:hover{background:rgba(196,160,60,.12);color:var(--primary-dark)}
+.today-year-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:10px}
+.today-year-btn{background:var(--surface);border:1px solid var(--border);cursor:pointer;color:var(--text-light);font-size:15px;font-weight:600;padding:9px 20px;border-radius:10px;transition:.15s}
+.today-year-btn:hover{background:rgba(196,160,60,.12);color:var(--primary-dark);border-color:var(--primary)}
+.today-year-btn:active{transform:scale(.96)}
 /* 非今日の日付表示 */
 .today-not-today-bar{text-align:center;margin-bottom:10px;font-size:13px;color:var(--text-muted)}
 .today-back-today-btn{display:inline-block;margin-left:10px;padding:3px 12px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:12px;cursor:pointer;font-weight:600}
@@ -1471,7 +1473,9 @@ function renderTodayPage(){
 
   // 日付ヘッダー
   document.getElementById('today-date-year').textContent=`${y}`;
-  document.getElementById('today-date-main').textContent=`${m}月${d}日`;
+  const dateMainEl=document.getElementById('today-date-main');
+  dateMainEl.textContent=`${m}月${d}日`;
+  dateMainEl.classList.toggle('is-today', isToday);
   document.getElementById('today-date-dow').textContent=`（${dow}）`;
 
   // バッジ（今日 / 過去 / 未来）
@@ -1737,12 +1741,10 @@ function initTodaySwipe(){
     const maxTime=swipeFromHeader?400:500;
     if(Math.sqrt(dx*dx+dy*dy)<minDist||dt>maxTime) return;
     const isHoriz=Math.abs(dx)>Math.abs(dy)*0.8;
+    // 上下フリックでの年移動は誤動作が多いため廃止（昨年/来年はボタンのみで移動）
     if(isHoriz){
       if(dx<-minDist) navigateTodayPage(0,0,1);    // 左フリック→明日
       else if(dx>minDist) navigateTodayPage(0,0,-1); // 右フリック→昨日
-    } else {
-      if(dy<-minDist) navigateTodayPage(1,0,0);    // 上フリック→来年
-      else if(dy>minDist) navigateTodayPage(-1,0,0); // 下フリック→昨年
     }
   },{passive:true});
 
@@ -1764,27 +1766,13 @@ function initTodaySwipe(){
     _wheelTimer = setTimeout(()=>{
       const ax=Math.abs(_wheelAccX), ay=Math.abs(_wheelAccY);
       if(!_wheelCooldown && (ax>WHEEL_THRESHOLD || ay>WHEEL_THRESHOLD)){
+        // 上下フリック（トラックパッド）での年移動は誤動作が多いため廃止（昨年/来年はボタンのみ）
         if(ax>ay){
           // 左右（日移動）
           _wheelCooldown=true;
           setTimeout(()=>{ _wheelCooldown=false; }, COOLDOWN_MS);
           if(_wheelAccX>0) navigateTodayPage(0,0,1);   // 右→明日
           else navigateTodayPage(0,0,-1);               // 左→昨日
-        } else {
-          // 上下（年移動）— まだ下にスクロールできる余地がある時は、
-          // 普通のスクロール（隠れた内容を見る）と区別するため発火させない
-          const main=document.getElementById('main');
-          const atTop = !main || main.scrollTop<=0;
-          const atBottom = !main || (main.scrollHeight-main.scrollTop-main.clientHeight)<=1;
-          if(_wheelAccY<0 && atTop){
-            _wheelCooldown=true;
-            setTimeout(()=>{ _wheelCooldown=false; }, COOLDOWN_MS);
-            navigateTodayPage(1,0,0);                   // 上→来年（一番上でさらに上へ）
-          } else if(_wheelAccY>0 && atBottom){
-            _wheelCooldown=true;
-            setTimeout(()=>{ _wheelCooldown=false; }, COOLDOWN_MS);
-            navigateTodayPage(-1,0,0);                  // 下→昨年（一番下でさらに下へ）
-          }
         }
       }
       _wheelAccX=0; _wheelAccY=0;
