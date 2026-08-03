@@ -1150,6 +1150,7 @@ function restorePrevEntriesBackup(){
   if(!backup || !backup.data){ alert('復元できる直前のバックアップが見つかりません。'); return; }
   const when = new Date(backup.at).toLocaleString('ja-JP');
   if(!confirm(`${when} 時点の状態に戻します。\n今の日記データは上書きされます。よろしいですか？`)) return;
+  cancelPendingTodayEdits();
   try{
     const cur = localStorage.getItem('diary_entries');
     localStorage.setItem('diary_entries', backup.data);
@@ -3242,6 +3243,13 @@ function flushColumnAutosave(){
     saveColumn(true);
   }
 }
+/** 同期の取得・データ復元の直前に呼ぶ。保存済み（＝flush）ではなく破棄。
+ * 古い入力内容の保留中タイマーが、復元直後に発火して新しいデータを
+ * 上書きしてしまう事故を防ぐため。 */
+function cancelPendingTodayEdits(){
+  clearTimeout(_todaySaveTimer); _todaySaveTimer=null;
+  clearTimeout(_columnSaveTimer); _columnSaveTimer=null;
+}
 function setColumnAutosaveStatus(text){
   const el=document.getElementById('column-autosave-status');
   if(el) el.textContent=text;
@@ -3527,6 +3535,7 @@ function importData(){
   input.onchange=e=>{
     const r=new FileReader();
     r.onload=ev=>{
+      cancelPendingTodayEdits();
       const d=JSON.parse(ev.target.result);
       if(d.entries) localStorage.setItem('diary_entries',d.entries);
       if(d.annivs)  localStorage.setItem('diary_annivs',d.annivs);
@@ -4095,6 +4104,7 @@ const DRIVE_SYNC = {
   },
   async pull(silent=false){
     if(!getGdriveToken()) return;
+    cancelPendingTodayEdits();
     if(!silent) updateSyncUI('syncing');
     const {rootId, dataId} = await driveEnsureFolders();
     const jid = await driveFindFileInParent('diary-data.json', rootId);
@@ -4538,6 +4548,7 @@ const SYNC = {
   async pull(silent=false){
     if(getSyncBackend()==='gdrive') return DRIVE_SYNC.pull(silent);
     if(!this.key||!this.gistId) return;
+    cancelPendingTodayEdits();
     updateSyncUI('syncing');
     let r;
     try{
