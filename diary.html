@@ -194,19 +194,25 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .section-card h3{font-size:15px;font-weight:600;color:var(--primary-dark);margin-bottom:12px}
 #kakeibo-amount-display{font-size:38px;font-weight:700;text-align:right;color:var(--primary-dark);padding:10px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);margin-bottom:14px;letter-spacing:.02em}
 .kakeibo-numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.kakeibo-key{padding:16px 0;font-size:20px;font-weight:700;border:1px solid var(--border);background:var(--surface);border-radius:10px;cursor:pointer;color:var(--text);transition:all .15s}
+.kakeibo-key{touch-action:manipulation;padding:16px 0;font-size:20px;font-weight:700;border:1px solid var(--border);background:var(--surface);border-radius:10px;cursor:pointer;color:var(--text);transition:all .15s}
 .kakeibo-key:active{transform:scale(.95);background:var(--bg)}
 .kakeibo-key-clear{color:#c0392b}
 .kakeibo-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
-.kakeibo-cat-btn{position:relative;padding:12px 6px;font-size:13px;font-weight:600;border:1px solid var(--border);background:var(--surface);border-radius:10px;cursor:pointer;color:var(--text);transition:all .15s;text-align:center}
+.kakeibo-cat-btn{touch-action:manipulation;position:relative;padding:12px 6px;font-size:13px;font-weight:600;border:1px solid var(--border);background:var(--surface);border-radius:10px;cursor:pointer;color:var(--text);transition:all .15s;text-align:center}
 .kakeibo-cat-btn:hover{border-color:var(--primary);color:var(--primary-dark)}
 .kakeibo-cat-btn:active{transform:scale(.96)}
 .kakeibo-cat-del{position:absolute;top:2px;right:2px;width:18px;height:18px;line-height:16px;padding:0;border:none;background:rgba(0,0,0,.12);color:var(--text-muted);border-radius:50%;font-size:10px;cursor:pointer}
 .kakeibo-cat-del:hover{background:rgba(0,0,0,.25)}
 .kakeibo-cat-add{display:flex;align-items:center;justify-content:center;border-style:dashed;color:var(--text-muted);font-weight:600}
+.kakeibo-pay-methods{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.kakeibo-pay-btn{touch-action:manipulation;padding:10px 6px;font-size:12px;font-weight:600;border:1px solid var(--border);background:var(--surface);border-radius:10px;cursor:pointer;color:var(--text);transition:all .15s;text-align:center}
+.kakeibo-pay-btn:hover{border-color:var(--primary);color:var(--primary-dark)}
+.kakeibo-pay-btn:active{transform:scale(.96)}
+.kakeibo-pay-btn.selected{background:linear-gradient(135deg,var(--primary),#dab84e);color:#fff;border-color:var(--primary)}
 .kakeibo-item{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);font-size:13px}
 .kakeibo-item:last-child{border-bottom:none}
 .kakeibo-item-cat{font-weight:600;min-width:64px}
+.kakeibo-item-pay{font-size:11px;color:var(--text-muted);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
 .kakeibo-item-amount{margin-left:auto;font-weight:700;color:var(--primary-dark)}
 .kakeibo-item-del{border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:2px 6px}
 .column-list-item{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border);cursor:pointer}
@@ -806,6 +812,8 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
         <button type="button" class="kakeibo-key" onclick="kakeiboKey('0')">0</button>
         <button type="button" class="kakeibo-key kakeibo-key-clear" onclick="kakeiboClear()">C</button>
       </div>
+      <div style="font-size:12px;font-weight:600;color:var(--text-light);margin-top:16px">💳 支払い方法</div>
+      <div class="kakeibo-pay-methods" id="kakeibo-pay-methods"></div>
       <div class="kakeibo-cats" id="kakeibo-cats"></div>
     </div>
     <div class="section-card" style="max-width:560px;margin:0 auto">
@@ -3154,14 +3162,34 @@ function updateKakeiboDisplay(){
   const el=document.getElementById('kakeibo-amount-display');
   if(el) el.textContent='¥'+Number(kakeiboAmount||'0').toLocaleString();
 }
+const KAKEIBO_PAY_METHODS=[
+  {name:'SUICA',icon:'🚃'},{name:'CASH',icon:'💵'},{name:'CARD-会社',icon:'💳'},
+  {name:'CARD-AMEX',icon:'💳'},{name:'CARD-Master',icon:'💳'},{name:'CARD-VISA',icon:'💳'}
+];
+let kakeiboPaymentMethod='';
+function kakeiboSelectPayment(name){
+  kakeiboPaymentMethod=(kakeiboPaymentMethod===name)?'':name;
+  renderKakeiboPayMethods();
+}
+function renderKakeiboPayMethods(){
+  const wrap=document.getElementById('kakeibo-pay-methods');
+  if(!wrap) return;
+  const enc=(s)=>encodeURIComponent(s);
+  wrap.innerHTML=KAKEIBO_PAY_METHODS.map(p=>`
+    <button type="button" class="kakeibo-pay-btn${kakeiboPaymentMethod===p.name?' selected':''}" onclick="kakeiboSelectPayment(decodeURIComponent('${enc(p.name)}'))">${p.icon} ${escHtml(p.name)}</button>
+  `).join('');
+}
 function kakeiboRecord(category){
   const amount=Number(kakeiboAmount||'0');
   if(!amount){ showToast('金額を入力してください'); return; }
+  if(!kakeiboPaymentMethod){ showToast('支払い方法を選んでください'); return; }
   const list=DB.getKakeibo();
-  list.push({id:Date.now()+'_'+Math.random().toString(36).slice(2), date:today(), amount, category, createdAt:Date.now()});
+  list.push({id:Date.now()+'_'+Math.random().toString(36).slice(2), date:today(), amount, category, paymentMethod:kakeiboPaymentMethod, createdAt:Date.now()});
   DB.setKakeibo(list);
   kakeiboAmount='';
+  kakeiboPaymentMethod='';
   updateKakeiboDisplay();
+  renderKakeiboPayMethods();
   renderKakeibo();
   showToast('✅ '+category+' ¥'+amount.toLocaleString()+' を記録しました');
 }
@@ -3173,6 +3201,7 @@ function deleteKakeiboEntry(id){
 function renderKakeibo(){
   updateKakeiboDisplay();
   renderKakeiboCategories();
+  renderKakeiboPayMethods();
   const range=document.getElementById('kakeibo-range')?.value||'month';
   let list=DB.getKakeibo().slice().sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt);
   if(range==='month'){
@@ -3189,6 +3218,7 @@ function renderKakeibo(){
     <div class="kakeibo-item">
       <span>${e.date}</span>
       <span class="kakeibo-item-cat">${escHtml(e.category)}</span>
+      ${e.paymentMethod?`<span class="kakeibo-item-pay">${escHtml(e.paymentMethod)}</span>`:''}
       <span class="kakeibo-item-amount">¥${e.amount.toLocaleString()}</span>
       <button type="button" class="kakeibo-item-del" onclick="deleteKakeiboEntry('${e.id}')" title="削除">✕</button>
     </div>`).join('');
