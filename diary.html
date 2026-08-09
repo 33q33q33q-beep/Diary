@@ -812,17 +812,28 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
         <button type="button" class="kakeibo-key" onclick="kakeiboKey('0')">0</button>
         <button type="button" class="kakeibo-key kakeibo-key-clear" onclick="kakeiboClear()">C</button>
       </div>
+      <div class="kakeibo-cats" id="kakeibo-cats"></div>
       <div style="font-size:12px;font-weight:600;color:var(--text-light);margin-top:16px">💳 支払い方法</div>
       <div class="kakeibo-pay-methods" id="kakeibo-pay-methods"></div>
-      <div class="kakeibo-cats" id="kakeibo-cats"></div>
     </div>
     <div class="section-card" style="max-width:560px;margin:0 auto">
-      <h3 style="display:flex;align-items:center;justify-content:space-between">
+      <h3 style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
         <span>📒 記録</span>
-        <select id="kakeibo-range" onchange="renderKakeibo()" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">
-          <option value="month">今月</option>
-          <option value="all">全期間</option>
-        </select>
+        <span style="display:flex;gap:6px;flex-wrap:wrap">
+          <select id="kakeibo-pay-filter" onchange="renderKakeibo()" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">
+            <option value="">支払い方法: すべて</option>
+            <option value="SUICA">🚃 SUICA</option>
+            <option value="CASH">💵 CASH</option>
+            <option value="CARD-会社">💳 CARD-会社</option>
+            <option value="CARD-AMEX">💳 CARD-AMEX</option>
+            <option value="CARD-Master">💳 CARD-Master</option>
+            <option value="CARD-VISA">💳 CARD-VISA</option>
+          </select>
+          <select id="kakeibo-range" onchange="renderKakeibo()" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">
+            <option value="month">今月</option>
+            <option value="all">全期間</option>
+          </select>
+        </span>
       </h3>
       <div id="kakeibo-total" style="font-size:14px;font-weight:700;color:var(--primary-dark);margin-bottom:10px"></div>
       <div id="kakeibo-list"></div>
@@ -3203,14 +3214,18 @@ function renderKakeibo(){
   renderKakeiboCategories();
   renderKakeiboPayMethods();
   const range=document.getElementById('kakeibo-range')?.value||'month';
+  const payFilter=document.getElementById('kakeibo-pay-filter')?.value||'';
   let list=DB.getKakeibo().slice().sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt);
   if(range==='month'){
     const ym=today().slice(0,7);
     list=list.filter(e=>e.date.startsWith(ym));
   }
+  if(payFilter) list=list.filter(e=>e.paymentMethod===payFilter);
   const total=list.reduce((s,e)=>s+e.amount,0);
   const totalEl=document.getElementById('kakeibo-total');
-  if(totalEl) totalEl.textContent=(range==='month'?'今月の合計':'合計')+'：¥'+total.toLocaleString()+'（'+list.length+'件）';
+  const rangeLabel=range==='month'?'今月の合計':'合計';
+  const payLabel=payFilter?`（${payFilter}）`:'';
+  if(totalEl) totalEl.textContent=rangeLabel+payLabel+'：¥'+total.toLocaleString()+'（'+list.length+'件）';
   const listEl=document.getElementById('kakeibo-list');
   if(!listEl) return;
   if(!list.length){ listEl.innerHTML='<p style="font-size:13px;color:var(--text-muted)">記録がありません</p>'; return; }
