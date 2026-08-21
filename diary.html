@@ -53,6 +53,12 @@ body{font-family:'Hiragino Maru Gothic ProN','Hiragino Maru Gothic Pro','M PLUS 
 .nav-btn:hover{background:rgba(196,160,60,.08);color:var(--text);padding-left:24px}
 .nav-btn.active{background:linear-gradient(90deg,rgba(196,160,60,.16) 0%,transparent 100%);color:var(--primary-dark);font-weight:700;border-left:2px solid var(--primary);padding-left:18px}
 .nav-btn .icon{font-size:18px;width:24px;text-align:center}
+/* 階層メニュー：親の直下に子ページをまとめて表示 */
+.nav-group{margin-bottom:2px}
+.nav-btn.nav-child{padding-left:44px;font-size:12px;color:var(--text-muted)}
+.nav-btn.nav-child:hover{padding-left:48px}
+.nav-btn.nav-child.active{padding-left:40px}
+.nav-btn.nav-child .icon{font-size:14px;width:20px}
 /* Main */
 #main{flex:1;height:100%;overflow-y:auto;padding:24px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
 .page{display:none}
@@ -375,12 +381,9 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   #main{flex:1;width:100%;max-width:100%;padding:12px 12px 0}
   #global-mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:100;padding-bottom:max(10px,env(safe-area-inset-bottom))}
   #main{padding-bottom:calc(130px + env(safe-area-inset-bottom))!important}
-  /* page-today モバイル最適化 */
+  /* page-today モバイル最適化（ヘッダー圧縮の実体は Today Page CSSセクション末尾の
+     @media ブロックに配置。ベース規則より後に書かないとカスケード順で負けるため） */
   #page-today{max-width:100%;padding-bottom:8px}
-  .today-header{padding:6px 0 2px;margin-bottom:14px}
-  .today-date-main{font-size:28px}
-  .today-date-nav{gap:8px}
-  .today-nav-btn{font-size:13px;padding:5px 10px}
   .today-info-bar{gap:6px;margin:8px 0 2px}
   .today-info-chip{font-size:12px;padding:4px 10px}
   .today-card{padding:14px 16px;margin-bottom:12px}
@@ -443,8 +446,9 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .today-saved-msg{color:var(--primary-dark);font-size:14px;font-weight:600;opacity:0;transition:opacity .4s}
 .today-saved-msg.show{opacity:1}
 .today-streak{font-size:13px;color:var(--text-muted);text-align:center;margin-top:10px}
-/* 年移動矢印 */
-.today-year-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:10px}
+/* 年移動矢印＋天気 */
+.today-year-nav-row{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:10px}
+.today-year-nav{display:flex;align-items:center;justify-content:center;gap:14px}
 .today-year-btn{background:var(--surface);border:1px solid var(--border);cursor:pointer;color:var(--text-light);font-size:15px;font-weight:600;padding:9px 20px;border-radius:10px;transition:.15s}
 .today-year-btn:hover{background:rgba(196,160,60,.12);color:var(--primary-dark);border-color:var(--primary)}
 .today-year-btn:active{transform:scale(.96)}
@@ -456,6 +460,24 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 .today-slide-in{animation:todaySlideIn .2s ease forwards}
 /* 完全ページスライドアニメ（JSのinline transitionで制御） */
 #today-content-wrap{will-change:transform;position:relative}
+
+/* ヘッダー圧縮（モバイル）：上のベース規則より後ろに置くことでカスケード順で確実に勝たせる。
+   年・日付・曜日・TODAYバッジを1行にまとめ、昨年/来年ボタンと天気を1行にまとめて天地を詰める */
+@media(max-width:600px){
+  .today-header{padding:2px 0 0;margin-bottom:8px}
+  .today-not-today-bar{margin-bottom:4px;font-size:12px}
+  .today-date-nav{gap:6px;margin-bottom:2px}
+  .today-nav-btn{font-size:12px;padding:4px 8px}
+  .today-date-block{flex-direction:row;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:4px 6px}
+  .today-date-year{font-size:11px}
+  .today-date-main{font-size:20px;line-height:1}
+  .today-date-dow{font-size:11px;margin-top:0}
+  .today-date-badge{margin-top:0;font-size:9px;padding:1px 8px}
+  .today-year-nav-row{flex-direction:row;justify-content:center;gap:10px;margin-top:2px}
+  .today-year-btn{font-size:12px;padding:5px 12px}
+  #today-weather-bar{font-size:11px}
+  .today-swipe-hint{margin-top:2px;font-size:10px}
+}
 
 /* ─── Mini Calendar (Sidebar) ────────────────────────────────────────────── */
 .mini-cal-wrap{padding:10px 12px 8px;border-top:1px solid var(--sidebar-border)}
@@ -502,20 +524,26 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 <nav id="sidebar">
   <div id="sidebar-resizer" title="ドラッグで幅を調整"></div>
   <h1><div><span class="brand-title">LifeTime Diary</span><span class="brand-sub">私の日記</span></div><button id="dark-toggle" onclick="toggleDarkMode()" title="ダーク/ライト切替">🌙</button></h1>
-  <button class="nav-btn active" onclick="showPage('today')" id="nav-today"><span class="icon">✏️</span><span>今日の日記</span></button>
-  <button class="nav-btn" onclick="showPage('kakeibo')" id="nav-kakeibo"><span class="icon">💰</span><span>お小遣い帳</span></button>
-  <button class="nav-btn" onclick="showPage('kakeiboLedger')" id="nav-kakeiboLedger"><span class="icon">📒</span><span>帳簿</span></button>
-  <button class="nav-btn" onclick="showPage('column')" id="nav-column"><span class="icon">📝</span><span>コラム</span></button>
-  <button class="nav-btn" onclick="showPage('subscription')" id="nav-subscription"><span class="icon">📱</span><span>サブスク管理</span></button>
-  <button class="nav-btn" onclick="showPage('calendar')" id="nav-calendar"><span class="icon">📅</span><span>カレンダー</span></button>
+  <div class="nav-group">
+    <button class="nav-btn active" onclick="showPage('today')" id="nav-today"><span class="icon">✏️</span><span>今日の日記</span></button>
+    <button class="nav-btn nav-child" onclick="showPage('column')" id="nav-column"><span class="icon">📝</span><span>コラム</span></button>
+  </div>
+  <div class="nav-group">
+    <button class="nav-btn" onclick="showPage('kakeibo')" id="nav-kakeibo"><span class="icon">💰</span><span>お小遣い帳</span></button>
+    <button class="nav-btn nav-child" onclick="showPage('kakeiboLedger')" id="nav-kakeiboLedger"><span class="icon">📒</span><span>帳簿</span></button>
+    <button class="nav-btn nav-child" onclick="showPage('subscription')" id="nav-subscription"><span class="icon">📱</span><span>サブスク管理</span></button>
+  </div>
+  <div class="nav-group">
+    <button class="nav-btn" onclick="showPage('schedule')" id="nav-schedule"><span class="icon">📋</span><span>スケジュール</span></button>
+    <button class="nav-btn nav-child" onclick="showPage('calendar')" id="nav-calendar"><span class="icon">📅</span><span>カレンダー</span></button>
+  </div>
   <button class="nav-btn" onclick="showPage('timeline')" id="nav-timeline"><span class="icon">⏳</span><span>タイムライン</span></button>
-  <button class="nav-btn" onclick="showPage('search')" id="nav-search"><span class="icon">🔍</span><span>検索</span></button>
   <button class="nav-btn" onclick="showPage('anniversary')" id="nav-anniversary"><span class="icon">🎉</span><span>記念日</span></button>
   <button class="nav-btn" onclick="showPage('media')" id="nav-media"><span class="icon">🎬</span><span>映画・本</span></button>
-  <button class="nav-btn" onclick="showPage('todo')" id="nav-todo"><span class="icon">🎯</span><span>Ambition・目標・習慣</span></button>
   <button class="nav-btn" onclick="showPage('encounter')" id="nav-encounter"><span class="icon">🧑</span><span>出会い</span></button>
-    <button class="nav-btn" onclick="showPage('schedule')" id="nav-schedule"><span class="icon">📋</span><span>スケジュール</span></button>
-    <button class="nav-btn" onclick="showPage('stats')" id="nav-stats"><span class="icon">📊</span><span>統計・サマリー</span></button>
+  <button class="nav-btn" onclick="showPage('todo')" id="nav-todo"><span class="icon">🎯</span><span>Ambition・目標・習慣</span></button>
+  <button class="nav-btn" onclick="showPage('search')" id="nav-search"><span class="icon">🔍</span><span>検索</span></button>
+  <button class="nav-btn" onclick="showPage('stats')" id="nav-stats"><span class="icon">📊</span><span>統計・サマリー</span></button>
   <!-- Mini Calendar -->
   <div class="mini-cal-wrap" id="mini-cal-wrap">
     <div class="mini-cal-header">
@@ -598,12 +626,14 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
         </div>
         <button class="today-nav-btn" onclick="navigateTodayPage(0,0,1)" title="明日">明日 ›</button>
       </div>
-      <!-- 年移動 -->
-      <div class="today-year-nav">
-        <button class="today-year-btn" onclick="navigateTodayPage(-1,0,0)" title="昨年の同日">▲ 昨年</button>
-        <button class="today-year-btn" onclick="navigateTodayPage(1,0,0)" title="来年の同日">来年 ▼</button>
+      <!-- 年移動＋天気 -->
+      <div class="today-year-nav-row" id="today-year-nav-row">
+        <div class="today-year-nav">
+          <button class="today-year-btn" onclick="navigateTodayPage(-1,0,0)" title="昨年の同日">▲ 昨年</button>
+          <button class="today-year-btn" onclick="navigateTodayPage(1,0,0)" title="来年の同日">来年 ▼</button>
+        </div>
+        <div id="today-weather-bar" style="font-size:13px;color:var(--text-muted)"></div>
       </div>
-      <div id="today-weather-bar" style="font-size:13px;color:var(--text-muted);margin-top:4px"></div>
       <!-- スワイプヒント（モバイルのみ） -->
       <div class="today-swipe-hint" id="today-swipe-hint">← 昨日　フリックで日移動　明日 →</div>
     </div>
@@ -971,8 +1001,14 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
             <input type="date" id="sub-renewdate" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
           </div>
           <div style="flex:1;min-width:120px">
-            <label style="font-size:11px;color:var(--text-muted)">価格（円）</label>
-            <input type="number" id="sub-price" placeholder="例: 1490" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+            <label style="font-size:11px;color:var(--text-muted)">価格</label>
+            <div style="display:flex;gap:4px">
+              <select id="sub-currency" style="padding:8px 6px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+                <option value="¥">¥</option>
+                <option value="$">$</option>
+              </select>
+              <input type="number" id="sub-price" step="0.01" placeholder="例: 1490" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+            </div>
           </div>
         </div>
         <button type="button" class="btn btn-primary" onclick="addSubscription()">追加</button>
@@ -988,18 +1024,18 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
 <div id="global-mobile-nav" class="calendar-mobile-nav" aria-label="ナビゲーション">
   <div class="calendar-mobile-nav-pages">
     <button type="button" class="mob-page-btn active" data-page="today" onclick="showPage('today')" title="今日の日記" aria-label="今日の日記">✏️</button>
+    <button type="button" class="mob-page-btn" data-page="column" onclick="showPage('column')" title="コラム" aria-label="コラム">📝</button>
     <button type="button" class="mob-page-btn" data-page="kakeibo" onclick="showPage('kakeibo')" title="お小遣い帳" aria-label="お小遣い帳">💰</button>
     <button type="button" class="mob-page-btn" data-page="kakeiboLedger" onclick="showPage('kakeiboLedger')" title="帳簿" aria-label="帳簿">📒</button>
-    <button type="button" class="mob-page-btn" data-page="column" onclick="showPage('column')" title="コラム" aria-label="コラム">📝</button>
     <button type="button" class="mob-page-btn" data-page="subscription" onclick="showPage('subscription')" title="サブスク管理" aria-label="サブスク管理">📱</button>
+    <button type="button" class="mob-page-btn" data-page="schedule" onclick="showPage('schedule')" title="スケジュール" aria-label="スケジュール">📋</button>
     <button type="button" class="mob-page-btn" data-page="calendar" onclick="showPage('calendar')" title="カレンダー" aria-label="カレンダー">📅</button>
     <button type="button" class="mob-page-btn" data-page="timeline" onclick="showPage('timeline')" title="タイムライン" aria-label="タイムライン">⏳</button>
-    <button type="button" class="mob-page-btn" data-page="search" onclick="showPage('search')" title="検索" aria-label="検索">🔍</button>
     <button type="button" class="mob-page-btn" data-page="anniversary" onclick="showPage('anniversary')" title="記念日" aria-label="記念日">🎉</button>
     <button type="button" class="mob-page-btn" data-page="media" onclick="showPage('media')" title="映画・本" aria-label="映画・本">🎬</button>
-    <button type="button" class="mob-page-btn" data-page="todo" onclick="showPage('todo')" title="Ambition" aria-label="Ambition">🎯</button>
     <button type="button" class="mob-page-btn" data-page="encounter" onclick="showPage('encounter')" title="出会い" aria-label="出会い">🧑</button>
-    <button type="button" class="mob-page-btn" data-page="schedule" onclick="showPage('schedule')" title="スケジュール" aria-label="スケジュール">📋</button>
+    <button type="button" class="mob-page-btn" data-page="todo" onclick="showPage('todo')" title="Ambition" aria-label="Ambition">🎯</button>
+    <button type="button" class="mob-page-btn" data-page="search" onclick="showPage('search')" title="検索" aria-label="検索">🔍</button>
     <button type="button" class="mob-page-btn" data-page="stats" onclick="showPage('stats')" title="統計" aria-label="統計">📊</button>
   </div>
   <div class="calendar-mobile-nav-tools">
@@ -3820,20 +3856,30 @@ function renderColumnPage(){
 }
 
 // ─── Subscription（サブスク管理） ───────────────────────────────────────────────
+function formatSubPrice(s){
+  const currency=s.currency||'¥';
+  const amount=Number(s.price||0);
+  const num=currency==='$'
+    ? amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})
+    : amount.toLocaleString();
+  return currency+num;
+}
 function addSubscription(){
   const title=document.getElementById('sub-title').value.trim();
   const loginId=document.getElementById('sub-loginid').value.trim();
   const renewDate=document.getElementById('sub-renewdate').value;
+  const currency=document.getElementById('sub-currency').value||'¥';
   const price=Number(document.getElementById('sub-price').value)||0;
   if(!title){ showToast('サブスク名を入力してください'); return; }
   if(!renewDate){ showToast('更新日を入力してください'); return; }
   const list=DB.getSubscriptions();
-  list.push({id:Date.now()+'_'+Math.random().toString(36).slice(2), title, loginId, renewDate, price, createdAt:Date.now()});
+  list.push({id:Date.now()+'_'+Math.random().toString(36).slice(2), title, loginId, renewDate, price, currency, createdAt:Date.now()});
   DB.setSubscriptions(list);
   document.getElementById('sub-title').value='';
   document.getElementById('sub-loginid').value='';
   document.getElementById('sub-renewdate').value='';
   document.getElementById('sub-price').value='';
+  document.getElementById('sub-currency').value='¥';
   renderSubscriptionList();
   renderSubscriptionNotice();
   showToast('✅ '+title+' を登録しました');
@@ -3854,11 +3900,14 @@ function editSubscription(id){
   if(loginId===null) return;
   const renewDate=prompt('更新日（YYYY-MM-DD）', sub.renewDate);
   if(renewDate===null) return;
-  const priceStr=prompt('価格（円）', String(sub.price||0));
+  const currency=prompt('通貨単位（¥ または $）', sub.currency||'¥');
+  if(currency===null) return;
+  const priceStr=prompt('価格', String(sub.price||0));
   if(priceStr===null) return;
   sub.title=title.trim()||sub.title;
   sub.loginId=loginId.trim();
   sub.renewDate=renewDate.trim()||sub.renewDate;
+  sub.currency=(currency.trim()==='$')?'$':'¥';
   sub.price=Number(priceStr)||0;
   DB.setSubscriptions(list);
   renderSubscriptionList();
@@ -3874,7 +3923,7 @@ function renderSubscriptionList(){
       <span class="sub-item-title">${escHtml(s.title)}</span>
       <span class="sub-item-meta">🆔 ${escHtml(s.loginId||'—')}</span>
       <span class="sub-item-meta">📅 ${escHtml(s.renewDate||'—')}更新</span>
-      <span class="sub-item-price">¥${Number(s.price||0).toLocaleString()}</span>
+      <span class="sub-item-price">${formatSubPrice(s)}</span>
       <span class="sub-item-actions">
         <button type="button" class="sub-item-btn" onclick="editSubscription('${s.id}')" title="編集">✏️</button>
         <button type="button" class="sub-item-btn" onclick="deleteSubscription('${s.id}')" title="削除">✕</button>
@@ -3900,7 +3949,7 @@ function renderSubscriptionNotice(){
   wrap.style.display='block';
   wrap.innerHTML=upcoming.map(s=>{
     const label=s.diffDays===0?'今日更新':`${s.diffDays}日後に更新`;
-    return `<div class="sub-notice-item">🔔 <strong>${escHtml(s.title)}</strong> が${label}（¥${Number(s.price||0).toLocaleString()}）</div>`;
+    return `<div class="sub-notice-item">🔔 <strong>${escHtml(s.title)}</strong> が${label}（${formatSubPrice(s)}）</div>`;
   }).join('');
 }
 
