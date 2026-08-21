@@ -504,6 +504,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   <h1><div><span class="brand-title">LifeTime Diary</span><span class="brand-sub">私の日記</span></div><button id="dark-toggle" onclick="toggleDarkMode()" title="ダーク/ライト切替">🌙</button></h1>
   <button class="nav-btn active" onclick="showPage('today')" id="nav-today"><span class="icon">✏️</span><span>今日の日記</span></button>
   <button class="nav-btn" onclick="showPage('kakeibo')" id="nav-kakeibo"><span class="icon">💰</span><span>お小遣い帳</span></button>
+  <button class="nav-btn" onclick="showPage('kakeiboLedger')" id="nav-kakeiboLedger"><span class="icon">📒</span><span>帳簿</span></button>
   <button class="nav-btn" onclick="showPage('column')" id="nav-column"><span class="icon">📝</span><span>コラム</span></button>
   <button class="nav-btn" onclick="showPage('subscription')" id="nav-subscription"><span class="icon">📱</span><span>サブスク管理</span></button>
   <button class="nav-btn" onclick="showPage('calendar')" id="nav-calendar"><span class="icon">📅</span><span>カレンダー</span></button>
@@ -907,6 +908,30 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
       <div id="kakeibo-list"></div>
     </div>
   </div>
+  <!-- 帳簿（月ごとのジャンル別集計表） -->
+  <div class="page" id="page-kakeiboLedger">
+    <div class="page-title">📒 帳簿</div>
+    <div class="section-card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px">
+        <button type="button" class="btn" onclick="shiftLedgerMonth(-1)">◀ 前月</button>
+        <span id="ledger-month-label" style="font-size:16px;font-weight:700;color:var(--primary-dark);min-width:110px;text-align:center"></span>
+        <button type="button" class="btn" onclick="shiftLedgerMonth(1)">翌月 ▶</button>
+      </div>
+    </div>
+    <div class="section-card" style="margin-bottom:16px">
+      <h3 style="display:flex;align-items:center;justify-content:space-between">
+        <span>🏷️ ジャンル管理</span>
+      </h3>
+      <div id="ledger-cats" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+    <div class="section-card" style="overflow-x:auto">
+      <table id="ledger-table" style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap">
+        <thead id="ledger-thead"></thead>
+        <tbody id="ledger-tbody"></tbody>
+        <tfoot id="ledger-tfoot"></tfoot>
+      </table>
+    </div>
+  </div>
   <!-- Column (コラム) -->
   <div class="page" id="page-column">
     <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
@@ -964,6 +989,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   <div class="calendar-mobile-nav-pages">
     <button type="button" class="mob-page-btn active" data-page="today" onclick="showPage('today')" title="今日の日記" aria-label="今日の日記">✏️</button>
     <button type="button" class="mob-page-btn" data-page="kakeibo" onclick="showPage('kakeibo')" title="お小遣い帳" aria-label="お小遣い帳">💰</button>
+    <button type="button" class="mob-page-btn" data-page="kakeiboLedger" onclick="showPage('kakeiboLedger')" title="帳簿" aria-label="帳簿">📒</button>
     <button type="button" class="mob-page-btn" data-page="column" onclick="showPage('column')" title="コラム" aria-label="コラム">📝</button>
     <button type="button" class="mob-page-btn" data-page="subscription" onclick="showPage('subscription')" title="サブスク管理" aria-label="サブスク管理">📱</button>
     <button type="button" class="mob-page-btn" data-page="calendar" onclick="showPage('calendar')" title="カレンダー" aria-label="カレンダー">📅</button>
@@ -1197,8 +1223,9 @@ const DB = {
     const d=JSON.parse(localStorage.getItem('diary_kakeibo_categories')||'null');
     if(Array.isArray(d)&&d.length) return d;
     return [
-      {name:'通販',icon:'🛒'},{name:'日用品',icon:'🧻'},{name:'食費',icon:'🍚'},
-      {name:'嗜好品',icon:'🍷'},{name:'サブスク',icon:'📱'},{name:'その他',icon:'✨'}
+      {name:'交通費',icon:'🚃'},{name:'生活用品',icon:'🧻'},{name:'勉強費',icon:'📚'},
+      {name:'ケータリング',icon:'🍱'},{name:'食費',icon:'🍚'},{name:'嗜好品',icon:'🍷'},
+      {name:'交際費',icon:'🍻'},{name:'固定費',icon:'🏠'},{name:'猫',icon:'🐱'}
     ];
   },
   setKakeiboCategories(d){ localStorage.setItem('diary_kakeibo_categories', JSON.stringify(d)); SYNC.schedule(); },
@@ -1464,6 +1491,7 @@ function showPage(name){
   if(name==='schedule'){ seedInitialSchedule(); renderSchedule(); }
   if(name==='stats'){ renderStats(); }
   if(name==='kakeibo'){ renderKakeibo(); }
+  if(name==='kakeiboLedger'){ renderKakeiboLedger(); }
   if(name==='column'){ renderColumnPage(); }
   if(name==='subscription'){ renderSubscriptionList(); }
 }
@@ -3586,6 +3614,88 @@ function renderKakeibo(){
     </div>`).join('');
 }
 
+// ─── 帳簿（月ごとのジャンル別集計表） ────────────────────────────────────────────
+let ledgerYm=today().slice(0,7); // "yyyy-MM"
+function shiftLedgerMonth(delta){
+  const [y,m]=ledgerYm.split('-').map(Number);
+  const d=new Date(y,m-1+delta,1);
+  ledgerYm=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  renderKakeiboLedger();
+}
+function renderLedgerCategoryChips(){
+  const wrap=document.getElementById('ledger-cats');
+  if(!wrap) return;
+  const cats=DB.getKakeiboCategories();
+  wrap.innerHTML=cats.map(c=>{
+    const enc=encodeURIComponent(c.name);
+    return `<span class="kakeibo-cat-btn" style="cursor:default">
+      <span class="kakeibo-cat-del" onclick="deleteLedgerCategory(decodeURIComponent('${enc}'))" title="削除">✕</span>
+      ${c.icon} ${escHtml(c.name)}
+    </span>`;
+  }).join('') + `<button type="button" class="kakeibo-cat-btn kakeibo-cat-add" onclick="addLedgerCategory()">＋ 追加</button>`;
+}
+function addLedgerCategory(){
+  addKakeiboCategory();
+  renderKakeiboLedger();
+}
+function deleteLedgerCategory(name){
+  deleteKakeiboCategory(name);
+  renderKakeiboLedger();
+}
+function renderKakeiboLedger(){
+  const labelEl=document.getElementById('ledger-month-label');
+  if(labelEl){
+    const [y,m]=ledgerYm.split('-').map(Number);
+    labelEl.textContent=`${y}年${m}月`;
+  }
+  renderLedgerCategoryChips();
+
+  const cats=DB.getKakeiboCategories();
+  const catNames=cats.map(c=>c.name);
+  const records=DB.getKakeibo()
+    .filter(e=>e.date.startsWith(ledgerYm))
+    .slice()
+    .sort((a,b)=>a.date.localeCompare(b.date)||a.createdAt-b.createdAt);
+
+  const thead=document.getElementById('ledger-thead');
+  const tbody=document.getElementById('ledger-tbody');
+  const tfoot=document.getElementById('ledger-tfoot');
+  if(!thead||!tbody||!tfoot) return;
+
+  const th=(s)=>`<th style="padding:6px 10px;border-bottom:2px solid var(--border);text-align:center;background:var(--surface-alt,var(--surface))">${s}</th>`;
+  thead.innerHTML=`<tr>${th('No.')}${th('日付')}${th('内容')}${cats.map(c=>th(c.icon+' '+escHtml(c.name))).join('')}${th('その他')}</tr>`;
+
+  if(!records.length){
+    tbody.innerHTML=`<tr><td colspan="${4+cats.length}" style="padding:20px;text-align:center;color:var(--text-muted)">この月の記録はありません</td></tr>`;
+    tfoot.innerHTML='';
+    return;
+  }
+
+  const td=(s,align)=>`<td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:${align||'right'}">${s}</td>`;
+  const colTotals=catNames.map(()=>0);
+  let otherTotal=0;
+
+  tbody.innerHTML=records.map((e,i)=>{
+    const idx=catNames.indexOf(e.category);
+    const cells=catNames.map((name,ci)=>{
+      if(ci===idx){ colTotals[ci]+=e.amount; return td('¥'+e.amount.toLocaleString()); }
+      return td('');
+    });
+    let otherCell=td('');
+    if(idx<0){ otherTotal+=e.amount; otherCell=td('¥'+e.amount.toLocaleString()); }
+    return `<tr>${td(String(i+1).padStart(2,'0'),'center')}${td(e.date,'center')}${td(escHtml(e.memo||e.category),'left')}${cells.join('')}${otherCell}</tr>`;
+  }).join('');
+
+  const grandTotal=colTotals.reduce((s,v)=>s+v,0)+otherTotal;
+  const tf=(s)=>`<td style="padding:6px 10px;border-top:2px solid var(--border);text-align:right;font-weight:700">${s}</td>`;
+  tfoot.innerHTML=`<tr>
+    ${tf('')}${tf('')}<td style="padding:6px 10px;border-top:2px solid var(--border);font-weight:700">合計</td>
+    ${colTotals.map(v=>tf(v?'¥'+v.toLocaleString():'')).join('')}
+    ${tf(otherTotal?'¥'+otherTotal.toLocaleString():'')}
+  </tr>
+  <tr><td colspan="${4+cats.length}" style="padding:10px;text-align:right;font-size:15px;font-weight:800;color:var(--primary-dark)">合計金額：¥${grandTotal.toLocaleString()}</td></tr>`;
+}
+
 // ─── Column（コラム） ──────────────────────────────────────────────────────────
 let _currentColumnId=null;
 let _columnSaveTimer=null;
@@ -5286,6 +5396,7 @@ function renderCurrentPage(){
   else if(id==='todo'){ renderAmbitions(); renderGoals(); renderVisions(); }
   else if(id==='encounter') renderEncounters();
   else if(id==='kakeibo') renderKakeibo();
+  else if(id==='kakeiboLedger') renderKakeiboLedger();
   else if(id==='column') renderColumnPage();
   else if(id==='subscription') renderSubscriptionList();
 }
