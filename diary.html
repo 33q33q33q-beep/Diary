@@ -511,7 +511,8 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
   <button class="nav-btn" onclick="showPage('search')" id="nav-search"><span class="icon">🔍</span><span>検索</span></button>
   <button class="nav-btn" onclick="showPage('anniversary')" id="nav-anniversary"><span class="icon">🎉</span><span>記念日</span></button>
   <button class="nav-btn" onclick="showPage('media')" id="nav-media"><span class="icon">🎬</span><span>映画・本</span></button>
-  <button class="nav-btn" onclick="showPage('todo')" id="nav-todo"><span class="icon">🎯</span><span>Ambition・Aspiration</span></button>
+  <button class="nav-btn" onclick="showPage('todo')" id="nav-todo"><span class="icon">🎯</span><span>Ambition・目標・習慣</span></button>
+  <button class="nav-btn" onclick="showPage('encounter')" id="nav-encounter"><span class="icon">🧑</span><span>出会い</span></button>
     <button class="nav-btn" onclick="showPage('schedule')" id="nav-schedule"><span class="icon">📋</span><span>スケジュール</span></button>
     <button class="nav-btn" onclick="showPage('stats')" id="nav-stats"><span class="icon">📊</span><span>統計・サマリー</span></button>
   <!-- Mini Calendar -->
@@ -609,10 +610,14 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <div id="today-content-wrap">
       <!-- サブスク更新Notice -->
       <div id="today-subscription-notice" style="display:none"></div>
+      <!-- Ambition（自分で書き留めた信条をランダム表示） -->
+      <div class="today-card" id="today-ambition-card" style="display:none"></div>
+      <!-- Aspiration（AIが選ぶ今日の格言） -->
+      <div class="today-card" id="today-aspiration-card" style="display:none"></div>
       <!-- 日記 -->
       <div class="today-card">
         <div class="today-section-label">📔 日記</div>
-        <textarea class="today-textarea" id="today-diary" placeholder="今日の出来事を書いてみましょう…" oninput="scheduleTodayAutosave()"></textarea>
+        <textarea class="today-textarea" id="today-diary" placeholder="今日の出来事を書いてみましょう…" oninput="scheduleTodayAutosave();renderTodayRelatedPeople()"></textarea>
         <div class="photo-section" style="margin-top:12px">
           <label class="btn" style="cursor:pointer;display:inline-block;font-size:14px">📷 写真を追加
             <input type="file" id="today-photo-input" accept="image/*" multiple style="display:none" onchange="addTodayPhotos(this)">
@@ -621,6 +626,23 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
         </div>
         <div class="mood-select" id="today-mood-select" style="margin-top:14px;margin-bottom:8px"></div>
         <div class="tags-row" id="today-tags-row"></div>
+        <div id="today-related-people" style="margin-top:10px"></div>
+      </div>
+      <!-- 出会った人を記録 -->
+      <div style="margin-bottom:16px" id="today-encounter-btn-wrap">
+        <div style="text-align:center">
+          <button type="button" class="btn" onclick="toggleAddPersonForm()">🧑 今日出会った人を記録</button>
+        </div>
+        <div id="today-add-person-form" class="today-card" style="display:none;margin-top:10px">
+          <div class="today-section-label">🧑 出会った人を記録</div>
+          <input type="text" id="person-name-input" placeholder="名前" style="width:100%;margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:8px;box-sizing:border-box">
+          <input type="text" id="person-relationship-input" placeholder="関係性（例：取引先、友人）" style="width:100%;margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:8px;box-sizing:border-box">
+          <textarea id="person-notes-input" placeholder="メモ" style="width:100%;margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:8px;min-height:60px;box-sizing:border-box"></textarea>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button type="button" class="btn" onclick="toggleAddPersonForm()">キャンセル</button>
+            <button type="button" class="btn btn-primary" onclick="saveNewPerson()">保存</button>
+          </div>
+        </div>
       </div>
       <!-- 予定メモ -->
       <div class="today-card">
@@ -718,11 +740,19 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
         <button class="btn btn-primary" onclick="addMedia()">追加</button>
       </div>
     </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer">
+        <input type="checkbox" id="media-ai-toggle" onchange="DB.setAiMediaRecommendEnabled(this.checked);renderMediaAiSection()">
+        AIおすすめ機能
+      </label>
+      <button type="button" class="btn" onclick="fetchMediaRecommendations()">🧠 AIにおすすめを聞く</button>
+    </div>
+    <div id="media-ai-recommend" style="display:none;margin-bottom:16px"></div>
     <div class="media-grid" id="media-grid"></div>
   </div>
   <!-- Ambition・Aspiration -->
   <div class="page" id="page-todo">
-    <div class="page-title">Ambition · Aspiration</div>
+    <div class="page-title">Ambition · 目標 · 習慣</div>
     <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;margin-bottom:16px;box-shadow:var(--shadow)">
       <span style="font-size:13px;font-weight:600;color:var(--text-light)">🔤 文字サイズ</span>
       <input type="range" id="todo-font-size" min="11" max="24" value="13" style="flex:1;max-width:180px;accent-color:var(--primary)" oninput="applyTodoFontSize(this.value)">
@@ -731,8 +761,17 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     </div>
     <div class="todo-sections">
       <div class="section-card">
+        <h3>🌟 Ambition</h3>
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px">自分で書き留めた信条・野心。今日ページにランダムで1つ表示され、「頭に入れた」でチェックすると表示されなくなります。</p>
+        <div class="todo-add">
+          <input type="text" id="ambitionInput" placeholder="Ambitionを追加… (Shift+Enterで決定)" onkeydown="if(event.key==='Enter'&&!event.isComposing&&event.shiftKey)addAmbition()">
+          <button class="btn btn-primary" onclick="addAmbition()">追加</button>
+        </div>
+        <div id="ambition-list"></div>
+      </div>
+      <div class="section-card">
         <h3 style="display:flex;align-items:center;justify-content:space-between">
-          <span>🏆 Ambition</span>
+          <span>🎯 目標</span>
           <select id="goal-sort" onchange="renderGoals()" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">
             <option value="priority">優先度順</option>
             <option value="add">追加順</option>
@@ -751,7 +790,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
         <div id="goal-list"></div>
       </div>
       <div class="section-card">
-        <h3>✨ Aspiration（毎日の習慣）</h3>
+        <h3>🔥 習慣</h3>
         <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px">達成した日数が累積カウントされます。毎朝チェックをリセットできます。</p>
         <div class="todo-add">
           <input type="text" id="visionInput" placeholder="習慣を追加… (Shift+Enterで決定)" onkeydown="if(event.key==='Enter'&&!event.isComposing&&event.shiftKey)addVision()">
@@ -761,6 +800,28 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
         <button class="btn" onclick="resetAspirationChecks()" style="margin-top:10px;font-size:12px;width:100%">🌅 本日のチェックをリセット</button>
       </div>
     </div>
+  </div>
+  <!-- 出会い -->
+  <div class="page" id="page-encounter">
+    <div class="page-title">🧑 出会い</div>
+    <div class="anniv-form" id="person-form">
+      <div class="form-row">
+        <input type="text" id="personName" placeholder="名前">
+        <input type="date" id="personMetOn">
+      </div>
+      <div class="form-row">
+        <input type="text" id="personRelationship" placeholder="関係性（例：取引先、友人）">
+      </div>
+      <div class="form-row">
+        <textarea id="personNotes" placeholder="メモ" rows="2" style="resize:vertical"></textarea>
+        <button class="btn btn-primary" onclick="addPerson()">追加</button>
+      </div>
+    </div>
+    <div style="text-align:center;margin-bottom:16px">
+      <button type="button" class="btn" onclick="fetchEncounterSuggestions()">🧠 AIにフォローアップ提案してもらう</button>
+    </div>
+    <div id="encounter-suggestions" style="display:none;margin-bottom:16px"></div>
+    <div id="encounter-list"></div>
   </div>
   <!-- Stats Page -->
   <div class="page" id="page-stats">
@@ -911,6 +972,7 @@ mark{background:#fff3c4;padding:0 2px;border-radius:3px}
     <button type="button" class="mob-page-btn" data-page="anniversary" onclick="showPage('anniversary')" title="記念日" aria-label="記念日">🎉</button>
     <button type="button" class="mob-page-btn" data-page="media" onclick="showPage('media')" title="映画・本" aria-label="映画・本">🎬</button>
     <button type="button" class="mob-page-btn" data-page="todo" onclick="showPage('todo')" title="Ambition" aria-label="Ambition">🎯</button>
+    <button type="button" class="mob-page-btn" data-page="encounter" onclick="showPage('encounter')" title="出会い" aria-label="出会い">🧑</button>
     <button type="button" class="mob-page-btn" data-page="schedule" onclick="showPage('schedule')" title="スケジュール" aria-label="スケジュール">📋</button>
     <button type="button" class="mob-page-btn" data-page="stats" onclick="showPage('stats')" title="統計" aria-label="統計">📊</button>
   </div>
@@ -1144,7 +1206,28 @@ const DB = {
   setColumns(d){ localStorage.setItem('diary_columns', JSON.stringify(d)); SYNC.schedule(); },
   getSubscriptions(){ const d=JSON.parse(localStorage.getItem('diary_subscriptions')||'[]'); return Array.isArray(d)?d:[]; },
   setSubscriptions(d){ localStorage.setItem('diary_subscriptions', JSON.stringify(d)); SYNC.schedule(); },
+  getAmbitions(){ const d=JSON.parse(localStorage.getItem('diary_ambitions')||'[]'); return Array.isArray(d)?d:[]; },
+  setAmbitions(d){ localStorage.setItem('diary_ambitions', JSON.stringify(d)); SYNC.schedule(); },
+  getDailyAmbitionPick(){ return JSON.parse(localStorage.getItem('diary_daily_ambition_pick')||'null'); },
+  setDailyAmbitionPick(d){ localStorage.setItem('diary_daily_ambition_pick', JSON.stringify(d)); SYNC.schedule(); },
+  getPeople(){ const d=JSON.parse(localStorage.getItem('diary_people')||'[]'); return Array.isArray(d)?d:[]; },
+  setPeople(d){ localStorage.setItem('diary_people', JSON.stringify(d)); SYNC.schedule(); },
+  getAiMediaRecommendEnabled(){ return localStorage.getItem('diary_ai_media_recommend_enabled')!=='0'; },
+  setAiMediaRecommendEnabled(v){ localStorage.setItem('diary_ai_media_recommend_enabled', v?'1':'0'); },
 };
+
+// ─── AI秘書バックエンド（Railway）───────────────────────────────────────────
+const AI_BACKEND_BASE='https://lifetimediary-backend-production.up.railway.app';
+const AI_BACKEND_SECRET='23e8d039a9509da490bf5e47987ad628895221a1d387d4be0182a2d5beeb7ec0';
+async function aiFetch(path, options){
+  options=options||{};
+  const res=await fetch(AI_BACKEND_BASE+path, {
+    ...options,
+    headers:{'x-app-secret':AI_BACKEND_SECRET,'Content-Type':'application/json',...(options.headers||{})}
+  });
+  if(!res.ok) throw new Error('AI backend error '+res.status);
+  return res.json();
+}
 
 // ─── 同期の事故防止：件数が減る上書きは確認を求め、上書き前に必ず1つ前の状態を保存する ───
 function backupEntriesBeforeOverwrite(){
@@ -1329,6 +1412,8 @@ function hasLocalDiaryData(){
     const visions = DB.getVisions();
     const kakeibo = DB.getKakeibo();
     const columns = DB.getColumns();
+    const ambitions = DB.getAmbitions();
+    const people = DB.getPeople();
     return (
       Object.keys(entries||{}).length>0 ||
       (Array.isArray(annivs) && annivs.length>0) ||
@@ -1338,7 +1423,9 @@ function hasLocalDiaryData(){
       (Array.isArray(goals) && goals.length>0) ||
       (Array.isArray(visions) && visions.length>0) ||
       (Array.isArray(kakeibo) && kakeibo.length>0) ||
-      (Array.isArray(columns) && columns.length>0)
+      (Array.isArray(columns) && columns.length>0) ||
+      (Array.isArray(ambitions) && ambitions.length>0) ||
+      (Array.isArray(people) && people.length>0)
     );
   }catch(e){
     return false;
@@ -1372,7 +1459,8 @@ function showPage(name){
   if(name==='search') renderTagCloud();
   if(name==='anniversary') renderAnniversaries();
   if(name==='media') renderMedia();
-  if(name==='todo'){ renderGoals(); renderVisions(); setTimeout(()=>{ const s=localStorage.getItem('diary_todo_font'); if(s) applyTodoFontSize(s); },0); }
+  if(name==='todo'){ renderAmbitions(); renderGoals(); renderVisions(); setTimeout(()=>{ const s=localStorage.getItem('diary_todo_font'); if(s) applyTodoFontSize(s); },0); }
+  if(name==='encounter'){ renderEncounters(); }
   if(name==='schedule'){ seedInitialSchedule(); renderSchedule(); }
   if(name==='stats'){ renderStats(); }
   if(name==='kakeibo'){ renderKakeibo(); }
@@ -1615,6 +1703,20 @@ function renderTodayPage(){
 
   renderTodayTagsRow();
   renderTodayPhotoGrid();
+  renderTodayRelatedPeople();
+
+  // Ambition / Aspiration / 出会いボタン（今日を見ている時だけ）
+  const encounterBtnWrap=document.getElementById('today-encounter-btn-wrap');
+  if(encounterBtnWrap) encounterBtnWrap.style.display=isToday?'block':'none';
+  const ambitionCard=document.getElementById('today-ambition-card');
+  const aspirationCard=document.getElementById('today-aspiration-card');
+  if(isToday){
+    renderTodayAmbitionCard();
+    renderTodayAspirationCard();
+  } else {
+    if(ambitionCard){ ambitionCard.style.display='none'; ambitionCard.innerHTML=''; }
+    if(aspirationCard){ aspirationCard.style.display='none'; aspirationCard.innerHTML=''; }
+  }
 
   // 天気（今日のみ取得）
   const wEl=document.getElementById('today-weather-bar');
@@ -1634,6 +1736,105 @@ function renderTodayPage(){
   // 連続記録（今日のみ）
   if(isToday) renderTodayStreak(todayKey);
   else document.getElementById('today-streak').textContent='';
+}
+
+// ─── Ambition（自分で書き留めた信条。今日ページにランダム表示し、内面化チェックする） ──
+function pickTodaysAmbition(){
+  const todayStr=today();
+  const pick=DB.getDailyAmbitionPick();
+  const ambitions=DB.getAmbitions();
+  if(pick && pick.dayID===todayStr){
+    const found=ambitions.find(a=>a.id===pick.ambitionId && !a.isInternalized);
+    if(found) return found;
+  }
+  const candidates=ambitions.filter(a=>!a.isInternalized);
+  if(!candidates.length) return null;
+  const picked=candidates[Math.floor(Math.random()*candidates.length)];
+  picked.displayCount=(picked.displayCount||0)+1;
+  DB.setAmbitions(ambitions.map(a=>a.id===picked.id?picked:a));
+  DB.setDailyAmbitionPick({dayID:todayStr, ambitionId:picked.id, pickedAt:Date.now()});
+  return picked;
+}
+function renderTodayAmbitionCard(){
+  const wrap=document.getElementById('today-ambition-card');
+  if(!wrap) return;
+  const ambition=pickTodaysAmbition();
+  if(!ambition){ wrap.style.display='none'; wrap.innerHTML=''; return; }
+  wrap.style.display='block';
+  wrap.innerHTML=`
+    <div class="today-section-label">🌟 Ambition <span style="font-weight:400;font-size:12px;color:var(--text-muted)">表示 ${ambition.displayCount}回目</span></div>
+    <div style="font-size:15px;font-weight:600;margin:8px 0">${escHtml(ambition.text)}</div>
+    <button class="btn btn-primary" onclick="internalizeAmbition(${ambition.id})">✅ 頭に入れた</button>
+  `;
+}
+function internalizeAmbition(id){
+  const ambitions=DB.getAmbitions().map(a=>a.id===id?{...a,isInternalized:true,internalizedAt:Date.now()}:a);
+  DB.setAmbitions(ambitions);
+  renderTodayAmbitionCard();
+}
+
+// ─── Aspiration（AIが選ぶ今日の格言。1日1回だけバックエンドに取得しキャッシュする） ──
+function getCachedAspiration(){
+  try{
+    const cached=JSON.parse(localStorage.getItem('diary_aspiration_cache')||'null');
+    if(cached && cached.date===today()) return cached;
+  }catch(e){}
+  return null;
+}
+function renderAspirationContent(data){
+  return `<div class="today-section-label">✨ 今日の格言</div>
+    <div style="font-style:italic;margin:8px 0">"${escHtml(data.quote)}"</div>
+    <div style="font-size:13px;color:var(--text-muted);text-align:right">— ${escHtml(data.author)}</div>`;
+}
+function renderTodayAspirationCard(){
+  const wrap=document.getElementById('today-aspiration-card');
+  if(!wrap) return;
+  const cached=getCachedAspiration();
+  wrap.style.display='block';
+  if(cached){ wrap.innerHTML=renderAspirationContent(cached); return; }
+  wrap.innerHTML='<div class="today-section-label">✨ 今日の格言</div><div style="color:var(--text-muted);font-size:13px">取得中…</div>';
+  aiFetch('/aspiration/today').then(data=>{
+    localStorage.setItem('diary_aspiration_cache', JSON.stringify(data));
+    wrap.innerHTML=renderAspirationContent(data);
+  }).catch(()=>{
+    wrap.innerHTML='<div class="today-section-label">✨ 今日の格言</div><div style="color:var(--text-muted);font-size:13px">取得できませんでした</div>';
+  });
+}
+
+// ─── 出会い機能（人物記録・日記本文との自動関連付け） ────────────────────────
+function renderTodayRelatedPeople(){
+  const wrap=document.getElementById('today-related-people');
+  if(!wrap) return;
+  const content=document.getElementById('today-diary')?.value||'';
+  if(!content){ wrap.innerHTML=''; return; }
+  const people=DB.getPeople();
+  const matched=people.filter(p=>p.name && content.includes(p.name));
+  if(!matched.length){ wrap.innerHTML=''; return; }
+  wrap.innerHTML='<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">🔗 関連する人</div>'+
+    matched.map(p=>`<div style="font-size:13px;margin-bottom:4px"><b>${escHtml(p.name)}</b>${p.notes?' — '+escHtml(p.notes):''}</div>`).join('');
+}
+function toggleAddPersonForm(){
+  const form=document.getElementById('today-add-person-form');
+  if(!form) return;
+  const show=form.style.display==='none';
+  form.style.display=show?'block':'none';
+  if(show){
+    document.getElementById('person-name-input').value='';
+    document.getElementById('person-relationship-input').value='';
+    document.getElementById('person-notes-input').value='';
+  }
+}
+function saveNewPerson(){
+  const name=document.getElementById('person-name-input').value.trim();
+  if(!name){ alert('名前を入力してください'); return; }
+  const relationship=document.getElementById('person-relationship-input').value.trim();
+  const notes=document.getElementById('person-notes-input').value.trim();
+  const people=DB.getPeople();
+  people.unshift({id:Date.now(), name, metOn:today(), relationship, notes, lastMentionedAt:today(), createdAt:Date.now()});
+  DB.setPeople(people);
+  toggleAddPersonForm();
+  showToast('✅ 記録しました');
+  renderTodayRelatedPeople();
 }
 
 function renderTodayTagsRow(){
@@ -2854,7 +3055,36 @@ function addMedia(){
   document.getElementById('mediaMemo').value='';
   renderMedia();
 }
+function renderMediaAiSection(){
+  const toggle=document.getElementById('media-ai-toggle');
+  const enabled=DB.getAiMediaRecommendEnabled();
+  if(toggle) toggle.checked=enabled;
+  const recWrap=document.getElementById('media-ai-recommend');
+  if(recWrap && !enabled){ recWrap.style.display='none'; recWrap.innerHTML=''; }
+}
+async function fetchMediaRecommendations(){
+  if(!DB.getAiMediaRecommendEnabled()){ alert('AIおすすめ機能がオフになっています。チェックを入れてから実行してください。'); return; }
+  const history=DB.getMedia();
+  if(!history.length){ alert('映画・書籍の記録がまだありません。'); return; }
+  const wrap=document.getElementById('media-ai-recommend');
+  wrap.style.display='block';
+  wrap.innerHTML='<div class="empty" style="padding:14px;font-size:13px">🧠 おすすめを生成中…</div>';
+  try{
+    const mediaHistory=history.map(m=>({type:m.type,title:m.title,author:m.author||'',rating:m.rating,memo:m.memo||''}));
+    const data=await aiFetch('/media/recommend',{method:'POST',body:JSON.stringify({mediaHistory})});
+    const recs=data.recommendations||[];
+    if(!recs.length){ wrap.innerHTML='<div class="empty" style="padding:14px;font-size:13px">おすすめが見つかりませんでした</div>'; return; }
+    wrap.innerHTML=recs.map(r=>`
+      <div class="media-card" style="margin-bottom:8px">
+        <div class="title">${escHtml(r.title)}（${escHtml(r.type)}）</div>
+        <div class="memo">${escHtml(r.reason)}</div>
+      </div>`).join('');
+  }catch(e){
+    wrap.innerHTML='<div class="empty" style="padding:14px;font-size:13px">おすすめの取得に失敗しました</div>';
+  }
+}
 function renderMedia(){
+  renderMediaAiSection();
   const all=DB.getMedia();
   const media=all.filter(m=>m.type===mediaType);
   const grid=document.getElementById('media-grid');
@@ -2985,6 +3215,100 @@ function toggleTodo(id,done){
 }
 function delTodo(id){
   DB.setTodos(DB.getTodos().filter(t=>t.id!==id)); renderTodos();
+}
+
+// ─── Ambition（信条・野心。今日ページのランダム表示＋内面化チェックの管理画面） ──
+function addAmbition(){
+  const input=document.getElementById('ambitionInput');
+  const val=input.value.trim();
+  if(!val) return;
+  const ambitions=DB.getAmbitions();
+  ambitions.unshift({id:Date.now(),text:val,displayCount:0,isInternalized:false,internalizedAt:null,createdAt:Date.now()});
+  DB.setAmbitions(ambitions);
+  input.value='';
+  renderAmbitions();
+}
+function renderAmbitions(){
+  const list=document.getElementById('ambition-list');
+  if(!list) return;
+  const ambitions=DB.getAmbitions();
+  if(ambitions.length===0){ list.innerHTML='<div class="empty" style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">Ambitionはまだありません</div>'; return; }
+  list.innerHTML=ambitions.map(a=>`
+    <div class="vision-item${a.isInternalized?' vision-checked':''}">
+      <input type="checkbox" ${a.isInternalized?'checked':''} onchange="toggleAmbition(${a.id},this.checked)">
+      <span class="text" style="${a.isInternalized?'text-decoration:line-through;opacity:.6':''}">${escHtml(a.text)}</span>
+      <span class="count">👁️ ${a.displayCount||0}回</span>
+      <span class="del" onclick="delAmbition(${a.id})">✕</span>
+    </div>`).join('');
+}
+function toggleAmbition(id,checked){
+  const ambitions=DB.getAmbitions().map(a=>a.id===id?{...a,isInternalized:checked,internalizedAt:checked?Date.now():null}:a);
+  DB.setAmbitions(ambitions);
+  renderAmbitions();
+}
+function delAmbition(id){
+  DB.setAmbitions(DB.getAmbitions().filter(a=>a.id!==id));
+  renderAmbitions();
+}
+
+// ─── 出会い（人物記録＋AIフォローアップ提案） ─────────────────────────────────
+function addPerson(){
+  const name=document.getElementById('personName').value.trim();
+  if(!name){ alert('名前を入力してください'); return; }
+  const metOn=document.getElementById('personMetOn').value||today();
+  const relationship=document.getElementById('personRelationship').value.trim();
+  const notes=document.getElementById('personNotes').value.trim();
+  const people=DB.getPeople();
+  people.unshift({id:Date.now(),name,metOn,relationship,notes,lastMentionedAt:metOn,createdAt:Date.now()});
+  DB.setPeople(people);
+  document.getElementById('personName').value='';
+  document.getElementById('personMetOn').value='';
+  document.getElementById('personRelationship').value='';
+  document.getElementById('personNotes').value='';
+  renderEncounters();
+}
+function delPerson(id){
+  if(!confirm('この人物の記録を削除しますか？')) return;
+  DB.setPeople(DB.getPeople().filter(p=>p.id!==id));
+  renderEncounters();
+}
+function renderEncounters(){
+  const list=document.getElementById('encounter-list');
+  if(!list) return;
+  const people=DB.getPeople();
+  if(people.length===0){ list.innerHTML='<div class="empty" style="text-align:center;padding:30px;color:var(--text-muted)">まだ記録がありません</div>'; return; }
+  list.innerHTML=people.map(p=>`
+    <div class="media-card" style="margin-bottom:8px">
+      <div class="title">${escHtml(p.name)}${p.relationship?` <span style="font-size:12px;color:var(--text-muted);font-weight:400">（${escHtml(p.relationship)}）</span>`:''}</div>
+      <div class="date">${p.metOn||''}</div>
+      ${p.notes?`<div class="memo">${escHtml(p.notes)}</div>`:''}
+      <div class="media-card-actions">
+        <button class="card-del" onclick="delPerson(${p.id})">削除</button>
+      </div>
+    </div>`).join('');
+}
+async function fetchEncounterSuggestions(){
+  const people=DB.getPeople();
+  if(!people.length){ alert('記録されている人物がいません。'); return; }
+  const wrap=document.getElementById('encounter-suggestions');
+  wrap.style.display='block';
+  wrap.innerHTML='<div class="empty" style="padding:14px;font-size:13px">🧠 提案を生成中…</div>';
+  try{
+    const payload={
+      today:today(),
+      people:people.map(p=>({name:p.name,metOn:p.metOn,relationship:p.relationship||'',notes:p.notes||'',lastMentionedAt:p.lastMentionedAt||null}))
+    };
+    const data=await aiFetch('/encounter/suggest',{method:'POST',body:JSON.stringify(payload)});
+    const suggestions=data.suggestions||[];
+    if(!suggestions.length){ wrap.innerHTML='<div class="empty" style="padding:14px;font-size:13px">今のところ提案はありません</div>'; return; }
+    wrap.innerHTML=suggestions.map(s=>`
+      <div class="media-card" style="margin-bottom:8px">
+        <div class="title">${escHtml(s.personName)}</div>
+        <div class="memo">${escHtml(s.reason)}</div>
+      </div>`).join('');
+  }catch(e){
+    wrap.innerHTML='<div class="empty" style="padding:14px;font-size:13px">提案の取得に失敗しました</div>';
+  }
 }
 
 // ─── Goals ───────────────────────────────────────────────────────────────────
@@ -3556,7 +3880,10 @@ async function exportData(){
     kakeibo:localStorage.getItem('diary_kakeibo'),
     kakeiboCategories:localStorage.getItem('diary_kakeibo_categories'),
     columns:localStorage.getItem('diary_columns'),
-    subscriptions:localStorage.getItem('diary_subscriptions')
+    subscriptions:localStorage.getItem('diary_subscriptions'),
+    ambitions:localStorage.getItem('diary_ambitions'),
+    dailyAmbitionPick:localStorage.getItem('diary_daily_ambition_pick'),
+    people:localStorage.getItem('diary_people')
   };
   const jsonStr=JSON.stringify(d);
   const blob=new Blob([jsonStr],{type:'application/json'});
@@ -3603,6 +3930,9 @@ function importData(){
       if(d.kakeiboCategories) localStorage.setItem('diary_kakeibo_categories',d.kakeiboCategories);
       if(d.columns) localStorage.setItem('diary_columns',d.columns);
       if(d.subscriptions) localStorage.setItem('diary_subscriptions',d.subscriptions);
+      if(d.ambitions) localStorage.setItem('diary_ambitions',d.ambitions);
+      if(d.dailyAmbitionPick) localStorage.setItem('diary_daily_ambition_pick',d.dailyAmbitionPick);
+      if(d.people) localStorage.setItem('diary_people',d.people);
       alert('復元完了！');
       renderCurrentPage();
     };
@@ -3776,6 +4106,11 @@ function applyDiaryPayloadToLocal(d){
   else if(!d.columns && DB.getColumns().length > 0) { /* ローカルを保持 */ }
   if(d.subscriptions && (Array.isArray(d.subscriptions) ? d.subscriptions.length > 0 : true)) trySet('diary_subscriptions', d.subscriptions);
   else if(!d.subscriptions && DB.getSubscriptions().length > 0) { /* ローカルを保持 */ }
+  if(d.ambitions && (Array.isArray(d.ambitions) ? d.ambitions.length > 0 : true)) trySet('diary_ambitions', d.ambitions);
+  else if(!d.ambitions && DB.getAmbitions().length > 0) { /* ローカルを保持 */ }
+  if(d.dailyAmbitionPick) trySet('diary_daily_ambition_pick', d.dailyAmbitionPick);
+  if(d.people && (Array.isArray(d.people) ? d.people.length > 0 : true)) trySet('diary_people', d.people);
+  else if(!d.people && DB.getPeople().length > 0) { /* ローカルを保持 */ }
   if(d.schedule && Array.isArray(d.schedule)) trySet('diary_schedule', d.schedule);
   if(d.schedule_summary && typeof d.schedule_summary==='object') trySet('diary_schedule_summary', d.schedule_summary);
   if(d.userTags) trySet('diary_user_tags', d.userTags);
@@ -4494,6 +4829,7 @@ const SYNC = {
       media: DB.getMedia(), todos: DB.getTodos(), goals: DB.getGoals(), visions: DB.getVisions(),
       kakeibo: DB.getKakeibo(), kakeiboCategories: DB.getKakeiboCategories(), columns: DB.getColumns(),
       subscriptions: DB.getSubscriptions(),
+      ambitions: DB.getAmbitions(), dailyAmbitionPick: DB.getDailyAmbitionPick(), people: DB.getPeople(),
       userTags: getUserTags(),
       schedule: SCHEDULE_DB.getAll(),
       schedule_summary: SCHEDULE_SUMMARY_DB.getAll(),
@@ -4947,7 +5283,8 @@ function renderCurrentPage(){
   else if(id==='search') renderTagCloud();
   else if(id==='anniversary') renderAnniversaries();
   else if(id==='media') renderMedia();
-  else if(id==='todo'){ renderGoals(); renderVisions(); }
+  else if(id==='todo'){ renderAmbitions(); renderGoals(); renderVisions(); }
+  else if(id==='encounter') renderEncounters();
   else if(id==='kakeibo') renderKakeibo();
   else if(id==='column') renderColumnPage();
   else if(id==='subscription') renderSubscriptionList();
