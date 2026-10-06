@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f2e8">
+  <meta name="description" content="LifeTimeDiaryのTestFlightテストに参加する方向けのインストール・テスト・フィードバック手順です。">
+  <title>LifeTimeDiary｜TestFlight 参加ガイド</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #2d2924;
+      --muted: #6e665b;
+      --paper: #fffdf8;
+      --wash: #f7f2e8;
+      --line: #e5dccd;
+      --gold: #9b7538;
+      --gold-dark: #715225;
+      --sage: #71806c;
+      --rose: #a76f69;
+      --shadow: 0 18px 50px rgba(70, 52, 30, .09);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 8% 0%, rgba(181, 151, 99, .12), transparent 34rem),
+        linear-gradient(180deg, var(--wash), #fbf8f1 46%, #f3eee4);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+      line-height: 1.8;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--gold-dark); text-underline-offset: .18em; }
+    a:hover { color: #422f16; }
+
+    .wrap {
+      width: min(920px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      padding: max(38px, env(safe-area-inset-top)) 0 34px;
+      border-bottom: 1px solid rgba(155, 117, 56, .16);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      margin: 0 0 16px;
+      color: var(--gold-dark);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 30px;
+      height: 1px;
+      background: var(--gold);
+    }
+
+    h1, h2, h3 { line-height: 1.35; }
+    h1 {
+      max-width: 760px;
+      margin: 0;
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+      font-size: clamp(2.2rem, 8vw, 4.4rem);
+      font-weight: 600;
+      letter-spacing: -.035em;
+    }
+
+    .lead {
+      max-width: 680px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 2.5vw, 1.16rem);
+    }
+
+    .notice {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      margin-top: 26px;
+      padding: 18px 20px;
+      border: 1px solid #ead9b8;
+      border-radius: 16px;
+      background: rgba(255, 251, 238, .82);
+    }
+
+    .notice .mark { font-size: 1.25rem; line-height: 1.5; }
+    .notice p { margin: 0; }
+
+    .quick {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 26px 0 0;
+    }
+
+    .quick a {
+      display: flex;
+      min-height: 52px;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 253, 248, .82);
+      font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(70, 52, 30, .05);
+    }
+
+    main { padding: 38px 0 74px; }
+    section { scroll-margin-top: 18px; }
+    .card {
+      margin: 0 0 22px;
+      padding: clamp(22px, 5vw, 38px);
+      border: 1px solid rgba(136, 111, 72, .16);
+      border-radius: var(--radius);
+      background: rgba(255, 253, 248, .94);
+      box-shadow: var(--shadow);
+    }
+
+    .section-head {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .num {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--ink);
+      color: white;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .88rem;
+      font-weight: 800;
+    }
+
+    h2 { margin: 1px 0 4px; font-size: clamp(1.35rem, 4vw, 1.8rem); }
+    .section-head p { margin: 0; color: var(--muted); }
+    h3 { margin: 26px 0 8px; font-size: 1.05rem; }
+    p { margin: .7em 0; }
+    ul, ol { padding-left: 1.45em; }
+    li + li { margin-top: .55em; }
+
+    .button {
+      display: inline-flex;
+      min-height: 50px;
+      align-items: center;
+      justify-content: center;
+      margin-top: 12px;
+      padding: 10px 20px;
+      border-radius: 14px;
+      background: var(--ink);
+      color: white;
+      font-weight: 800;
+      text-decoration: none;
+      box-shadow: 0 10px 22px rgba(45, 41, 36, .18);
+    }
+
+    .button:hover { color: white; background: #111; }
+
+    .steps {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: steps;
+    }
+
+    .steps li {
+      position: relative;
+      min-height: 48px;
+      padding: 5px 0 18px 54px;
+      border-left: 1px solid var(--line);
+      margin-left: 18px;
+    }
+
+    .steps li:last-child { padding-bottom: 0; border-left-color: transparent; }
+    .steps li::before {
+      counter-increment: steps;
+      content: counter(steps);
+      position: absolute;
+      left: -18px;
+      top: 0;
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border: 1px solid #d6c5a4;
+      border-radius: 50%;
+      background: #fffaf0;
+      color: var(--gold-dark);
+      font-weight: 800;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 999px;
+      background: #ebe5d9;
+      font-size: .78rem;
+      font-weight: 800;
+      vertical-align: .08em;
+    }
+
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .test-item {
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fbf8f0;
+    }
+
+    .test-item strong { display: block; margin-bottom: 2px; }
+    .test-item span { color: var(--muted); font-size: .92rem; }
+
+    .callout {
+      margin-top: 20px;
+      padding: 18px 20px;
+      border-left: 4px solid var(--sage);
+      border-radius: 4px 14px 14px 4px;
+      background: #f1f5ef;
+    }
+
+    .callout.warn { border-left-color: var(--rose); background: #fbf0ee; }
+    .callout p:first-child { margin-top: 0; }
+    .callout p:last-child { margin-bottom: 0; }
+
+    details {
+      border-top: 1px solid var(--line);
+      padding: 16px 0;
+    }
+
+    details:last-child { border-bottom: 1px solid var(--line); }
+    summary { cursor: pointer; font-weight: 800; }
+    details p { color: var(--muted); }
+
+    footer {
+      padding: 0 0 calc(42px + env(safe-area-inset-bottom));
+      color: var(--muted);
+      font-size: .88rem;
+      text-align: center;
+    }
+
+    footer p { margin: .35em 0; }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 22px, 920px); }
+      .hero { padding-bottom: 26px; }
+      .quick { grid-template-columns: 1fr; }
+      .test-grid { grid-template-columns: 1fr; }
+      .card { border-radius: 18px; }
+      .section-head { gap: 12px; }
+      .num { width: 38px; height: 38px; flex-basis: 38px; }
+    }
+
+    @media print {
+      body { background: white; }
+      .quick { display: none; }
+      .hero { padding-top: 20px; }
+      .card { break-inside: avoid; box-shadow: none; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Beta Tester Guide</p>
+      <h1>LifeTimeDiary<br>TestFlight 参加ガイド</h1>
+      <p class="lead">招待を受け取ってからアプリを試し、気づいたことを送るまでの手順です。はじめてTestFlightを使う方も、このページの順番どおりに進めれば参加できます。</p>
+
+      <div class="notice" role="note">
+        <span class="mark" aria-hidden="true">☕️</span>
+        <p><strong>所要時間の目安は5分です。</strong><br>Apple Account（旧Apple ID）でサインインしたiPhoneまたはiPadと、インターネット接続をご用意ください。</p>
+      </div>
+
+      <nav class="quick" aria-label="ページ内メニュー">
+        <a href="#install">参加・インストール</a>
+        <a href="#test">試してほしいこと</a>
+        <a href="#feedback">不具合の送り方</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="card" id="before">
+      <div class="section-head">
+        <span class="num">00</span>
+        <div>
+          <h2>参加前の確認</h2>
+          <p>LifeTimeDiaryは開発途中のβ版です。</p>
+        </div>
+      </div>
+
+      <ul>
+        <li>iPhone・iPad版は<strong>iOS / iPadOS 16以降</strong>、Mac版は<strong>macOS 14以降</strong>が対象です。</li>
+        <li>TestFlight版には利用期限があります。1つのビルドを試せる期間は、公開後最大90日です。</li>
+        <li>β版では表示の乱れ、強制終了、データ消失などが起きる可能性があります。大切な内容は別の場所にも控えてください。</li>
+        <li>招待メールを受けた場合は、招待先のメールアドレスで参加してください。公開リンクを受けた場合は、そのリンクを開きます。</li>
+      </ul>
+    </section>
+
+    <section class="card" id="install">
+      <div class="section-head">
+        <span class="num">01</span>
+        <div>
+          <h2>TestFlightをインストール</h2>
+          <p>Apple公式の無料アプリです。</p>
+        </div>
+      </div>
+
+      <ol class="steps">
+        <li>iPhoneまたはiPadで、下のボタンからApp Storeを開きます。</li>
+        <li><strong>TestFlight</strong>の「入手」をタップしてインストールします。</li>
+        <li>インストール後、TestFlightを一度開き、案内が表示されたら内容を確認して進みます。</li>
+      </ol>
+
+      <a class="button" href="https://apps.apple.com/jp/app/testflight/id899247664" target="_blank" rel="noopener">App StoreでTestFlightを開く</a>
+    </section>
+
+    <section class="card" id="join">
+      <div class="section-head">
+        <span class="num">02</span>
+        <div>
+          <h2>LifeTimeDiaryに参加</h2>
+          <p>受け取った招待の種類に合わせて進めます。</p>
+        </div>
+      </div>
+
+      <h3><span class="tag">招待メール</span> を受け取った場合</h3>
+      <ol>
+        <li>iPhoneまたはiPadでAppleから届いたTestFlight招待メールを開きます。</li>
+        <li>メール内の<strong>「View in TestFlight」</strong>または参加ボタンをタップします。</li>
+        <li>TestFlightが開いたら、LifeTimeDiaryの<strong>「承認」</strong>、続けて<strong>「インストール」</strong>をタップします。</li>
+      </ol>
+
+      <h3><span class="tag">公開リンク</span> を受け取った場合</h3>
+      <ol>
+        <li>主催者から届いたLifeTimeDiaryの参加リンクをiPhoneまたはiPadで開きます。</li>
+        <li><strong>「テストを開始」</strong>をタップし、TestFlightで開きます。</li>
+        <li>LifeTimeDiaryの<strong>「承認」</strong>、続けて<strong>「インストール」</strong>をタップします。</li>
+      </ol>
+
+      <div class="callout">
+        <p><strong>インストール後は、通常のアプリと同じです。</strong></p>
+        <p>ホーム画面のLifeTimeDiaryアイコンをタップして起動してください。新しいテスト版が届いたときは、TestFlightで「アップデート」をタップします。</p>
+      </div>
+    </section>
+
+    <section class="card" id="test">
+      <div class="section-head">
+        <span class="num">03</span>
+        <div>
+          <h2>試してほしいこと</h2>
+          <p>全部を試す必要はありません。普段どおり使った感想も大切です。</p>
+        </div>
+      </div>
+
+      <div class="test-grid">
+        <div class="test-item"><strong>日記を書く</strong><span>本文やコラムを入力し、閉じてから開き直して内容が残るか</span></div>
+        <div class="test-item"><strong>記念日</strong><span>追加・表示・削除が自然に行えるか</span></div>
+        <div class="test-item"><strong>今日の格言</strong><span>表示されない日や不自然な状態がないか</span></div>
+        <div class="test-item"><strong>目標</strong><span>優先度（高・中・低）の選択と保存ができるか</span></div>
+        <div class="test-item"><strong>お小遣い帳</strong><span>日付・金額・ジャンル・支払い方法、円グラフなどが正しいか</span></div>
+        <div class="test-item"><strong>リマインダー</strong><span>「日記を書く時間」を設定し、通知が届くか</span></div>
+        <div class="test-item"><strong>読みやすさ</strong><span>文字の大きさ、ボタンの押しやすさ、画面の崩れがないか</span></div>
+        <div class="test-item"><strong>複数端末の同期</strong><span>同じApple Accountの端末間で内容がそろうか（試せる方のみ）</span></div>
+      </div>
+
+      <div class="callout warn">
+        <p><strong>同期テストをする前に</strong></p>
+        <p>大切なデータが入っている場合はバックアップを作り、空の端末や古いデータで上書きされないよう注意してください。</p>
+      </div>
+    </section>
+
+    <section class="card" id="feedback">
+      <div class="section-head">
+        <span class="num">04</span>
+        <div>
+          <h2>不具合・感想を送る</h2>
+          <p>スクリーンショットがあると、原因を見つけやすくなります。</p>
+        </div>
+      </div>
+
+      <h3>方法A：不具合の画面でスクリーンショット</h3>
+      <ol>
+        <li>不具合が見える状態でスクリーンショットを撮ります。</li>
+        <li>画面左下に出るスクリーンショットの小さな画像をタップします。</li>
+        <li>共有メニューから<strong>「ベータ版のフィードバックを共有」</strong>を選びます。</li>
+        <li>起きたこと、直前にした操作、期待していた結果を書いて送信します。</li>
+      </ol>
+
+      <h3>方法B：TestFlightから送る</h3>
+      <ol>
+        <li>TestFlightを開き、LifeTimeDiaryを選びます。</li>
+        <li><strong>「ベータ版フィードバックを送信」</strong>をタップします。</li>
+        <li>スクリーンショットを追加し、内容を書いて送信します。</li>
+      </ol>
+
+      <div class="callout">
+        <p><strong>書いてほしい4点</strong></p>
+        <p>①使った端末　②どの画面か　③何をしたら起きたか　④本来どうなってほしかったか</p>
+      </div>
+    </section>
+
+    <section class="card" id="faq">
+      <div class="section-head">
+        <span class="num">05</span>
+        <div>
+          <h2>うまくいかないとき</h2>
+          <p>よくある状況をまとめました。</p>
+        </div>
+      </div>
+
+      <details>
+        <summary>招待リンクを押してもTestFlightが開きません</summary>
+        <p>先にTestFlightをインストールし、iPhoneまたはiPadのSafariで招待リンクをもう一度開いてください。メールの転送や一部のアプリ内ブラウザでは開けない場合があります。</p>
+      </details>
+      <details>
+        <summary>「このベータ版は現在新しいテスターを受け入れていません」と表示されます</summary>
+        <p>テスター上限、公開停止、またはビルドの期限切れが考えられます。表示された文章のスクリーンショットを主催者へ送ってください。</p>
+      </details>
+      <details>
+        <summary>LifeTimeDiaryがTestFlightに表示されません</summary>
+        <p>招待を受け取ったメールアドレスやApple Accountを確認し、招待メールまたは公開リンクをもう一度開いてください。</p>
+      </details>
+      <details>
+        <summary>アプリを開けない・すぐ終了します</summary>
+        <p>端末を再起動し、TestFlightで更新がないか確認してください。それでも直らない場合は、端末名とOSのバージョンを添えてフィードバックを送ってください。</p>
+      </details>
+      <details>
+        <summary>日記がほかの端末に出てきません</summary>
+        <p>両方の端末が同じApple AccountでiCloudにサインインしているか、通信できる状態かを確認してください。同期には少し時間がかかる場合があります。内容を消してやり直す前に、主催者へ相談してください。</p>
+      </details>
+    </section>
+
+    <section class="card" id="privacy">
+      <div class="section-head">
+        <span class="num">06</span>
+        <div>
+          <h2>大切なお願い</h2>
+          <p>安心してテストするためにご確認ください。</p>
+        </div>
+      </div>
+
+      <ul>
+        <li>フィードバックの画像に、氏名・住所・連絡先・日記本文などの個人情報が写っていないか確認してください。</li>
+        <li>招待リンクや専用コードがある場合は、許可なく第三者へ転送・公開しないでください。</li>
+        <li>β版の画面や仕様は変更されることがあります。</li>
+        <li>テストをやめる場合は、LifeTimeDiaryを削除して構いません。TestFlight内のLifeTimeDiary画面からテスト参加を停止することもできます。</li>
+      </ul>
+
+      <p><a href="https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/" target="_blank" rel="noopener">Apple公式：TestFlightの概要</a></p>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <p><strong>LifeTimeDiary TestFlight 参加ガイド</strong></p>
+    <p>更新日：2026年10月6日</p>
+  </footer>
+</body>
+</html>
